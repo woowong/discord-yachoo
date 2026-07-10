@@ -164,7 +164,7 @@ const handleInteraction = (
         // Format: roll_${holds}
         const parts = customId.split("_");
         const holds = parts[1] || "00000";
-        const holdsTuple = holds.split("").map(h => h === "1") as unknown as DiceHold;
+        const holdsTuple = holds.split("").map((h: string) => h === "1") as unknown as DiceHold;
 
         const nextState = yield* rollDice(gameState, holdsTuple, rollProvider);
         yield* gameRepo.save(nextState);
@@ -300,14 +300,14 @@ export default {
 
       const isVerified = yield* verifier.verify(body, signature, timestamp, publicKey);
       if (!isVerified) {
-        return yield* Effect.fail({ _tag: "Unauthorized", message: "Invalid signature" });
+        return yield* Effect.fail({ _tag: "Unauthorized" as const, message: "Invalid signature" });
       }
 
       let rawJson;
       try {
         rawJson = JSON.parse(body);
       } catch (e) {
-        return yield* Effect.fail({ _tag: "BadRequest", message: "Invalid JSON body" });
+        return yield* Effect.fail({ _tag: "BadRequest" as const, message: "Invalid JSON body" });
       }
 
       const interaction = yield* parser.parse(body);

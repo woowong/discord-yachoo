@@ -19,7 +19,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
       ["sign", "verify"]
     )) as CryptoKeyPair;
 
-    const publicKeyBuffer = await crypto.subtle.exportKey("raw", keypair.publicKey);
+    const publicKeyBuffer = (await crypto.subtle.exportKey("raw", keypair.publicKey)) as ArrayBuffer;
     publicKeyHex = Array.from(new Uint8Array(publicKeyBuffer))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -75,7 +75,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
   it("should return 401 when signature is invalid", async () => {
     const body = JSON.stringify({ type: 1 });
     const req = await createSignedRequest(body, "a".repeat(64));
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(401);
   });
 
@@ -84,16 +84,16 @@ describe("Discord Yacht Bot Integration Tests", () => {
       method: "POST",
       body: JSON.stringify({ type: 1 })
     });
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(401);
   });
 
   it("should handle PING (Type 1) successfully", async () => {
     const body = JSON.stringify({ type: 1 });
     const req = await createSignedRequest(body);
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(200);
-    const json = await res.json();
+    const json = (await res.json()) as any;
     expect(json.type).toBe(1);
   });
 
@@ -112,10 +112,10 @@ describe("Discord Yacht Bot Integration Tests", () => {
     });
 
     const req = await createSignedRequest(body);
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as any;
     expect(json.type).toBe(4); // ChannelMessageWithSource
     expect(json.data.embeds[0].title).toBe("🎲 Yacht Dice Game");
     expect(json.data.embeds[0].description).toContain("Alice");
@@ -150,10 +150,10 @@ describe("Discord Yacht Bot Integration Tests", () => {
     });
 
     const req = await createSignedRequest(body);
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as any;
     expect(json.type).toBe(4);
     expect(json.data.content).toContain("Player Profile: Alice");
     expect(json.data.content).toContain("Wins: **10**");
@@ -190,10 +190,10 @@ describe("Discord Yacht Bot Integration Tests", () => {
     });
 
     const req = await createSignedRequest(body);
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as any;
     expect(json.type).toBe(4);
     expect(json.data.embeds[0].title).toBe("🏆 Yacht Dice Leaderboard");
     expect(json.data.embeds[0].fields[0].name).toContain("Alice");
@@ -246,10 +246,10 @@ describe("Discord Yacht Bot Integration Tests", () => {
     });
 
     const req = await createSignedRequest(body);
-    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex });
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
     expect(res.status).toBe(200);
 
-    const json = await res.json();
+    const json = (await res.json()) as any;
     expect(json.type).toBe(7); // UpdateMessage
     expect(json.data.embeds[0].description).toContain("Dice 3: **:three:** [HELD]");
   });

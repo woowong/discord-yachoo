@@ -1,6 +1,6 @@
 import { Context, Layer } from "effect";
 import { GameState, ScoreCategory } from "../../../domain/types";
-import { PlayerStats } from "../../repository";
+import { PlayerStats } from "../../../persistence/repository";
 import { calculateScore, calculateUpperSectionSum } from "../../../domain/score";
 import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./types";
 

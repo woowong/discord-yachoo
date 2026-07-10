@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { DiceHold, DiceRoll, GameMode, GameState, ScoreCategory } from "../../domain/types";
 import { initGame, rollDice, selectCategory } from "../../domain/game";
-import { GameRepository } from "../../persistence/memory/repository";
+import { GameRepository } from "../../persistence/repository";
 import { ConsolePresenter } from "./presenter";
 import { Terminal } from "./terminal";
 import { calculateScore } from "../../domain/score";

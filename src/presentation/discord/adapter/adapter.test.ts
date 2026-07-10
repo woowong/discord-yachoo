@@ -4,7 +4,7 @@ import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./signat
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./parser";
 import { DiscordResponseSerializer, DiscordResponseSerializerLive } from "./serializer";
 import { GameState } from "../../../domain/types";
-import { PlayerStats } from "../../repository";
+import { PlayerStats } from "../../../persistence/repository";
 
 describe("Discord Webhook Adapter Layer", () => {
   describe("DiscordSignatureVerifier", () => {
@@ -16,7 +16,7 @@ describe("Discord Webhook Adapter Layer", () => {
         ["sign", "verify"]
       )) as CryptoKeyPair;
 
-      const publicKeyBuffer = await crypto.subtle.exportKey("raw", keypair.publicKey);
+      const publicKeyBuffer = (await crypto.subtle.exportKey("raw", keypair.publicKey)) as ArrayBuffer;
       const publicKeyHex = Array.from(new Uint8Array(publicKeyBuffer))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
