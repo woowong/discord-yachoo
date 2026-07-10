@@ -2,10 +2,8 @@ name = "discord-yachoo"
 main = "src/index.ts"
 compatibility_date = "2024-05-02"
 
-# [vars]
-# DISCORD_PUBLIC_KEY = "..."
-
 [[d1_databases]]
 binding = "DB"
 database_name = "yacht_dice"
-database_id = "local-db"
+database_id = "d30f4a69-d298-4374-ab91-7fea361a693a"
+

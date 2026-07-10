@@ -18,11 +18,11 @@ TBD - created by archiving change init-project-setup. Update Purpose after archi
 - **THEN** `src/` 디렉토리 내의 TypeScript 파일들이 문법 및 타입 에러 없이 성공적으로 컴파일되어야 한다.
 
 ### Requirement: Cloudflare Workers wrangler.toml Setup
-프로젝트는 Cloudflare Workers 환경에 빌드 및 배포될 수 있도록 `wrangler.toml` 설정을 가지고 있어야 한다. (SHALL)
+프로젝트는 Cloudflare Workers 환경에 빌드 및 배포될 수 있도록 `wrangler.toml` 설정을 가지고 있어야 한다. 특히, 프로덕션 환경 배포를 위한 원격 Cloudflare D1 데이터베이스 바인딩(`DB`)과 `DISCORD_PUBLIC_KEY` 보안 키 연동 설정을 완비해야 한다. (SHALL)
 
 #### Scenario: Wrangler Configuration Validation
-- **WHEN** wrangler 개발 서버나 설정 검증 도구가 실행될 때
-- **THEN** `wrangler.toml` 설정 파일이 올바르게 분석되고 에러가 발생하지 않아야 한다.
+- **WHEN** wrangler 개발 서버나 설정 검증 도구 또는 배포 명령이 실행될 때
+- **THEN** `wrangler.toml` 설정 파일이 올바르게 분석되어 원격 D1 DB 바인딩이 연결되고 에러가 발생하지 않아야 한다.
 
 ### Requirement: Vitest Test Runner Config
 프로젝트는 비즈니스 로직과 기타 구현 계층의 단위 테스트를 병렬로 빠르게 수행할 수 있도록 Vitest 설정을 포함해야 한다. (SHALL)
