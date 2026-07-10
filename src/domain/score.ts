@@ -58,9 +58,9 @@ export const calculateSmallStraight = (dice: DiceRoll): number => {
   const uniqueVals = new Set(dice);
   
   // Possible small straight subsets
-  const s1 = [1, 2, 3, 4].every(x => uniqueVals.has(x));
-  const s2 = [2, 3, 4, 5].every(x => uniqueVals.has(x));
-  const s3 = [3, 4, 5, 6].every(x => uniqueVals.has(x));
+  const s1 = [1, 2, 3, 4].every(x => uniqueVals.has(x as Dice));
+  const s2 = [2, 3, 4, 5].every(x => uniqueVals.has(x as Dice));
+  const s3 = [3, 4, 5, 6].every(x => uniqueVals.has(x as Dice));
 
   return (s1 || s2 || s3) ? 15 : 0;
 };
@@ -72,8 +72,8 @@ export const calculateLargeStraight = (dice: DiceRoll): number => {
   const uniqueVals = new Set(dice);
 
   // Possible large straight subsets
-  const l1 = [1, 2, 3, 4, 5].every(x => uniqueVals.has(x));
-  const l2 = [2, 3, 4, 5, 6].every(x => uniqueVals.has(x));
+  const l1 = [1, 2, 3, 4, 5].every(x => uniqueVals.has(x as Dice));
+  const l2 = [2, 3, 4, 5, 6].every(x => uniqueVals.has(x as Dice));
 
   return (l1 || l2) ? 30 : 0;
 };

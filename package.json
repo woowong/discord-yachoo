@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "vitest run"
+    "test": "vitest run",
+    "simulate": "tsx src/presentation/console/index.ts"
   },
   "dependencies": {
     "@effect/platform": "^0.57.0",
@@ -16,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "tsx": "^4.11.0",
     "typescript": "^5.4.5",
     "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
