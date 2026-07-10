@@ -153,7 +153,7 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.type).toBe(7); // UpdateMessage
       expect(response.data?.embeds?.[0].title).toBe("🎲 Yacht Dice Game");
       expect(response.data?.embeds?.[0].description).toContain("Alice");
-      expect(response.data?.embeds?.[0].description).toContain("Dice 3: **⚂** [HELD]");
+      expect(response.data?.embeds?.[0].description).toContain("Dice 3: **:three:** [HELD]");
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
     });
 

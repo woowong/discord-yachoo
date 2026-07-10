@@ -6,6 +6,7 @@ import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./ty
 
 export interface DiscordResponseSerializer {
   readonly serializeGame: (state: GameState, holds?: string) => DiscordInteractionResponse;
+  readonly serializeRolling: (state: GameState, holds?: string) => DiscordInteractionResponse;
   readonly serializeLeaderboard: (topPlayers: readonly PlayerStats[]) => DiscordInteractionResponse;
   readonly serializeError: (message: string) => DiscordInteractionResponse;
   readonly serializeMessage: (content: string) => DiscordInteractionResponse;
@@ -13,7 +14,8 @@ export interface DiscordResponseSerializer {
 
 export const DiscordResponseSerializer = Context.GenericTag<DiscordResponseSerializer>("@services/DiscordResponseSerializer");
 
-const DICE_UNICODE = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"] as const;
+const DICE_EMOJIS = ["", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:"] as const;
+const DICE_BUTTON_EMOJIS = ["", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"] as const;
 
 const CATEGORIES: { key: ScoreCategory | "Subtotal" | "Bonus"; label: string }[] = [
   { key: "Aces", label: "Aces" },
@@ -87,7 +89,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
 
         if (state.rollCount > 0) {
           const diceFaces = state.currentDice.map((val, idx) => {
-            const face = DICE_UNICODE[val] || val.toString();
+            const face = DICE_EMOJIS[val] || val.toString();
             const heldLabel = holds[idx] === "1" ? " [HELD]" : "";
             return `Dice ${idx + 1}: **${face}**${heldLabel}`;
           });
@@ -127,11 +129,12 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           const holdButtons = state.currentDice.map((val, idx) => {
             const isHeld = holds[idx] === "1";
             const newHolds = holds.split("").map((h, i) => i === idx ? (h === "1" ? "0" : "1") : h).join("");
-            const face = DICE_UNICODE[val] || val.toString();
+            const emojiName = DICE_BUTTON_EMOJIS[val];
             return {
               type: 2 as const,
               style: isHeld ? (3 as const) : (2 as const),
-              label: `${face} [${idx + 1}]${isHeld ? " Held" : ""}`,
+              label: `[${idx + 1}]${isHeld ? " Held" : ""}`,
+              emoji: { name: emojiName },
               custom_id: `hold_${idx}_${newHolds}`
             };
           });
@@ -147,6 +150,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           type: 2 as const,
           style: 1 as const,
           label: `Roll Dice (${state.rollCount}/3)`,
+          emoji: { name: "🎲" },
           custom_id: `roll_${holds}`,
           disabled: !canRoll
         };
@@ -180,6 +184,98 @@ export const DiscordResponseSerializerLive = Layer.succeed(
               ]
             });
           }
+        }
+      }
+
+      return {
+        type: 7, // UpdateMessage
+        data: {
+          embeds: [embed],
+          components: components.length > 0 ? components : undefined
+        }
+      };
+    },
+
+    serializeRolling: (state, holds = "00000") => {
+      const currentPlayer = state.players[state.currentPlayerIndex];
+      const nextRollCount = Math.min(3, state.rollCount + 1);
+
+      let description = formatScoreBoard(state);
+      description += `\n**Current Turn:** <@${currentPlayer.playerId}> (${currentPlayer.playerName})`;
+      description += `\n**Rolls:** ${nextRollCount}/3`;
+      description += `\n**Current Dice:** 🎲 **Rolling the dice...**`;
+
+      const embed: DiscordEmbed = {
+        title: "🎲 Yacht Dice Game",
+        description,
+        color: 0x5865F2,
+        image: {
+          url: "https://media.giphy.com/media/VGoZVlR9naOZCiRLSy/giphy.gif"
+        },
+        footer: { text: `Game ID: ${state.gameId}` }
+      };
+
+      const components: DiscordActionRow[] = [];
+
+      // Row 1: Hold buttons (all disabled)
+      if (state.rollCount > 0 && state.rollCount < 3) {
+        const holdButtons = state.currentDice.map((val, idx) => {
+          const isHeld = holds[idx] === "1";
+          const emojiName = DICE_BUTTON_EMOJIS[val];
+          return {
+            type: 2 as const,
+            style: isHeld ? (3 as const) : (2 as const),
+            label: `[${idx + 1}]${isHeld ? " Held" : ""}`,
+            emoji: { name: emojiName },
+            custom_id: `disabled_hold_${idx}`,
+            disabled: true
+          };
+        });
+        components.push({
+          type: 1,
+          components: holdButtons
+        });
+      }
+
+      // Row 2: Roll button (disabled, shows Rolling...)
+      const rollButton = {
+        type: 2 as const,
+        style: 1 as const,
+        label: `Rolling...`,
+        emoji: { name: "🎲" },
+        custom_id: `disabled_roll`,
+        disabled: true
+      };
+      components.push({
+        type: 1,
+        components: [rollButton]
+      });
+
+      // Row 3: Select Menu (all disabled if it was visible)
+      if (state.rollCount > 0) {
+        const selectOptions = CATEGORIES.filter(c => c.key !== "Subtotal" && c.key !== "Bonus" && currentPlayer.scoreBoard[c.key as ScoreCategory] === undefined)
+          .map(c => {
+            const estimatedScore = calculateScore(c.key as ScoreCategory, state.currentDice);
+            return {
+              label: `${c.label} (+${estimatedScore} pts)`,
+              value: c.key,
+              description: `Score current dice in ${c.label}`
+            };
+          });
+
+        if (selectOptions.length > 0) {
+          components.push({
+            type: 1,
+            components: [
+              {
+                type: 3 as const,
+                custom_id: "disabled_select_category",
+                placeholder: "Rolling dice...",
+                options: selectOptions.map(opt => ({ ...opt })),
+                disabled: true
+              }
+            ]
+          });
         }
       }
 

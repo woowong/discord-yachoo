@@ -36,6 +36,9 @@ export const DiscordInteractionParserLive = Layer.succeed(
             globalName: rawUser.global_name || null
           };
 
+          const applicationId = raw.application_id || "";
+          const token = raw.token || "";
+
           if (interactionType === 2) {
             const commandName = raw.data?.name;
             if (!commandName) {
@@ -51,6 +54,8 @@ export const DiscordInteractionParserLive = Layer.succeed(
             return {
               _tag: "Command",
               commandName,
+              applicationId,
+              token,
               user,
               options
             } as const;
@@ -65,6 +70,8 @@ export const DiscordInteractionParserLive = Layer.succeed(
             return {
               _tag: "Component",
               customId,
+              applicationId,
+              token,
               user,
               values: raw.data?.values || undefined
             } as const;

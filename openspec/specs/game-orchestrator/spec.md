@@ -51,7 +51,7 @@ The system SHALL handle component interactions (hold buttons, roll buttons, cate
 
 #### Scenario: Handle Dice Roll Interaction
 - **WHEN** user clicks "Roll Dice" button for their active game
-- **THEN** the system SHALL update game state with rolled dice and return the updated board.
+- **THEN** the system SHALL update game state with rolled dice, immediately return an intermediate rolling animation response with all components disabled, and schedule a background task to patch the original message with the final dice values and active components.
 
 #### Scenario: Handle Dice Hold Interaction
 - **WHEN** user clicks a dice hold button

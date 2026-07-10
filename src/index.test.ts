@@ -251,6 +251,6 @@ describe("Discord Yacht Bot Integration Tests", () => {
 
     const json = await res.json();
     expect(json.type).toBe(7); // UpdateMessage
-    expect(json.data.embeds[0].description).toContain("Dice 3: **⚂** [HELD]");
+    expect(json.data.embeds[0].description).toContain("Dice 3: **:three:** [HELD]");
   });
 });

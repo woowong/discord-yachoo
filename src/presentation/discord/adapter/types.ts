@@ -15,6 +15,9 @@ export interface DiscordEmbed {
   readonly description?: string;
   readonly color?: number;
   readonly fields?: readonly DiscordEmbedField[];
+  readonly image?: {
+    readonly url: string;
+  };
   readonly footer?: {
     readonly text: string;
   };
@@ -67,12 +70,16 @@ export type ParsedInteraction =
   | {
       readonly _tag: "Command";
       readonly commandName: string;
+      readonly applicationId: string;
+      readonly token: string;
       readonly user: DiscordUser;
       readonly options: Record<string, any>;
     }
   | {
       readonly _tag: "Component";
       readonly customId: string;
+      readonly applicationId: string;
+      readonly token: string;
       readonly user: DiscordUser;
       readonly values?: readonly string[];
     };

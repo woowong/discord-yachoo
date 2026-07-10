@@ -22,7 +22,8 @@ const rollProvider: Effect.Effect<DiceRoll, never> = Effect.sync(() => [
 const handleInteraction = (
   body: string,
   rawJson: any,
-  interaction: any
+  interaction: any,
+  ctx: any
 ) =>
   Effect.gen(function* () {
     const serializer = yield* DiscordResponseSerializer;
@@ -168,8 +169,33 @@ const handleInteraction = (
         const nextState = yield* rollDice(gameState, holdsTuple, rollProvider);
         yield* gameRepo.save(nextState);
 
-        const responsePayload = serializer.serializeGame(nextState, holds);
-        return new Response(JSON.stringify(responsePayload), {
+        const rollingPayload = serializer.serializeRolling(gameState, holds);
+
+        ctx.waitUntil(
+          Effect.runPromise(
+            Effect.gen(function* () {
+              yield* Effect.sleep("1.4 seconds");
+              const finalPayload = serializer.serializeGame(nextState, holds);
+              
+              yield* Effect.tryPromise({
+                try: () =>
+                  fetch(`https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`, {
+                    method: "PATCH",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify(finalPayload.data)
+                  }),
+                catch: (error) => new Error(`Failed to update interaction response: ${error}`)
+              });
+            }).pipe(
+              Effect.catchAll((error) => {
+                console.error("Error in background dice rolling task:", error);
+                return Effect.void;
+              })
+            )
+          )
+        );
+
+        return new Response(JSON.stringify(rollingPayload), {
           headers: { "content-type": "application/json" }
         });
       }
@@ -254,7 +280,7 @@ const handleInteraction = (
   });
 
 export default {
-  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string }): Promise<Response> {
+  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string }, ctx: any): Promise<Response> {
     const signature = request.headers.get("x-signature-ed25519") || "";
     const timestamp = request.headers.get("x-signature-timestamp") || "";
 
@@ -285,7 +311,7 @@ export default {
       }
 
       const interaction = yield* parser.parse(body);
-      return yield* handleInteraction(body, rawJson, interaction);
+      return yield* handleInteraction(body, rawJson, interaction, ctx);
     });
 
     const mainLayer = Layer.mergeAll(
