@@ -40,6 +40,10 @@ The system SHALL prompt the active player to choose an empty score category to w
 - **WHEN** the active player selects an empty category (e.g., 'Yacht') after rolling
 - **THEN** the score board for 'Yacht' MUST be populated, and the turn MUST transition to the next player (or remain with the same player in single-player mode) with the roll count reset to 0
 
+#### Scenario: Display expected scores for available categories
+- **WHEN** the player enters the category selection phase
+- **THEN** the system MUST display the estimated score next to each 'Available' category based on the current dice roll
+
 ### Requirement: CLI Game Over Notification
 The system SHALL print the final game state when all players' score boards are filled, announce the final score of each player, and determine the winner in multi-player mode before exiting.
 

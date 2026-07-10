@@ -19,3 +19,8 @@
 
 - [x] 4.1 Create run script entrypoint for local simulation (src/presentation/console/index.ts)
 - [x] 4.2 Add npm script "simulate" to package.json pointing to the CLI entrypoint
+
+## 5. Additional Features
+
+- [x] 5.1 Render expected scores for available categories during selection prompt using domain calculateScore helper
+

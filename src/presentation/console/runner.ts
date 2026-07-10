@@ -4,6 +4,7 @@ import { initGame, rollDice, selectCategory } from "../../domain/game";
 import { GameRepository } from "../../persistence/memory/repository";
 import { ConsolePresenter } from "./presenter";
 import { Terminal } from "./terminal";
+import { calculateScore } from "../../domain/score";
 
 const randomDice = (): 1 | 2 | 3 | 4 | 5 | 6 =>
   (Math.floor(Math.random() * 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6;
@@ -159,8 +160,13 @@ const playTurn = (gameId: string) =>
       
       Object.entries(CATEGORY_MAP).forEach(([key, category]) => {
         const alreadyScored = currentPlayer.scoreBoard[category] !== undefined;
-        const scoreVal = alreadyScored ? currentPlayer.scoreBoard[category] : "";
-        const statusStr = alreadyScored ? `[Scored: ${scoreVal}]` : "[Available]";
+        let statusStr = "";
+        if (alreadyScored) {
+          statusStr = `[Scored: ${currentPlayer.scoreBoard[category]}]`;
+        } else {
+          const expected = calculateScore(category, state.currentDice);
+          statusStr = `[Available] (Expected: ${expected} pts)`;
+        }
         console.log(`  ${key.padStart(2)}. ${CATEGORY_LABELS[category].padEnd(20)} : ${statusStr}`);
       });
 
