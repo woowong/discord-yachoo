@@ -1,6 +1,7 @@
 import { Effect, Layer, Option } from "effect";
-import { PlayerRepository, MatchRepository, PlayerStats, MatchRecord, RepositoryError } from "../repository";
+import { PlayerRepository, MatchRepository, GameRepository, PlayerStats, MatchRecord, RepositoryError } from "../repository";
 import { D1Database } from "./database";
+import { GameState } from "../../domain/types";
 
 // DB Row interfaces
 interface DBPlayerRow {
@@ -142,6 +143,42 @@ export const D1MatchRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`getRecentMatches failed: ${error}`, error)
         }).pipe(
           Effect.map((res) => res.results.map(mapRowToMatchRecord))
+        )
+    };
+  })
+);
+
+export const D1GameRepositoryLive = Layer.effect(
+  GameRepository,
+  Effect.gen(function* () {
+    const db = yield* D1Database;
+
+    return {
+      save: (state: GameState) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              INSERT INTO active_games (id, state, updated_at)
+              VALUES (?, ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(id) DO UPDATE SET state = excluded.state, updated_at = CURRENT_TIMESTAMP
+            `).bind(state.gameId, JSON.stringify(state)).run(),
+          catch: (error) => new RepositoryError(`save game failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      findById: (gameId: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM active_games WHERE id = ?").bind(gameId).first<{ state: string }>(),
+          catch: (error) => new RepositoryError(`findById game failed: ${error}`, error)
+        }).pipe(
+          Effect.flatMap((row) =>
+            row
+              ? Effect.try({
+                  try: () => Option.some(JSON.parse(row.state) as GameState),
+                  catch: (error) => new RepositoryError(`failed to parse game state JSON: ${error}`, error)
+                })
+              : Effect.succeed(Option.none())
+          )
         )
     };
   })

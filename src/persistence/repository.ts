@@ -1,4 +1,5 @@
 import { Effect, Context, Option } from "effect";
+import { GameState } from "../domain/types";
 
 export class RepositoryError {
   readonly _tag = "RepositoryError";
@@ -42,3 +43,10 @@ export interface MatchRepository {
 }
 
 export const MatchRepository = Context.GenericTag<MatchRepository>("@services/MatchRepository");
+
+export interface GameRepository {
+  readonly save: (state: GameState) => Effect.Effect<void, RepositoryError>;
+  readonly findById: (gameId: string) => Effect.Effect<Option.Option<GameState>, RepositoryError>;
+}
+
+export const GameRepository = Context.GenericTag<GameRepository>("@services/GameRepository");

@@ -8,7 +8,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
-    "simulate": "tsx src/presentation/console/index.ts"
+    "simulate": "tsx src/presentation/console/index.ts",
+    "register-commands": "tsx scripts/register-commands.ts"
   },
   "dependencies": {
     "@effect/platform": "^0.57.0",
