@@ -1,0 +1,23 @@
+{
+  "name": "discord-yachoo",
+  "version": "1.0.0",
+  "description": "Discord Yacht Dice Bot on Cloudflare Workers and Effect.ts",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "effect": "^3.5.0",
+    "@effect/platform": "^0.57.0",
+    "@effect/schema": "^0.68.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "wrangler": "^3.57.1"
+  }
+}
