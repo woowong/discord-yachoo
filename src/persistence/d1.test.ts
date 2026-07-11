@@ -58,6 +58,12 @@ describe("D1 Persistence Repositories", () => {
         losses: 2,
         draws: 1,
         highest_score: 180,
+        solo_play_count: 3,
+        solo_highest_score: 150,
+        multi_wins: 2,
+        multi_losses: 1,
+        multi_draws: 0,
+        multi_highest_score: 180,
         created_at: "2026-07-10T12:00:00.000Z",
         updated_at: "2026-07-10T12:00:00.000Z",
       });
@@ -77,6 +83,12 @@ describe("D1 Persistence Repositories", () => {
       expect(stats.name).toBe("Alice");
       expect(stats.wins).toBe(5);
       expect(stats.highestScore).toBe(180);
+      expect(stats.soloPlayCount).toBe(3);
+      expect(stats.soloHighestScore).toBe(150);
+      expect(stats.multiWins).toBe(2);
+      expect(stats.multiLosses).toBe(1);
+      expect(stats.multiDraws).toBe(0);
+      expect(stats.multiHighestScore).toBe(180);
       expect(mockDB.prepare).toHaveBeenCalledWith("SELECT * FROM players WHERE id = ?");
       expect(mockBind).toHaveBeenCalledWith("user-123");
       expect(mockFirst).toHaveBeenCalled();
@@ -98,12 +110,12 @@ describe("D1 Persistence Repositories", () => {
       expect(Option.isNone(result)).toBe(true);
     });
 
-    it("updateStats should execute correct update SQL", async () => {
+    it("updateStats should execute correct update SQL for single mode", async () => {
       const { mockDB, mockBind, mockRun } = createMockDb();
       mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.updateStats("user-123", "win", 120)
+        repo.updateStats("user-123", "single", "win", 120)
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -112,12 +124,29 @@ describe("D1 Persistence Repositories", () => {
       await Effect.runPromise(program);
 
       expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("UPDATE players"));
-      // wins +1, losses +0, draws +0, highest_score 120
-      expect(mockBind).toHaveBeenCalledWith(1, 0, 0, 120, "user-123");
+      expect(mockBind).toHaveBeenCalledWith(120, 120, "user-123");
       expect(mockRun).toHaveBeenCalled();
     });
 
-    it("getLeaderboard should query players ordered by score", async () => {
+    it("updateStats should execute correct update SQL for multi mode", async () => {
+      const { mockDB, mockBind, mockRun } = createMockDb();
+      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+
+      const program = Effect.flatMap(PlayerRepository, (repo) =>
+        repo.updateStats("user-123", "multi", "win", 120)
+      ).pipe(
+        Effect.provide(D1PlayerRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      await Effect.runPromise(program);
+
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("UPDATE players"));
+      expect(mockBind).toHaveBeenCalledWith(1, 0, 0, 120, 1, 0, 0, 120, "user-123");
+      expect(mockRun).toHaveBeenCalled();
+    });
+
+    it("getLeaderboard should query solo players ordered by score", async () => {
       const { mockDB, mockBind, mockAll } = createMockDb();
       mockAll.mockResolvedValue({
         success: true,
@@ -129,6 +158,12 @@ describe("D1 Persistence Repositories", () => {
             losses: 0,
             draws: 0,
             highest_score: 300,
+            solo_play_count: 5,
+            solo_highest_score: 250,
+            multi_wins: 5,
+            multi_losses: 0,
+            multi_draws: 0,
+            multi_highest_score: 300,
             created_at: "2026-07-10T12:00:00.000Z",
             updated_at: "2026-07-10T12:00:00.000Z",
           },
@@ -137,7 +172,7 @@ describe("D1 Persistence Repositories", () => {
       });
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.getLeaderboard(5)
+        repo.getLeaderboard("single", 5)
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -147,8 +182,49 @@ describe("D1 Persistence Repositories", () => {
 
       expect(list).toHaveLength(1);
       expect(list[0].id).toBe("user-1");
-      expect(list[0].highestScore).toBe(300);
-      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("ORDER BY highest_score DESC"));
+      expect(list[0].soloHighestScore).toBe(250);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("ORDER BY solo_highest_score DESC"));
+      expect(mockBind).toHaveBeenCalledWith(5);
+    });
+
+    it("getLeaderboard should query matching players ordered by wins", async () => {
+      const { mockDB, mockBind, mockAll } = createMockDb();
+      mockAll.mockResolvedValue({
+        success: true,
+        results: [
+          {
+            id: "user-1",
+            name: "Alice",
+            wins: 10,
+            losses: 0,
+            draws: 0,
+            highest_score: 300,
+            solo_play_count: 5,
+            solo_highest_score: 250,
+            multi_wins: 5,
+            multi_losses: 0,
+            multi_draws: 0,
+            multi_highest_score: 300,
+            created_at: "2026-07-10T12:00:00.000Z",
+            updated_at: "2026-07-10T12:00:00.000Z",
+          },
+        ],
+        meta: {},
+      });
+
+      const program = Effect.flatMap(PlayerRepository, (repo) =>
+        repo.getLeaderboard("multi", 5)
+      ).pipe(
+        Effect.provide(D1PlayerRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const list = await Effect.runPromise(program);
+
+      expect(list).toHaveLength(1);
+      expect(list[0].id).toBe("user-1");
+      expect(list[0].multiWins).toBe(5);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("ORDER BY multi_wins DESC"));
       expect(mockBind).toHaveBeenCalledWith(5);
     });
   });

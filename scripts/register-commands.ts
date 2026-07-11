@@ -17,7 +17,19 @@ const commands = [
   },
   {
     name: "leaderboard",
-    description: "View the Yacht Dice leaderboard"
+    description: "View the Yacht Dice leaderboard",
+    options: [
+      {
+        name: "type",
+        description: "Choose leaderboard type (solo or multi)",
+        type: 3, // STRING
+        required: false,
+        choices: [
+          { name: "Solo Mode (Score)", value: "solo" },
+          { name: "Matching Mode (Wins)", value: "multi" }
+        ]
+      }
+    ]
   },
   {
     name: "history",

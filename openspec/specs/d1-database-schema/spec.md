@@ -2,9 +2,7 @@
 
 ## Purpose
 플레이어의 전적(승패무 기록 및 최고 점수)과 경기 이력(매치 데이터)을 유지하기 위해 Cloudflare D1 데이터베이스에 적용할 SQLite 테이블 구조와 마이그레이션 방안을 정의합니다.
-
 ## Requirements
-
 ### Requirement: Database Schema Definition
 The system SHALL define a database schema for `players` and `matches` using an SQLite-compatible SQL migration script.
 
@@ -16,16 +14,22 @@ The system SHALL define a database schema for `players` and `matches` using an S
 The `players` table MUST store individual player statistics, containing:
 * `id` (TEXT, PRIMARY KEY): The unique Discord User ID.
 * `name` (TEXT, NOT NULL): The player's display name.
-* `wins` (INTEGER, NOT NULL, DEFAULT 0): The count of wins.
-* `losses` (INTEGER, NOT NULL, DEFAULT 0): The count of losses.
-* `draws` (INTEGER, NOT NULL, DEFAULT 0): The count of draws.
-* `highest_score` (INTEGER, NOT NULL, DEFAULT 0): The highest score achieved by the player.
+* `wins` (INTEGER, NOT NULL, DEFAULT 0): The legacy count of wins (retained for compatibility).
+* `losses` (INTEGER, NOT NULL, DEFAULT 0): The legacy count of losses (retained for compatibility).
+* `draws` (INTEGER, NOT NULL, DEFAULT 0): The legacy count of draws (retained for compatibility).
+* `highest_score` (INTEGER, NOT NULL, DEFAULT 0): The legacy highest score achieved by the player (retained for compatibility).
+* `solo_play_count` (INTEGER, NOT NULL, DEFAULT 0): The count of completed solo games.
+* `solo_highest_score` (INTEGER, NOT NULL, DEFAULT 0): The highest score in a solo game.
+* `multi_wins` (INTEGER, NOT NULL, DEFAULT 0): The count of multiplayer wins.
+* `multi_losses` (INTEGER, NOT NULL, DEFAULT 0): The count of multiplayer losses.
+* `multi_draws` (INTEGER, NOT NULL, DEFAULT 0): The count of multiplayer draws.
+* `multi_highest_score` (INTEGER, NOT NULL, DEFAULT 0): The highest score in a multiplayer game.
 * `created_at` (DATETIME, DEFAULT CURRENT_TIMESTAMP)
 * `updated_at` (DATETIME, DEFAULT CURRENT_TIMESTAMP)
 
 #### Scenario: Player record creation
 - **WHEN** a new player is registered in the database
-- **THEN** default values of 0 for wins, losses, draws, and highest_score are applied.
+- **THEN** default values of 0 for all statistics columns (wins, losses, draws, highest_score, solo_play_count, solo_highest_score, multi_wins, multi_losses, multi_draws, multi_highest_score) are applied.
 
 ### Requirement: Matches Table Structure
 The `matches` table MUST store the history of played matches, containing:
@@ -41,3 +45,4 @@ The `matches` table MUST store the history of played matches, containing:
 #### Scenario: Single-player match recording
 - **WHEN** a single-player match is recorded
 - **THEN** `player2_id`, `player2_score`, and `winner_id` SHALL be recorded as NULL.
+

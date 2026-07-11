@@ -13,6 +13,12 @@ export interface PlayerStats {
   readonly losses: number;
   readonly draws: number;
   readonly highestScore: number;
+  readonly soloPlayCount: number;
+  readonly soloHighestScore: number;
+  readonly multiWins: number;
+  readonly multiLosses: number;
+  readonly multiDraws: number;
+  readonly multiHighestScore: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -32,8 +38,8 @@ export interface MatchRecord {
 export interface PlayerRepository {
   readonly upsertPlayer: (id: string, name: string) => Effect.Effect<void, RepositoryError>;
   readonly getPlayer: (id: string) => Effect.Effect<Option.Option<PlayerStats>, RepositoryError>;
-  readonly updateStats: (id: string, outcome: "win" | "loss" | "draw", score: number) => Effect.Effect<void, RepositoryError>;
-  readonly getLeaderboard: (limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
+  readonly updateStats: (id: string, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) => Effect.Effect<void, RepositoryError>;
+  readonly getLeaderboard: (mode: "single" | "multi", limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
 }
 
 export const PlayerRepository = Context.GenericTag<PlayerRepository>("@services/PlayerRepository");

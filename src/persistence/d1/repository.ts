@@ -11,6 +11,12 @@ interface DBPlayerRow {
   readonly losses: number;
   readonly draws: number;
   readonly highest_score: number;
+  readonly solo_play_count: number;
+  readonly solo_highest_score: number;
+  readonly multi_wins: number;
+  readonly multi_losses: number;
+  readonly multi_draws: number;
+  readonly multi_highest_score: number;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -34,6 +40,12 @@ const mapRowToPlayerStats = (row: DBPlayerRow): PlayerStats => ({
   losses: row.losses,
   draws: row.draws,
   highestScore: row.highest_score,
+  soloPlayCount: row.solo_play_count,
+  soloHighestScore: row.solo_highest_score,
+  multiWins: row.multi_wins,
+  multiLosses: row.multi_losses,
+  multiDraws: row.multi_draws,
+  multiHighestScore: row.multi_highest_score,
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
@@ -76,30 +88,50 @@ export const D1PlayerRepositoryLive = Layer.effect(
           Effect.map((row) => (row ? Option.some(mapRowToPlayerStats(row)) : Option.none()))
         ),
 
-      updateStats: (id: string, outcome: "win" | "loss" | "draw", score: number) =>
+      updateStats: (id: string, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) =>
         Effect.tryPromise({
           try: () => {
             const winVal = outcome === "win" ? 1 : 0;
             const lossVal = outcome === "loss" ? 1 : 0;
             const drawVal = outcome === "draw" ? 1 : 0;
 
-            return db.prepare(`
-              UPDATE players
-              SET wins = wins + ?,
-                  losses = losses + ?,
-                  draws = draws + ?,
-                  highest_score = MAX(highest_score, ?),
-                  updated_at = CURRENT_TIMESTAMP
-              WHERE id = ?
-            `).bind(winVal, lossVal, drawVal, score, id).run();
+            if (mode === "single") {
+              return db.prepare(`
+                UPDATE players
+                SET wins = wins + 1,
+                    highest_score = MAX(highest_score, ?),
+                    solo_play_count = solo_play_count + 1,
+                    solo_highest_score = MAX(solo_highest_score, ?),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).bind(score, score, id).run();
+            } else {
+              return db.prepare(`
+                UPDATE players
+                SET wins = wins + ?,
+                    losses = losses + ?,
+                    draws = draws + ?,
+                    highest_score = MAX(highest_score, ?),
+                    multi_wins = multi_wins + ?,
+                    multi_losses = multi_losses + ?,
+                    multi_draws = multi_draws + ?,
+                    multi_highest_score = MAX(multi_highest_score, ?),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).bind(winVal, lossVal, drawVal, score, winVal, lossVal, drawVal, score, id).run();
+            }
           },
           catch: (error) => new RepositoryError(`updateStats failed: ${error}`, error)
         }).pipe(Effect.asVoid),
 
-      getLeaderboard: (limit: number) =>
+      getLeaderboard: (mode: "single" | "multi", limit: number) =>
         Effect.tryPromise({
-          try: () =>
-            db.prepare("SELECT * FROM players ORDER BY highest_score DESC LIMIT ?").bind(limit).all<DBPlayerRow>(),
+          try: () => {
+            const query = mode === "single"
+              ? "SELECT * FROM players ORDER BY solo_highest_score DESC LIMIT ?"
+              : "SELECT * FROM players ORDER BY multi_wins DESC, multi_highest_score DESC LIMIT ?";
+            return db.prepare(query).bind(limit).all<DBPlayerRow>();
+          },
           catch: (error) => new RepositoryError(`getLeaderboard failed: ${error}`, error)
         }).pipe(
           Effect.map((res) => res.results.map(mapRowToPlayerStats))

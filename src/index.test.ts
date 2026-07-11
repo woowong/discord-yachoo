@@ -133,6 +133,12 @@ describe("Discord Yacht Bot Integration Tests", () => {
       losses: 5,
       draws: 1,
       highest_score: 220,
+      solo_play_count: 5,
+      solo_highest_score: 180,
+      multi_wins: 10,
+      multi_losses: 5,
+      multi_draws: 1,
+      multi_highest_score: 220,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });
@@ -156,11 +162,12 @@ describe("Discord Yacht Bot Integration Tests", () => {
     const json = (await res.json()) as any;
     expect(json.type).toBe(4);
     expect(json.data.content).toContain("Player Profile: Alice");
+    expect(json.data.content).toContain("Games Played: **5**");
     expect(json.data.content).toContain("Wins: **10**");
     expect(json.data.content).toContain("Highest Score: **220**");
   });
 
-  it("should handle /leaderboard command", async () => {
+  it("should handle /leaderboard command (default matching)", async () => {
     mockAll.mockResolvedValue({
       success: true,
       results: [
@@ -171,6 +178,12 @@ describe("Discord Yacht Bot Integration Tests", () => {
           losses: 5,
           draws: 1,
           highest_score: 220,
+          solo_play_count: 5,
+          solo_highest_score: 180,
+          multi_wins: 10,
+          multi_losses: 5,
+          multi_draws: 1,
+          multi_highest_score: 220,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -195,8 +208,62 @@ describe("Discord Yacht Bot Integration Tests", () => {
 
     const json = (await res.json()) as any;
     expect(json.type).toBe(4);
-    expect(json.data.embeds[0].title).toBe("🏆 Yacht Dice Leaderboard");
+    expect(json.data.embeds[0].title).toBe("🏆 Yacht Dice Leaderboard (Matching Mode)");
     expect(json.data.embeds[0].fields[0].name).toContain("Alice");
+    expect(json.data.embeds[0].fields[0].value).toContain("Wins: **10**");
+  });
+
+  it("should handle /leaderboard command (solo option)", async () => {
+    mockAll.mockResolvedValue({
+      success: true,
+      results: [
+        {
+          id: "12345",
+          name: "Alice",
+          wins: 10,
+          losses: 5,
+          draws: 1,
+          highest_score: 220,
+          solo_play_count: 5,
+          solo_highest_score: 180,
+          multi_wins: 10,
+          multi_losses: 5,
+          multi_draws: 1,
+          multi_highest_score: 220,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ]
+    });
+
+    const body = JSON.stringify({
+      type: 2,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        name: "leaderboard",
+        options: [
+          {
+            name: "type",
+            type: 3,
+            value: "solo"
+          }
+        ]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4);
+    expect(json.data.embeds[0].title).toBe("🏆 Yacht Dice Leaderboard (Solo Mode)");
+    expect(json.data.embeds[0].fields[0].name).toContain("Alice");
+    expect(json.data.embeds[0].fields[0].value).toContain("Best Score: **180**");
   });
 
   it("should handle component hold_ interactions", async () => {

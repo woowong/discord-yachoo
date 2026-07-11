@@ -85,12 +85,16 @@ const handleInteraction = (
       if (interaction.commandName === "profile") {
         const statsOption = yield* playerRepo.getPlayer(interaction.user.id);
         const content = Option.isSome(statsOption)
-          ? `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n` +
-            `• Wins: **${statsOption.value.wins}**\n` +
-            `• Losses: **${statsOption.value.losses}**\n` +
-            `• Draws: **${statsOption.value.draws}**\n` +
-            `• Highest Score: **${statsOption.value.highestScore}**`
-          : `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n` +
+          ? `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
+            `🎮 **Solo Mode**\n` +
+            `• Games Played: **${statsOption.value.soloPlayCount}**\n` +
+            `• Highest Score: **${statsOption.value.soloHighestScore}**\n\n` +
+            `⚔️ **Matching Mode (VS)**\n` +
+            `• Wins: **${statsOption.value.multiWins}**\n` +
+            `• Losses: **${statsOption.value.multiLosses}**\n` +
+            `• Draws: **${statsOption.value.multiDraws}**\n` +
+            `• Highest Score: **${statsOption.value.multiHighestScore}**`
+          : `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
             `No games played yet. Use \`/challenge\` to start your first game!`;
 
         const responsePayload = serializer.serializeMessage(content);
@@ -100,8 +104,9 @@ const handleInteraction = (
       }
 
       if (interaction.commandName === "leaderboard") {
-        const topPlayers = yield* playerRepo.getLeaderboard(10);
-        const responsePayload = serializer.serializeLeaderboard(topPlayers);
+        const mode = (interaction.options.type === "solo" ? "single" : "multi") as "single" | "multi";
+        const topPlayers = yield* playerRepo.getLeaderboard(mode, 10);
+        const responsePayload = serializer.serializeLeaderboard(topPlayers, mode);
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
         });
@@ -315,17 +320,17 @@ const handleInteraction = (
 
           // Update stats
           if (mode === "single") {
-            yield* playerRepo.updateStats(p1.playerId, "win", p1.totalScore);
+            yield* playerRepo.updateStats(p1.playerId, "single", "win", p1.totalScore);
           } else if (p2) {
             if (p1.totalScore > p2.totalScore) {
-              yield* playerRepo.updateStats(p1.playerId, "win", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, "loss", p2.totalScore);
+              yield* playerRepo.updateStats(p1.playerId, "multi", "win", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, "multi", "loss", p2.totalScore);
             } else if (p2.totalScore > p1.totalScore) {
-              yield* playerRepo.updateStats(p1.playerId, "loss", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, "win", p2.totalScore);
+              yield* playerRepo.updateStats(p1.playerId, "multi", "loss", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, "multi", "win", p2.totalScore);
             } else {
-              yield* playerRepo.updateStats(p1.playerId, "draw", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, "draw", p2.totalScore);
+              yield* playerRepo.updateStats(p1.playerId, "multi", "draw", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, "multi", "draw", p2.totalScore);
             }
           }
         }

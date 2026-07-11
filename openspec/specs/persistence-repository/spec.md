@@ -2,24 +2,35 @@
 
 ## Purpose
 Effect.ts 환경에서 특정 데이터베이스 드라이버나 모듈에 강결합되지 않도록 플레이어 전적 및 매치 이력 조작을 위한 Repository 패턴을 구현하고, Cloudflare D1 바인딩을 안정적으로 주입받아 작동하도록 보장합니다.
-
 ## Requirements
-
 ### Requirement: PlayerRepository Interface and D1 Implementation
 The system SHALL define a `PlayerRepository` interface using Effect's `Context.Tag` and provide a Cloudflare D1 implementation.
 The repository MUST support the following operations:
 * `upsertPlayer(id: string, name: string)`: Adds a new player or updates an existing player's name.
-* `getPlayer(id: string)`: Retrieves the player's stats, returning an `Option`.
-* `updateStats(id: string, outcome: 'win' | 'loss' | 'draw', score: number)`: Updates wins/losses/draws, and updates `highest_score` if the new score exceeds the current highest.
-* `getLeaderboard(limit: number)`: Retrieves top players sorted by `highest_score` descending.
+* `getPlayer(id: string)`: Retrieves the player's stats (including both solo and multiplayer stats), returning an `Option`.
+* `updateStats(id: string, mode: 'single' | 'multi', outcome: 'win' | 'loss' | 'draw', score: number)`:
+  - If `mode` is 'single': Updates `solo_play_count` by 1, and updates `solo_highest_score` if the new score exceeds the current solo highest.
+  - If `mode` is 'multi': Updates `multi_wins`/`multi_losses`/`multi_draws` according to the outcome, and updates `multi_highest_score` if the new score exceeds the current multi highest.
+  - For backwards compatibility, it SHALL also update the legacy `wins`, `losses`, `draws`, and `highest_score` fields.
+* `getLeaderboard(mode: 'single' | 'multi', limit: number)`:
+  - If `mode` is 'single': Retrieves top players sorted by `solo_highest_score` descending.
+  - If `mode` is 'multi': Retrieves top players sorted by `multi_wins` descending.
 
-#### Scenario: Updating player stats with a new highest score
-- **WHEN** `updateStats` is called for player 'user1' with outcome 'win' and score 150 (current highest is 120)
-- **THEN** wins is incremented to 1, and highest_score is updated to 150.
+#### Scenario: Updating player solo stats
+- **WHEN** `updateStats` is called for player 'user1' with mode 'single', outcome 'win' and score 150 (current solo highest is 120)
+- **THEN** `solo_play_count` is incremented by 1, `solo_highest_score` is updated to 150, and legacy stats are also updated.
 
-#### Scenario: Updating player stats without exceeding highest score
-- **WHEN** `updateStats` is called for player 'user1' with outcome 'loss' and score 90 (current highest is 150)
-- **THEN** losses is incremented to 1, and highest_score remains 150.
+#### Scenario: Updating player multi stats
+- **WHEN** `updateStats` is called for player 'user1' with mode 'multi', outcome 'win' and score 150 (current multi highest is 120)
+- **THEN** `multi_wins` is incremented by 1, `multi_highest_score` is updated to 150, and legacy stats are also updated.
+
+#### Scenario: Querying solo leaderboard
+- **WHEN** `getLeaderboard` is called with mode 'single' and limit 5
+- **THEN** it returns the top 5 players ordered by `solo_highest_score` descending.
+
+#### Scenario: Querying multi leaderboard
+- **WHEN** `getLeaderboard` is called with mode 'multi' and limit 5
+- **THEN** it returns the top 5 players ordered by `multi_wins` descending.
 
 ### Requirement: MatchRepository Interface and D1 Implementation
 The system SHALL define a `MatchRepository` interface using Effect's `Context.Tag` and provide a Cloudflare D1 implementation.

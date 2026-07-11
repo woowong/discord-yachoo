@@ -7,7 +7,7 @@ import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./ty
 export interface DiscordResponseSerializer {
   readonly serializeGame: (state: GameState, holds?: string) => DiscordInteractionResponse;
   readonly serializeRolling: (state: GameState, holds?: string) => DiscordInteractionResponse;
-  readonly serializeLeaderboard: (topPlayers: readonly PlayerStats[]) => DiscordInteractionResponse;
+  readonly serializeLeaderboard: (topPlayers: readonly PlayerStats[], mode: "single" | "multi") => DiscordInteractionResponse;
   readonly serializeError: (message: string) => DiscordInteractionResponse;
   readonly serializeMessage: (content: string) => DiscordInteractionResponse;
   readonly serializeHistoryList: (recentMatches: readonly MatchRecord[], userId: string) => DiscordInteractionResponse;
@@ -294,16 +294,25 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       };
     },
 
-    serializeLeaderboard: (topPlayers) => {
-      const fields = topPlayers.map((player, idx) => ({
-        name: `#${idx + 1} - ${player.name}`,
-        value: `Wins: **${player.wins}** | Losses: **${player.losses}** | Best Score: **${player.highestScore}**`,
-        inline: false
-      }));
+    serializeLeaderboard: (topPlayers, mode) => {
+      const fields = topPlayers.map((player, idx) => {
+        const value = mode === "single"
+          ? `Best Score: **${player.soloHighestScore}** | Played: **${player.soloPlayCount}**`
+          : `Wins: **${player.multiWins}** | Losses: **${player.multiLosses}** | Best Score: **${player.multiHighestScore}**`;
+        return {
+          name: `#${idx + 1} - ${player.name}`,
+          value,
+          inline: false
+        };
+      });
+
+      const title = mode === "single"
+        ? "🏆 Yacht Dice Leaderboard (Solo Mode)"
+        : "🏆 Yacht Dice Leaderboard (Matching Mode)";
 
       const embed: DiscordEmbed = {
-        title: "🏆 Yacht Dice Leaderboard",
-        description: topPlayers.length === 0 ? "No records found yet. Be the first to win!" : undefined,
+        title,
+        description: topPlayers.length === 0 ? "No records found yet. Be the first to play!" : undefined,
         color: 0xFEE75C,
         fields: fields.length > 0 ? fields : undefined
       };

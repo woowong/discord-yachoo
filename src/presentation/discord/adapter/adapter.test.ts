@@ -166,18 +166,24 @@ describe("Discord Webhook Adapter Layer", () => {
           losses: 2,
           draws: 0,
           highestScore: 240,
+          soloPlayCount: 5,
+          soloHighestScore: 180,
+          multiWins: 10,
+          multiLosses: 2,
+          multiDraws: 0,
+          multiHighestScore: 240,
           createdAt: new Date(),
           updatedAt: new Date()
         }
       ];
 
       const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
-        Effect.sync(() => serializer.serializeLeaderboard(mockLeaderboard))
+        Effect.sync(() => serializer.serializeLeaderboard(mockLeaderboard, "multi"))
       ).pipe(Effect.provide(DiscordResponseSerializerLive));
 
       const response = await Effect.runPromise(program);
       expect(response.type).toBe(4); // ChannelMessageWithSource
-      expect(response.data?.embeds?.[0].title).toBe("🏆 Yacht Dice Leaderboard");
+      expect(response.data?.embeds?.[0].title).toBe("🏆 Yacht Dice Leaderboard (Matching Mode)");
       expect(response.data?.embeds?.[0].fields?.[0].name).toContain("Alice");
       expect(response.data?.embeds?.[0].fields?.[0].value).toContain("Wins: **10**");
     });
