@@ -3,11 +3,21 @@ schema: spec-driven
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Tech Stack & Runtime:
+    - Language: TypeScript (Strict mode)
+    - Framework/Paradigm: Functional Programming with Effect.ts (Effect, Layer, Context)
+    - Runtime: Cloudflare Workers (Serverless Webhook for Discord Interactions)
+    - Database: Cloudflare D1 (SQLite-based serverless database)
+    - Testing: Vitest for Unit Testing
+  Architecture Principles:
+    - Layer Separation:
+      * Core Game Engine (Pure Domain): Pure functions only. No side effects, no external dependencies (Discord API, D1, etc.).
+      * Presentation Layer: Render GameState for different platforms. Console View (for local simulation) and Discord View must be compatible at the interface level.
+      * Persistence Layer: Handle player history and game session storage, encapsulated behind Repository interfaces.
+  Coding Conventions:
+    - Prefer Safe Error handling using Effect's native pipelines or generator syntax (`Effect.gen`) instead of `try-catch` or `throw`.
+    - Short-term session states are stored in D1 or KV.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
