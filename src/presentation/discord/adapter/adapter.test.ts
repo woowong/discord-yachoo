@@ -145,7 +145,9 @@ describe("Discord Webhook Adapter Layer", () => {
           bonusScore: 0,
           totalScore: 3
         }
-      ]
+      ],
+      turnHistory: [],
+      currentTurnRolls: []
     };
 
     it("should serialize GameState into update message interaction response", async () => {
@@ -159,6 +161,32 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].description).toContain("Alice");
       expect(response.data?.embeds?.[0].description).toContain("Dice 3: **:three:** [HELD]");
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
+    });
+
+    it("should serialize GameState including last turn action details when turnHistory is not empty", async () => {
+      const stateWithHistory: GameState = {
+        ...mockGameState,
+        turnHistory: [
+          {
+            playerIndex: 0,
+            playerName: "Alice",
+            turnNumber: 1,
+            rolls: [[1, 1, 1, 4, 5]],
+            category: "Aces",
+            score: 3
+          }
+        ]
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeGame(stateWithHistory, "00000"))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      expect(response.data?.embeds?.[0].description).toContain("Last Turn Action");
+      expect(response.data?.embeds?.[0].description).toContain("Alice");
+      expect(response.data?.embeds?.[0].description).toContain("**3 pts** in **Aces**");
+      expect(response.data?.embeds?.[0].description).toContain(":one: :one: :one: :four: :five:");
     });
 
     it("should serialize leaderboard into message interaction response", async () => {

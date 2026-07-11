@@ -106,6 +106,22 @@ export const ConsolePresenterLive = Layer.effect(
           return;
         }
 
+        if (state.turnHistory && state.turnHistory.length > 0) {
+          const lastTurn = state.turnHistory[state.turnHistory.length - 1];
+          const categoryLabel = CATEGORIES.find((c) => c.key === lastTurn.category)?.label || lastTurn.category;
+          const lastDice = lastTurn.rolls && lastTurn.rolls.length > 0 ? lastTurn.rolls[lastTurn.rolls.length - 1] : undefined;
+          const lastDiceStr = lastDice ? lastDice.map((d) => getDiceUnicode(d)).join(" ") : "(No dice)";
+          const rollTimes = lastTurn.rolls ? lastTurn.rolls.length : 0;
+
+          const actionMsg = `[Last Action] ${lastTurn.playerName} scored ${lastTurn.score} pts in ${categoryLabel}`;
+          yield* terminal.writeLine(`│  ${actionMsg.padEnd(52)}  │`);
+
+          const diceMsg = `Dice: ${lastDiceStr} (Rolled ${rollTimes} times)`;
+          yield* terminal.writeLine(`│  ${diceMsg.padEnd(52)}  │`);
+
+          yield* terminal.writeLine("├────────────────────────────────────────────────────────┤");
+        }
+
         const activePlayer = state.players[state.currentPlayerIndex];
         const roundNumber = Math.min(12, Object.keys(activePlayer.scoreBoard).length + 1);
         yield* terminal.writeLine(`│  Current Turn: ${activePlayer.playerName.padEnd(20)} (Round ${roundNumber}/12, Roll ${state.rollCount}/3)  │`);

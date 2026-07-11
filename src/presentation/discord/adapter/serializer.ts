@@ -118,6 +118,18 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         }
       }
 
+      if (state.turnHistory && state.turnHistory.length > 0) {
+        const lastTurn = state.turnHistory[state.turnHistory.length - 1];
+        const lastDice = lastTurn.rolls && lastTurn.rolls.length > 0 ? lastTurn.rolls[lastTurn.rolls.length - 1] : undefined;
+        const diceEmojis = lastDice ? lastDice.map((val) => DICE_EMOJIS[val] || val.toString()).join(" ") : "(No dice rolled)";
+        const rollTimes = lastTurn.rolls ? lastTurn.rolls.length : 0;
+        const categoryLabel = CATEGORIES.find((c) => c.key === lastTurn.category)?.label || lastTurn.category;
+
+        description += `\n\n💬 **Last Turn Action:**`;
+        description += `\n**${lastTurn.playerName}** recorded **${lastTurn.score} pts** in **${categoryLabel}**`;
+        description += `\nDice: ${diceEmojis} (Rolled ${rollTimes} times)`;
+      }
+
       const embed: DiscordEmbed = {
         title: "🎲 Yacht Dice Game",
         description,
