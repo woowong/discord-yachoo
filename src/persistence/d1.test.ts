@@ -167,6 +167,7 @@ describe("D1 Persistence Repositories", () => {
         player2Score: null,
         winnerId: null,
         playedAt: new Date("2026-07-10T12:00:00.000Z"),
+        historyJson: JSON.stringify([{ round: 1 }])
       };
 
       const program = Effect.flatMap(MatchRepository, (repo) =>
@@ -187,7 +188,8 @@ describe("D1 Persistence Repositories", () => {
         150,
         null,
         null,
-        "2026-07-10T12:00:00.000Z"
+        "2026-07-10T12:00:00.000Z",
+        JSON.stringify([{ round: 1 }])
       );
       expect(mockRun).toHaveBeenCalled();
     });
@@ -206,6 +208,7 @@ describe("D1 Persistence Repositories", () => {
             player2_score: null,
             winner_id: null,
             played_at: "2026-07-10T12:00:00.000Z",
+            history_json: null
           },
         ],
         meta: {},
@@ -224,6 +227,38 @@ describe("D1 Persistence Repositories", () => {
       expect(history[0].id).toBe("match-123");
       expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("player1_id = ? OR player2_id = ?"));
       expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", 10);
+    });
+
+    it("getMatchById should retrieve match record by ID", async () => {
+      const { mockDB, mockBind, mockFirst } = createMockDb();
+      mockFirst.mockResolvedValue({
+        id: "match-123",
+        mode: "single",
+        player1_id: "user-123",
+        player2_id: null,
+        player1_score: 150,
+        player2_score: null,
+        winner_id: null,
+        played_at: "2026-07-10T12:00:00.000Z",
+        history_json: JSON.stringify([{ round: 1 }])
+      });
+
+      const program = Effect.flatMap(MatchRepository, (repo) =>
+        repo.getMatchById("match-123")
+      ).pipe(
+        Effect.provide(D1MatchRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const result = await Effect.runPromise(program);
+
+      expect(Option.isSome(result)).toBe(true);
+      const match = Option.getOrThrow(result);
+      expect(match.id).toBe("match-123");
+      expect(match.historyJson).toBe(JSON.stringify([{ round: 1 }]));
+      expect(mockDB.prepare).toHaveBeenCalledWith("SELECT * FROM matches WHERE id = ?");
+      expect(mockBind).toHaveBeenCalledWith("match-123");
+      expect(mockFirst).toHaveBeenCalled();
     });
   });
 });

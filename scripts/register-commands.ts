@@ -18,6 +18,18 @@ const commands = [
   {
     name: "leaderboard",
     description: "View the Yacht Dice leaderboard"
+  },
+  {
+    name: "history",
+    description: "View recent match history and turn records",
+    options: [
+      {
+        name: "game_id",
+        description: "Specific Game ID to view detailed turn-by-turn history",
+        type: 3, // STRING
+        required: false
+      }
+    ]
   }
 ];
 

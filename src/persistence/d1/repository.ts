@@ -24,6 +24,7 @@ interface DBMatchRow {
   readonly player2_score: number | null;
   readonly winner_id: string | null;
   readonly played_at: string;
+  readonly history_json: string | null;
 }
 
 const mapRowToPlayerStats = (row: DBPlayerRow): PlayerStats => ({
@@ -46,6 +47,7 @@ const mapRowToMatchRecord = (row: DBMatchRow): MatchRecord => ({
   player2Score: row.player2_score,
   winnerId: row.winner_id,
   playedAt: new Date(row.played_at),
+  historyJson: row.history_json || null,
 });
 
 export const D1PlayerRepositoryLive = Layer.effect(
@@ -116,8 +118,8 @@ export const D1MatchRepositoryLive = Layer.effect(
         Effect.tryPromise({
           try: () =>
             db.prepare(`
-              INSERT INTO matches (id, mode, player1_id, player2_id, player1_score, player2_score, winner_id, played_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO matches (id, mode, player1_id, player2_id, player1_score, player2_score, winner_id, played_at, history_json)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
               match.id,
               match.mode,
@@ -126,7 +128,8 @@ export const D1MatchRepositoryLive = Layer.effect(
               match.player1Score,
               match.player2Score,
               match.winnerId,
-              match.playedAt ? match.playedAt.toISOString() : new Date().toISOString()
+              match.playedAt ? match.playedAt.toISOString() : new Date().toISOString(),
+              match.historyJson || null
             ).run(),
           catch: (error) => new RepositoryError(`saveMatch failed: ${error}`, error)
         }).pipe(Effect.asVoid),
@@ -143,6 +146,15 @@ export const D1MatchRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`getRecentMatches failed: ${error}`, error)
         }).pipe(
           Effect.map((res) => res.results.map(mapRowToMatchRecord))
+        ),
+
+      getMatchById: (matchId: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM matches WHERE id = ?").bind(matchId).first<DBMatchRow>(),
+          catch: (error) => new RepositoryError(`getMatchById failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => (row ? Option.some(mapRowToMatchRecord(row)) : Option.none()))
         )
     };
   })

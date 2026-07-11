@@ -26,6 +26,7 @@ export interface MatchRecord {
   readonly player2Score: number | null;
   readonly winnerId: string | null;
   readonly playedAt: Date;
+  readonly historyJson?: string | null;
 }
 
 export interface PlayerRepository {
@@ -40,6 +41,7 @@ export const PlayerRepository = Context.GenericTag<PlayerRepository>("@services/
 export interface MatchRepository {
   readonly saveMatch: (match: MatchRecord) => Effect.Effect<void, RepositoryError>;
   readonly getRecentMatches: (playerId: string, limit: number) => Effect.Effect<readonly MatchRecord[], RepositoryError>;
+  readonly getMatchById: (matchId: string) => Effect.Effect<Option.Option<MatchRecord>, RepositoryError>;
 }
 
 export const MatchRepository = Context.GenericTag<MatchRepository>("@services/MatchRepository");

@@ -35,7 +35,9 @@ export const initGame = (
       currentPlayerIndex: 0,
       status: "Rolling",
       currentDice: [1, 1, 1, 1, 1],
-      rollCount: 0
+      rollCount: 0,
+      turnHistory: [],
+      currentTurnRolls: []
     };
 
     return initialState;
@@ -75,7 +77,8 @@ export const rollDice = (
       ...state,
       status: "Scoring",
       currentDice: finalDice,
-      rollCount: state.rollCount + 1
+      rollCount: state.rollCount + 1,
+      currentTurnRolls: [...state.currentTurnRolls, finalDice]
     };
   });
 };
@@ -146,12 +149,24 @@ export const selectCategory = (
       index === state.currentPlayerIndex ? updatedPlayer : p
     );
 
+    // Create turn record
+    const turnRecord = {
+      playerIndex: state.currentPlayerIndex,
+      playerName: currentPlayer.playerName,
+      turnNumber: Object.keys(currentPlayer.scoreBoard).length + 1,
+      rolls: state.currentTurnRolls,
+      category,
+      score: calculateScore(category, state.currentDice)
+    };
+
     // 5. Determine next game status
     if (isGameFinished(updatedPlayers)) {
       return {
         ...state,
         players: updatedPlayers,
-        status: "Finished"
+        status: "Finished",
+        turnHistory: [...state.turnHistory, turnRecord],
+        currentTurnRolls: []
       };
     }
 
@@ -167,7 +182,9 @@ export const selectCategory = (
       currentPlayerIndex: nextPlayerIndex,
       status: "Rolling",
       currentDice: [1, 1, 1, 1, 1], // Reset dice
-      rollCount: 0 // Reset roll count
+      rollCount: 0, // Reset roll count
+      turnHistory: [...state.turnHistory, turnRecord],
+      currentTurnRolls: []
     };
   });
 };

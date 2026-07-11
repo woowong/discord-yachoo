@@ -55,3 +55,11 @@ The system SHALL print the final game state when all players' score boards are f
 #### Scenario: Game over with results
 - **WHEN** the game state status transitions to 'Finished' after the final category is filled
 - **THEN** the system MUST output the final scoreboards and announce the winner (or final score in single-player) and terminate the program execution
+
+### Requirement: CLI Round Number Display
+The system SHALL display the current round number on the CLI board presenter.
+
+#### Scenario: Rendering round number on terminal board
+- **WHEN** rendering the scoreboard during a turn in the CLI simulator
+- **THEN** the system MUST display the current round number (1 to 12) on the turn status row (e.g. `(Round X/12, Roll Y/3)`)
+

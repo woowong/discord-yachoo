@@ -253,4 +253,194 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(json.type).toBe(7); // UpdateMessage
     expect(json.data.embeds[0].description).toContain("Dice 3: **:three:** [HELD]");
   });
+
+  it("should handle /history slash command (no options) and list recent matches", async () => {
+    mockAll.mockResolvedValue({
+      success: true,
+      results: [
+        {
+          id: "match-123",
+          mode: "single",
+          player1_id: "12345",
+          player2_id: null,
+          player1_score: 150,
+          player2_score: null,
+          winner_id: null,
+          played_at: "2026-07-10T12:00:00.000Z",
+          history_json: null
+        }
+      ]
+    });
+
+    const body = JSON.stringify({
+      type: 2,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        name: "history",
+        options: []
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4);
+    expect(json.data.embeds[0].title).toBe("🏆 Recent Yacht Dice Matches");
+    expect(json.data.embeds[0].description).toContain("Single Play");
+    expect(json.data.components[0].components[0].custom_id).toBe("viewhistory_match-123");
+  });
+
+  it("should handle /history slash command with game_id and show details", async () => {
+    mockFirst.mockResolvedValue({
+      id: "match-123",
+      mode: "single",
+      player1_id: "12345",
+      player2_id: null,
+      player1_score: 150,
+      player2_score: null,
+      winner_id: null,
+      played_at: "2026-07-10T12:00:00.000Z",
+      history_json: JSON.stringify([{
+        playerIndex: 0,
+        playerName: "Alice",
+        turnNumber: 1,
+        rolls: [[1, 2, 3, 4, 5]],
+        category: "Choice",
+        score: 15
+      }])
+    });
+
+    const body = JSON.stringify({
+      type: 2,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        name: "history",
+        options: [
+          {
+            name: "game_id",
+            type: 3,
+            value: "match-123"
+          }
+        ]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4); // Forced type 4
+    expect(json.data.embeds[0].title).toContain("Match Details: match-123");
+    expect(json.data.embeds[0].description).toContain("Choice ➔ **15 pts**");
+  });
+
+  it("should handle viewhistory_ and pagehistory_ component interactions", async () => {
+    mockFirst.mockResolvedValue({
+      id: "match-123",
+      mode: "single",
+      player1_id: "12345",
+      player2_id: null,
+      player1_score: 150,
+      player2_score: null,
+      winner_id: null,
+      played_at: "2026-07-10T12:00:00.000Z",
+      history_json: JSON.stringify([{
+        playerIndex: 0,
+        playerName: "Alice",
+        turnNumber: 1,
+        rolls: [[1, 2, 3, 4, 5]],
+        category: "Choice",
+        score: 15
+      }])
+    });
+
+    // Test viewhistory_match-123
+    const bodyView = JSON.stringify({
+      type: 3,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        custom_id: "viewhistory_match-123"
+      }
+    });
+
+    const reqView = await createSignedRequest(bodyView);
+    const resView = await worker.fetch(reqView, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(resView.status).toBe(200);
+    const jsonView = await resView.json() as any;
+    expect(jsonView.type).toBe(7); // UpdateMessage
+    expect(jsonView.data.embeds[0].title).toContain("Match Details: match-123");
+
+    // Test pagehistory_match-123_2
+    const bodyPage = JSON.stringify({
+      type: 3,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        custom_id: "pagehistory_match-123_2"
+      }
+    });
+
+    const reqPage = await createSignedRequest(bodyPage);
+    const resPage = await worker.fetch(reqPage, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(resPage.status).toBe(200);
+    const jsonPage = await resPage.json() as any;
+    expect(jsonPage.type).toBe(7); // UpdateMessage
+    expect(jsonPage.data.embeds[0].title).toContain("Rounds 7-12");
+  });
+
+  it("should handle backtohistorylist component interaction", async () => {
+    mockAll.mockResolvedValue({
+      success: true,
+      results: [
+        {
+          id: "match-123",
+          mode: "single",
+          player1_id: "12345",
+          player2_id: null,
+          player1_score: 150,
+          player2_score: null,
+          winner_id: null,
+          played_at: "2026-07-10T12:00:00.000Z",
+          history_json: null
+        }
+      ]
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        custom_id: "backtohistorylist"
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+    const json = await res.json() as any;
+    expect(json.type).toBe(7); // UpdateMessage
+    expect(json.data.embeds[0].title).toBe("🏆 Recent Yacht Dice Matches");
+  });
 });

@@ -1,6 +1,6 @@
 import { Context, Layer } from "effect";
-import { GameState, ScoreCategory } from "../../../domain/types";
-import { PlayerStats } from "../../../persistence/repository";
+import { GameState, ScoreCategory, TurnRecord } from "../../../domain/types";
+import { PlayerStats, MatchRecord } from "../../../persistence/repository";
 import { calculateScore, calculateUpperSectionSum } from "../../../domain/score";
 import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./types";
 
@@ -10,6 +10,8 @@ export interface DiscordResponseSerializer {
   readonly serializeLeaderboard: (topPlayers: readonly PlayerStats[]) => DiscordInteractionResponse;
   readonly serializeError: (message: string) => DiscordInteractionResponse;
   readonly serializeMessage: (content: string) => DiscordInteractionResponse;
+  readonly serializeHistoryList: (recentMatches: readonly MatchRecord[], userId: string) => DiscordInteractionResponse;
+  readonly serializeHistoryDetails: (match: MatchRecord, page: number) => DiscordInteractionResponse;
 }
 
 export const DiscordResponseSerializer = Context.GenericTag<DiscordResponseSerializer>("@services/DiscordResponseSerializer");
@@ -84,6 +86,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       let description = formatScoreBoard(state);
 
       if (!isFinished) {
+        const roundNumber = Math.min(12, Object.keys(currentPlayer.scoreBoard).length + 1);
+        description += `\n**Round:** ${roundNumber} / 12`;
         description += `\n**Current Turn:** <@${currentPlayer.playerId}> (${currentPlayer.playerName})`;
         description += `\n**Rolls:** ${state.rollCount}/3`;
 
@@ -201,6 +205,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       const nextRollCount = Math.min(3, state.rollCount + 1);
 
       let description = formatScoreBoard(state);
+      const roundNumber = Math.min(12, Object.keys(currentPlayer.scoreBoard).length + 1);
+      description += `\n**Round:** ${roundNumber} / 12`;
       description += `\n**Current Turn:** <@${currentPlayer.playerId}> (${currentPlayer.playerName})`;
       description += `\n**Rolls:** ${nextRollCount}/3`;
       description += `\n**Current Dice:** 🎲 **Rolling the dice...**`;
@@ -323,6 +329,155 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       data: {
         content
       }
-    })
+    }),
+
+    serializeHistoryList: (recentMatches, userId) => {
+      let description = recentMatches.length === 0
+        ? "No recent matches found. Start a game with `/challenge`!"
+        : recentMatches.map((m, idx) => {
+            const isP1 = userId === m.player1Id;
+            const isSingle = m.mode === "single";
+            const playedDate = new Date(m.playedAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric"
+            });
+            if (isSingle) {
+              return `${idx + 1}️⃣ **Single Play** • Score: **${m.player1Score}** • *${playedDate}*\n\`ID: ${m.id}\``;
+            } else {
+              const opponentId = isP1 ? m.player2Id : m.player1Id;
+              const myScore = isP1 ? m.player1Score : (m.player2Score ?? 0);
+              const oppScore = isP1 ? (m.player2Score ?? 0) : m.player1Score;
+              const outcome = m.winnerId === userId ? "Won 🏆" : (m.winnerId === null ? "Draw 🤝" : "Lost ❌");
+              return `${idx + 1}️⃣ vs <@${opponentId}>: **${myScore}** vs **${oppScore}** (${outcome}) • *${playedDate}*\n\`ID: ${m.id}\``;
+            }
+          }).join("\n\n");
+
+      const embed: DiscordEmbed = {
+        title: "🏆 Recent Yacht Dice Matches",
+        description,
+        color: 0x5865F2
+      };
+
+      const components: DiscordActionRow[] = [];
+      if (recentMatches.length > 0) {
+        const buttons = recentMatches.map((m, idx) => ({
+          type: 2 as const,
+          style: 2 as const,
+          label: `Match ${idx + 1}`,
+          custom_id: `viewhistory_${m.id}`
+        }));
+        components.push({
+          type: 1,
+          components: buttons
+        });
+      }
+
+      return {
+        type: 4, // ChannelMessageWithSource
+        data: {
+          embeds: [embed],
+          components: components.length > 0 ? components : undefined
+        }
+      };
+    },
+
+    serializeHistoryDetails: (match, page) => {
+      if (!match.historyJson) {
+        return {
+          type: 4,
+          data: {
+            content: "❌ Detailed history not available for this match.",
+            flags: 64
+          }
+        };
+      }
+
+      let history: TurnRecord[];
+      try {
+        history = JSON.parse(match.historyJson);
+      } catch (e) {
+        return {
+          type: 4,
+          data: {
+            content: "❌ Failed to parse match history.",
+            flags: 64
+          }
+        };
+      }
+
+      // Group history by round (turnNumber)
+      const roundsMap = new Map<number, TurnRecord[]>();
+      for (const rec of history) {
+        const list = roundsMap.get(rec.turnNumber) || [];
+        list.push(rec);
+        roundsMap.set(rec.turnNumber, list);
+      }
+
+      const startRound = page === 1 ? 1 : 7;
+      const endRound = page === 1 ? 6 : 12;
+      const lines: string[] = [];
+
+      for (let r = startRound; r <= endRound; r++) {
+        const turnRecs = roundsMap.get(r);
+        if (!turnRecs || turnRecs.length === 0) continue;
+
+        lines.push(`**Round ${r}**`);
+        for (const rec of turnRecs) {
+          const rollsStr = rec.rolls.map(roll => `\`[${roll.join(" ")}]\``).join(" ➔ ");
+          lines.push(`• **${rec.playerName}**: ${rec.category} ➔ **${rec.score} pts**`);
+          lines.push(`  Rolls: ${rollsStr}`);
+        }
+        lines.push("");
+      }
+
+      const pageDesc = lines.join("\n");
+      const matchHeader = match.mode === "single"
+        ? `**Single Play** • Final Score: **${match.player1Score}**`
+        : `<@${match.player1Id}> (**${match.player1Score}**) vs <@${match.player2Id}> (**${match.player2Score}**)`;
+
+      const embed: DiscordEmbed = {
+        title: `📜 Match Details: ${match.id} (Rounds ${page === 1 ? "1-6" : "7-12"})`,
+        description: `${matchHeader}\n\n${pageDesc}`,
+        color: 0x5865F2,
+        footer: { text: `Played on ${new Date(match.playedAt).toLocaleDateString()}` }
+      };
+
+      const components: DiscordActionRow[] = [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2 as const,
+              style: 2 as const,
+              label: "◀ Rounds 1-6",
+              custom_id: `pagehistory_${match.id}_1`,
+              disabled: page === 1
+            },
+            {
+              type: 2 as const,
+              style: 2 as const,
+              label: "Rounds 7-12 ▶",
+              custom_id: `pagehistory_${match.id}_2`,
+              disabled: page === 2
+            },
+            {
+              type: 2 as const,
+              style: 4 as const,
+              label: "🔙 Back to List",
+              custom_id: "backtohistorylist"
+            }
+          ]
+        }
+      ];
+
+      return {
+        type: 7, // UpdateMessage
+        data: {
+          embeds: [embed],
+          components
+        }
+      };
+    }
   }
 );

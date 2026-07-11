@@ -107,6 +107,33 @@ const handleInteraction = (
         });
       }
 
+      if (interaction.commandName === "history") {
+        const gameIdOption = interaction.options.game_id;
+        if (gameIdOption) {
+          const matchOpt = yield* matchRepo.getMatchById(gameIdOption);
+          if (Option.isNone(matchOpt)) {
+            const responsePayload = serializer.serializeError(`Match not found: ${gameIdOption}`);
+            return new Response(JSON.stringify(responsePayload), {
+              headers: { "content-type": "application/json" }
+            });
+          }
+          const responsePayload = serializer.serializeHistoryDetails(matchOpt.value, 1);
+          const forcedResponse = {
+            ...responsePayload,
+            type: 4
+          };
+          return new Response(JSON.stringify(forcedResponse), {
+            headers: { "content-type": "application/json" }
+          });
+        }
+
+        const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, 5);
+        const responsePayload = serializer.serializeHistoryList(recentMatches, interaction.user.id);
+        return new Response(JSON.stringify(responsePayload), {
+          headers: { "content-type": "application/json" }
+        });
+      }
+
       return new Response(
         JSON.stringify(serializer.serializeError(`Unknown command: ${interaction.commandName}`)),
         { headers: { "content-type": "application/json" } }
@@ -114,6 +141,52 @@ const handleInteraction = (
     }
 
     if (interaction._tag === "Component") {
+      const customId = interaction.customId;
+
+      if (customId === "backtohistorylist") {
+        const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, 5);
+        const responsePayload = serializer.serializeHistoryList(recentMatches, interaction.user.id);
+        const updatePayload = {
+          ...responsePayload,
+          type: 7 // UpdateMessage
+        };
+        return new Response(JSON.stringify(updatePayload), {
+          headers: { "content-type": "application/json" }
+        });
+      }
+
+      if (customId.startsWith("viewhistory_")) {
+        const matchId = customId.split("_")[1];
+        const matchOpt = yield* matchRepo.getMatchById(matchId);
+        if (Option.isNone(matchOpt)) {
+          return new Response(
+            JSON.stringify(serializer.serializeError(`Match details not found: ${matchId}`)),
+            { headers: { "content-type": "application/json" } }
+          );
+        }
+        const responsePayload = serializer.serializeHistoryDetails(matchOpt.value, 1);
+        return new Response(JSON.stringify(responsePayload), {
+          headers: { "content-type": "application/json" }
+        });
+      }
+
+      if (customId.startsWith("pagehistory_")) {
+        const parts = customId.split("_");
+        const matchId = parts[1];
+        const page = parseInt(parts[2], 10) || 1;
+        const matchOpt = yield* matchRepo.getMatchById(matchId);
+        if (Option.isNone(matchOpt)) {
+          return new Response(
+            JSON.stringify(serializer.serializeError(`Match details not found: ${matchId}`)),
+            { headers: { "content-type": "application/json" } }
+          );
+        }
+        const responsePayload = serializer.serializeHistoryDetails(matchOpt.value, page);
+        return new Response(JSON.stringify(responsePayload), {
+          headers: { "content-type": "application/json" }
+        });
+      }
+
       const footerText = rawJson.message?.embeds?.[0]?.footer?.text || "";
       const gameIdMatch = footerText.match(/Game ID:\s*([a-zA-Z0-9]+)/);
       if (!gameIdMatch) {
@@ -147,9 +220,6 @@ const handleInteraction = (
           { headers: { "content-type": "application/json" } }
         );
       }
-
-      const customId = interaction.customId;
-
       if (customId.startsWith("hold_")) {
         // Format: hold_${idx}_${newHolds}
         const parts = customId.split("_");
@@ -237,7 +307,8 @@ const handleInteraction = (
             player1Score: p1.totalScore,
             player2Score: p2 ? p2.totalScore : null,
             winnerId,
-            playedAt: new Date()
+            playedAt: new Date(),
+            historyJson: JSON.stringify(nextState.turnHistory)
           };
 
           yield* matchRepo.saveMatch(matchRecord);

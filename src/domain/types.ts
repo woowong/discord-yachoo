@@ -29,6 +29,15 @@ export interface PlayerState {
 export type GameMode = "single" | "multi";
 export type GameStatus = "Init" | "Rolling" | "Scoring" | "Finished";
 
+export interface TurnRecord {
+  readonly playerIndex: number;
+  readonly playerName: string;
+  readonly turnNumber: number; // 1 to 12
+  readonly rolls: readonly DiceRoll[];
+  readonly category: ScoreCategory;
+  readonly score: number;
+}
+
 export interface GameState {
   readonly gameId: string;
   readonly mode: GameMode;
@@ -37,4 +46,7 @@ export interface GameState {
   readonly status: GameStatus;
   readonly currentDice: DiceRoll;
   readonly rollCount: number; // 0 to 3
+  readonly turnHistory: readonly TurnRecord[];
+  readonly currentTurnRolls: readonly DiceRoll[];
 }
+

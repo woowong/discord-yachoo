@@ -107,7 +107,8 @@ export const ConsolePresenterLive = Layer.effect(
         }
 
         const activePlayer = state.players[state.currentPlayerIndex];
-        yield* terminal.writeLine(`│  Current Turn: ${activePlayer.playerName.padEnd(20)} (Roll ${state.rollCount}/3)  │`);
+        const roundNumber = Math.min(12, Object.keys(activePlayer.scoreBoard).length + 1);
+        yield* terminal.writeLine(`│  Current Turn: ${activePlayer.playerName.padEnd(20)} (Round ${roundNumber}/12, Roll ${state.rollCount}/3)  │`);
 
         const diceStr = state.currentDice
           .map((d) => `[ ${getDiceUnicode(d)} ]`)

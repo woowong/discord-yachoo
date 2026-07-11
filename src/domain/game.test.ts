@@ -206,4 +206,47 @@ describe("Yacht Dice Game State Machine", () => {
       expect(result.status).toBe("Finished");
     });
   });
+
+  describe("Turn History and Roll Tracking", () => {
+    it("should track dice rolls within a turn and commit them to turnHistory on category selection", () => {
+      const program = Effect.gen(function* () {
+        const state = yield* initGame([players[0]], "single");
+        // Roll 1: [1, 2, 3, 4, 5]
+        const state1 = yield* rollDice(state, [false, false, false, false, false], mockDiceProvider([1, 2, 3, 4, 5]));
+        // Roll 2: Keep [1, 2, 3, 4], roll 5th die, result [1, 2, 3, 4, 6]
+        const state2 = yield* rollDice(state1, [true, true, true, true, false], mockDiceProvider([1, 1, 1, 1, 6]));
+        
+        expect(state2.currentTurnRolls).toEqual([
+          [1, 2, 3, 4, 5],
+          [1, 2, 3, 4, 6]
+        ]);
+        expect(state2.turnHistory).toHaveLength(0);
+
+        // Select category "Choice" (value: 1+2+3+4+6 = 16)
+        const state3 = yield* selectCategory(state2, "Choice");
+
+        // After category selection:
+        // - turnHistory should contain 1 record
+        // - currentTurnRolls should be reset to empty
+        expect(state3.turnHistory).toHaveLength(1);
+        expect(state3.currentTurnRolls).toHaveLength(0);
+
+        const record = state3.turnHistory[0];
+        expect(record.playerIndex).toBe(0);
+        expect(record.playerName).toBe("Alice");
+        expect(record.turnNumber).toBe(1);
+        expect(record.rolls).toEqual([
+          [1, 2, 3, 4, 5],
+          [1, 2, 3, 4, 6]
+        ]);
+        expect(record.category).toBe("Choice");
+        expect(record.score).toBe(16);
+
+        return state3;
+      });
+
+      Effect.runSync(program);
+    });
+  });
 });
+
