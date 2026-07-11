@@ -24,6 +24,7 @@ interface DBPlayerRow {
 interface DBMatchRow {
   readonly id: string;
   readonly mode: string;
+  readonly guild_id: string | null;
   readonly player1_id: string;
   readonly player2_id: string | null;
   readonly player1_score: number;
@@ -53,6 +54,7 @@ const mapRowToPlayerStats = (row: DBPlayerRow): PlayerStats => ({
 const mapRowToMatchRecord = (row: DBMatchRow): MatchRecord => ({
   id: row.id,
   mode: row.mode as "single" | "multi",
+  guildId: row.guild_id || null,
   player1Id: row.player1_id,
   player2Id: row.player2_id,
   player1Score: row.player1_score,
@@ -79,58 +81,157 @@ export const D1PlayerRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`upsertPlayer failed: ${error}`, error)
         }).pipe(Effect.asVoid),
 
-      getPlayer: (id: string) =>
+      getPlayer: (id: string, guildId?: string | null) =>
         Effect.tryPromise({
-          try: () =>
-            db.prepare("SELECT * FROM players WHERE id = ?").bind(id).first<DBPlayerRow>(),
+          try: () => {
+            if (guildId) {
+              return db.prepare(`
+                SELECT 
+                  p.id, 
+                  p.name, 
+                  p.created_at, 
+                  p.updated_at,
+                  COALESCE(g.wins, 0) as wins,
+                  COALESCE(g.losses, 0) as losses,
+                  COALESCE(g.draws, 0) as draws,
+                  COALESCE(g.highest_score, 0) as highest_score,
+                  COALESCE(g.solo_play_count, 0) as solo_play_count,
+                  COALESCE(g.solo_highest_score, 0) as solo_highest_score,
+                  COALESCE(g.multi_wins, 0) as multi_wins,
+                  COALESCE(g.multi_losses, 0) as multi_losses,
+                  COALESCE(g.multi_draws, 0) as multi_draws,
+                  COALESCE(g.multi_highest_score, 0) as multi_highest_score
+                FROM players p
+                LEFT JOIN guild_player_stats g ON p.id = g.player_id AND g.guild_id = ?
+                WHERE p.id = ?
+              `).bind(guildId, id).first<DBPlayerRow>();
+            } else {
+              return db.prepare("SELECT * FROM players WHERE id = ?").bind(id).first<DBPlayerRow>();
+            }
+          },
           catch: (error) => new RepositoryError(`getPlayer failed: ${error}`, error)
         }).pipe(
           Effect.map((row) => (row ? Option.some(mapRowToPlayerStats(row)) : Option.none()))
         ),
 
-      updateStats: (id: string, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) =>
+      updateStats: (id: string, guildId: string | null, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) =>
         Effect.tryPromise({
           try: () => {
             const winVal = outcome === "win" ? 1 : 0;
             const lossVal = outcome === "loss" ? 1 : 0;
             const drawVal = outcome === "draw" ? 1 : 0;
 
-            if (mode === "single") {
-              return db.prepare(`
-                UPDATE players
-                SET wins = wins + 1,
-                    highest_score = MAX(highest_score, ?),
-                    solo_play_count = solo_play_count + 1,
-                    solo_highest_score = MAX(solo_highest_score, ?),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `).bind(score, score, id).run();
-            } else {
-              return db.prepare(`
-                UPDATE players
-                SET wins = wins + ?,
-                    losses = losses + ?,
-                    draws = draws + ?,
-                    highest_score = MAX(highest_score, ?),
-                    multi_wins = multi_wins + ?,
-                    multi_losses = multi_losses + ?,
-                    multi_draws = multi_draws + ?,
-                    multi_highest_score = MAX(multi_highest_score, ?),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-              `).bind(winVal, lossVal, drawVal, score, winVal, lossVal, drawVal, score, id).run();
+            const stmts = [];
+
+            // 1. Update/Upsert guild-specific stats
+            if (guildId) {
+              if (mode === "single") {
+                stmts.push(
+                  db.prepare(`
+                    INSERT INTO guild_player_stats (
+                      player_id, guild_id, wins, highest_score, solo_play_count, solo_highest_score, updated_at
+                    ) VALUES (?, ?, 1, ?, 1, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(player_id, guild_id) DO UPDATE SET
+                      wins = wins + 1,
+                      highest_score = MAX(highest_score, excluded.highest_score),
+                      solo_play_count = solo_play_count + 1,
+                      solo_highest_score = MAX(solo_highest_score, excluded.solo_highest_score),
+                      updated_at = CURRENT_TIMESTAMP
+                  `).bind(id, guildId, score, score)
+                );
+              } else {
+                stmts.push(
+                  db.prepare(`
+                    INSERT INTO guild_player_stats (
+                      player_id, guild_id, wins, losses, draws, highest_score, multi_wins, multi_losses, multi_draws, multi_highest_score, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(player_id, guild_id) DO UPDATE SET
+                      wins = wins + excluded.wins,
+                      losses = losses + excluded.losses,
+                      draws = draws + excluded.draws,
+                      highest_score = MAX(highest_score, excluded.highest_score),
+                      multi_wins = multi_wins + excluded.multi_wins,
+                      multi_losses = multi_losses + excluded.multi_losses,
+                      multi_draws = multi_draws + excluded.multi_draws,
+                      multi_highest_score = MAX(multi_highest_score, excluded.multi_highest_score),
+                      updated_at = CURRENT_TIMESTAMP
+                  `).bind(id, guildId, winVal, lossVal, drawVal, score, winVal, lossVal, drawVal, score)
+                );
+              }
             }
+
+            // 2. Update legacy global stats
+            if (mode === "single") {
+              stmts.push(
+                db.prepare(`
+                  UPDATE players
+                  SET wins = wins + 1,
+                      highest_score = MAX(highest_score, ?),
+                      solo_play_count = solo_play_count + 1,
+                      solo_highest_score = MAX(solo_highest_score, ?),
+                      updated_at = CURRENT_TIMESTAMP
+                  WHERE id = ?
+                `).bind(score, score, id)
+              );
+            } else {
+              stmts.push(
+                db.prepare(`
+                  UPDATE players
+                  SET wins = wins + ?,
+                      losses = losses + ?,
+                      draws = draws + ?,
+                      highest_score = MAX(highest_score, ?),
+                      multi_wins = multi_wins + ?,
+                      multi_losses = multi_losses + ?,
+                      multi_draws = multi_draws + ?,
+                      multi_highest_score = MAX(multi_highest_score, ?),
+                      updated_at = CURRENT_TIMESTAMP
+                  WHERE id = ?
+                `).bind(winVal, lossVal, drawVal, score, winVal, lossVal, drawVal, score, id)
+              );
+            }
+
+            return db.batch(stmts);
           },
           catch: (error) => new RepositoryError(`updateStats failed: ${error}`, error)
         }).pipe(Effect.asVoid),
 
-      getLeaderboard: (mode: "single" | "multi", limit: number) =>
+      getLeaderboard: (mode: "single" | "multi", guildId: string | null, limit: number) =>
         Effect.tryPromise({
           try: () => {
-            const query = mode === "single"
-              ? "SELECT * FROM players ORDER BY solo_highest_score DESC LIMIT ?"
-              : "SELECT * FROM players ORDER BY multi_wins DESC, multi_highest_score DESC LIMIT ?";
-            return db.prepare(query).bind(limit).all<DBPlayerRow>();
+            if (guildId) {
+              const query = mode === "single"
+                ? `
+                  SELECT 
+                    p.id, p.name, p.created_at, g.updated_at,
+                    g.wins, g.losses, g.draws, g.highest_score,
+                    g.solo_play_count, g.solo_highest_score,
+                    g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score
+                  FROM guild_player_stats g
+                  JOIN players p ON g.player_id = p.id
+                  WHERE g.guild_id = ?
+                  ORDER BY g.solo_highest_score DESC
+                  LIMIT ?
+                `
+                : `
+                  SELECT 
+                    p.id, p.name, p.created_at, g.updated_at,
+                    g.wins, g.losses, g.draws, g.highest_score,
+                    g.solo_play_count, g.solo_highest_score,
+                    g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score
+                  FROM guild_player_stats g
+                  JOIN players p ON g.player_id = p.id
+                  WHERE g.guild_id = ?
+                  ORDER BY g.multi_wins DESC, g.multi_highest_score DESC
+                  LIMIT ?
+                `;
+              return db.prepare(query).bind(guildId, limit).all<DBPlayerRow>();
+            } else {
+              const query = mode === "single"
+                ? "SELECT * FROM players ORDER BY solo_highest_score DESC LIMIT ?"
+                : "SELECT * FROM players ORDER BY multi_wins DESC, multi_highest_score DESC LIMIT ?";
+              return db.prepare(query).bind(limit).all<DBPlayerRow>();
+            }
           },
           catch: (error) => new RepositoryError(`getLeaderboard failed: ${error}`, error)
         }).pipe(
@@ -150,11 +251,12 @@ export const D1MatchRepositoryLive = Layer.effect(
         Effect.tryPromise({
           try: () =>
             db.prepare(`
-              INSERT INTO matches (id, mode, player1_id, player2_id, player1_score, player2_score, winner_id, played_at, history_json)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO matches (id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, played_at, history_json)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
               match.id,
               match.mode,
+              match.guildId,
               match.player1Id,
               match.player2Id,
               match.player1Score,
@@ -166,15 +268,25 @@ export const D1MatchRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`saveMatch failed: ${error}`, error)
         }).pipe(Effect.asVoid),
 
-      getRecentMatches: (playerId: string, limit: number) =>
+      getRecentMatches: (playerId: string, guildId: string | null, limit: number) =>
         Effect.tryPromise({
-          try: () =>
-            db.prepare(`
-              SELECT * FROM matches
-              WHERE player1_id = ? OR player2_id = ?
-              ORDER BY played_at DESC
-              LIMIT ?
-            `).bind(playerId, playerId, limit).all<DBMatchRow>(),
+          try: () => {
+            if (guildId) {
+              return db.prepare(`
+                SELECT * FROM matches
+                WHERE (player1_id = ? OR player2_id = ?) AND guild_id = ?
+                ORDER BY played_at DESC
+                LIMIT ?
+              `).bind(playerId, playerId, guildId, limit).all<DBMatchRow>();
+            } else {
+              return db.prepare(`
+                SELECT * FROM matches
+                WHERE (player1_id = ? OR player2_id = ?) AND guild_id IS NULL
+                ORDER BY played_at DESC
+                LIMIT ?
+              `).bind(playerId, playerId, limit).all<DBMatchRow>();
+            }
+          },
           catch: (error) => new RepositoryError(`getRecentMatches failed: ${error}`, error)
         }).pipe(
           Effect.map((res) => res.results.map(mapRowToMatchRecord))

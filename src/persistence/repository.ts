@@ -26,6 +26,7 @@ export interface PlayerStats {
 export interface MatchRecord {
   readonly id: string;
   readonly mode: "single" | "multi";
+  readonly guildId: string | null;
   readonly player1Id: string;
   readonly player2Id: string | null;
   readonly player1Score: number;
@@ -37,16 +38,16 @@ export interface MatchRecord {
 
 export interface PlayerRepository {
   readonly upsertPlayer: (id: string, name: string) => Effect.Effect<void, RepositoryError>;
-  readonly getPlayer: (id: string) => Effect.Effect<Option.Option<PlayerStats>, RepositoryError>;
-  readonly updateStats: (id: string, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) => Effect.Effect<void, RepositoryError>;
-  readonly getLeaderboard: (mode: "single" | "multi", limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
+  readonly getPlayer: (id: string, guildId?: string | null) => Effect.Effect<Option.Option<PlayerStats>, RepositoryError>;
+  readonly updateStats: (id: string, guildId: string | null, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) => Effect.Effect<void, RepositoryError>;
+  readonly getLeaderboard: (mode: "single" | "multi", guildId: string | null, limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
 }
 
 export const PlayerRepository = Context.GenericTag<PlayerRepository>("@services/PlayerRepository");
 
 export interface MatchRepository {
   readonly saveMatch: (match: MatchRecord) => Effect.Effect<void, RepositoryError>;
-  readonly getRecentMatches: (playerId: string, limit: number) => Effect.Effect<readonly MatchRecord[], RepositoryError>;
+  readonly getRecentMatches: (playerId: string, guildId: string | null, limit: number) => Effect.Effect<readonly MatchRecord[], RepositoryError>;
   readonly getMatchById: (matchId: string) => Effect.Effect<Option.Option<MatchRecord>, RepositoryError>;
 }
 

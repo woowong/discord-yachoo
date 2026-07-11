@@ -83,7 +83,7 @@ const handleInteraction = (
       }
 
       if (interaction.commandName === "profile") {
-        const statsOption = yield* playerRepo.getPlayer(interaction.user.id);
+        const statsOption = yield* playerRepo.getPlayer(interaction.user.id, interaction.guildId);
         const content = Option.isSome(statsOption)
           ? `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
             `🎮 **Solo Mode**\n` +
@@ -105,7 +105,7 @@ const handleInteraction = (
 
       if (interaction.commandName === "leaderboard") {
         const mode = (interaction.options.type === "solo" ? "single" : "multi") as "single" | "multi";
-        const topPlayers = yield* playerRepo.getLeaderboard(mode, 10);
+        const topPlayers = yield* playerRepo.getLeaderboard(mode, interaction.guildId, 10);
         const responsePayload = serializer.serializeLeaderboard(topPlayers, mode);
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
@@ -132,7 +132,7 @@ const handleInteraction = (
           });
         }
 
-        const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, 5);
+        const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, interaction.guildId, 5);
         const responsePayload = serializer.serializeHistoryList(recentMatches, interaction.user.id);
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
@@ -149,7 +149,7 @@ const handleInteraction = (
       const customId = interaction.customId;
 
       if (customId === "backtohistorylist") {
-        const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, 5);
+        const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, interaction.guildId, 5);
         const responsePayload = serializer.serializeHistoryList(recentMatches, interaction.user.id);
         const updatePayload = {
           ...responsePayload,
@@ -307,6 +307,7 @@ const handleInteraction = (
           const matchRecord = {
             id: matchId,
             mode,
+            guildId: interaction.guildId,
             player1Id: p1.playerId,
             player2Id: p2 ? p2.playerId : null,
             player1Score: p1.totalScore,
@@ -320,17 +321,17 @@ const handleInteraction = (
 
           // Update stats
           if (mode === "single") {
-            yield* playerRepo.updateStats(p1.playerId, "single", "win", p1.totalScore);
+            yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "single", "win", p1.totalScore);
           } else if (p2) {
             if (p1.totalScore > p2.totalScore) {
-              yield* playerRepo.updateStats(p1.playerId, "multi", "win", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, "multi", "loss", p2.totalScore);
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "win", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "loss", p2.totalScore);
             } else if (p2.totalScore > p1.totalScore) {
-              yield* playerRepo.updateStats(p1.playerId, "multi", "loss", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, "multi", "win", p2.totalScore);
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "loss", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "win", p2.totalScore);
             } else {
-              yield* playerRepo.updateStats(p1.playerId, "multi", "draw", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, "multi", "draw", p2.totalScore);
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "draw", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "draw", p2.totalScore);
             }
           }
         }

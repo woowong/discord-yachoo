@@ -21,13 +21,14 @@ describe("D1 Persistence Repositories", () => {
 
     mockBind.mockReturnValue(mockStmt);
 
+    const mockBatch = vi.fn().mockResolvedValue([]);
     const mockDB: D1Database = {
       prepare: vi.fn().mockReturnValue(mockStmt),
-      batch: vi.fn(),
+      batch: mockBatch,
       exec: vi.fn(),
     };
 
-    return { mockDB, mockStmt, mockFirst, mockRun, mockAll, mockBind };
+    return { mockDB, mockStmt, mockFirst, mockRun, mockAll, mockBind, mockBatch };
   };
 
   describe("PlayerRepository", () => {
@@ -69,7 +70,7 @@ describe("D1 Persistence Repositories", () => {
       });
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.getPlayer("user-123")
+        repo.getPlayer("user-123", null)
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -110,12 +111,27 @@ describe("D1 Persistence Repositories", () => {
       expect(Option.isNone(result)).toBe(true);
     });
 
-    it("updateStats should execute correct update SQL for single mode", async () => {
-      const { mockDB, mockBind, mockRun } = createMockDb();
-      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+    it("getPlayer should query with guild join when guildId is provided", async () => {
+      const { mockDB, mockBind, mockFirst } = createMockDb();
+      mockFirst.mockResolvedValue({
+        id: "user-123",
+        name: "Alice",
+        wins: 5,
+        losses: 2,
+        draws: 1,
+        highest_score: 180,
+        solo_play_count: 3,
+        solo_highest_score: 150,
+        multi_wins: 2,
+        multi_losses: 1,
+        multi_draws: 0,
+        multi_highest_score: 180,
+        created_at: "2026-07-10T12:00:00.000Z",
+        updated_at: "2026-07-10T12:00:00.000Z",
+      });
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.updateStats("user-123", "single", "win", 120)
+        repo.getPlayer("user-123", "guild-456")
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -123,17 +139,34 @@ describe("D1 Persistence Repositories", () => {
 
       await Effect.runPromise(program);
 
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("LEFT JOIN guild_player_stats"));
+      expect(mockBind).toHaveBeenCalledWith("guild-456", "user-123");
+      expect(mockFirst).toHaveBeenCalled();
+    });
+
+    it("updateStats should execute correct update SQL for single mode", async () => {
+      const { mockDB, mockBind, mockBatch } = createMockDb();
+
+      const program = Effect.flatMap(PlayerRepository, (repo) =>
+        repo.updateStats("user-123", "guild-456", "single", "win", 120)
+      ).pipe(
+        Effect.provide(D1PlayerRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      await Effect.runPromise(program);
+
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO guild_player_stats"));
       expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("UPDATE players"));
-      expect(mockBind).toHaveBeenCalledWith(120, 120, "user-123");
-      expect(mockRun).toHaveBeenCalled();
+      expect(mockBind).toHaveBeenCalledWith("user-123", "guild-456", 120, 120);
+      expect(mockBatch).toHaveBeenCalled();
     });
 
     it("updateStats should execute correct update SQL for multi mode", async () => {
-      const { mockDB, mockBind, mockRun } = createMockDb();
-      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+      const { mockDB, mockBind, mockBatch } = createMockDb();
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.updateStats("user-123", "multi", "win", 120)
+        repo.updateStats("user-123", "guild-456", "multi", "win", 120)
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -141,9 +174,10 @@ describe("D1 Persistence Repositories", () => {
 
       await Effect.runPromise(program);
 
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO guild_player_stats"));
       expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("UPDATE players"));
-      expect(mockBind).toHaveBeenCalledWith(1, 0, 0, 120, 1, 0, 0, 120, "user-123");
-      expect(mockRun).toHaveBeenCalled();
+      expect(mockBind).toHaveBeenCalledWith("user-123", "guild-456", 1, 0, 0, 120, 1, 0, 0, 120);
+      expect(mockBatch).toHaveBeenCalled();
     });
 
     it("getLeaderboard should query solo players ordered by score", async () => {
@@ -172,7 +206,7 @@ describe("D1 Persistence Repositories", () => {
       });
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.getLeaderboard("single", 5)
+        repo.getLeaderboard("single", "guild-456", 5)
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -183,8 +217,8 @@ describe("D1 Persistence Repositories", () => {
       expect(list).toHaveLength(1);
       expect(list[0].id).toBe("user-1");
       expect(list[0].soloHighestScore).toBe(250);
-      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("ORDER BY solo_highest_score DESC"));
-      expect(mockBind).toHaveBeenCalledWith(5);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("FROM guild_player_stats"));
+      expect(mockBind).toHaveBeenCalledWith("guild-456", 5);
     });
 
     it("getLeaderboard should query matching players ordered by wins", async () => {
@@ -213,7 +247,7 @@ describe("D1 Persistence Repositories", () => {
       });
 
       const program = Effect.flatMap(PlayerRepository, (repo) =>
-        repo.getLeaderboard("multi", 5)
+        repo.getLeaderboard("multi", "guild-456", 5)
       ).pipe(
         Effect.provide(D1PlayerRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -224,8 +258,8 @@ describe("D1 Persistence Repositories", () => {
       expect(list).toHaveLength(1);
       expect(list[0].id).toBe("user-1");
       expect(list[0].multiWins).toBe(5);
-      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("ORDER BY multi_wins DESC"));
-      expect(mockBind).toHaveBeenCalledWith(5);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("FROM guild_player_stats"));
+      expect(mockBind).toHaveBeenCalledWith("guild-456", 5);
     });
   });
 
@@ -237,6 +271,7 @@ describe("D1 Persistence Repositories", () => {
       const match: MatchRecord = {
         id: "match-123",
         mode: "single",
+        guildId: "guild-456",
         player1Id: "user-123",
         player2Id: null,
         player1Score: 150,
@@ -259,6 +294,7 @@ describe("D1 Persistence Repositories", () => {
       expect(mockBind).toHaveBeenCalledWith(
         "match-123",
         "single",
+        "guild-456",
         "user-123",
         null,
         150,
@@ -278,6 +314,7 @@ describe("D1 Persistence Repositories", () => {
           {
             id: "match-123",
             mode: "single",
+            guild_id: "guild-456",
             player1_id: "user-123",
             player2_id: null,
             player1_score: 150,
@@ -291,7 +328,7 @@ describe("D1 Persistence Repositories", () => {
       });
 
       const program = Effect.flatMap(MatchRepository, (repo) =>
-        repo.getRecentMatches("user-123", 10)
+        repo.getRecentMatches("user-123", "guild-456", 10)
       ).pipe(
         Effect.provide(D1MatchRepositoryLive),
         Effect.provide(Layer.succeed(D1Database, mockDB))
@@ -301,8 +338,8 @@ describe("D1 Persistence Repositories", () => {
 
       expect(history).toHaveLength(1);
       expect(history[0].id).toBe("match-123");
-      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("player1_id = ? OR player2_id = ?"));
-      expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", 10);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("guild_id = ?"));
+      expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", "guild-456", 10);
     });
 
     it("getMatchById should retrieve match record by ID", async () => {

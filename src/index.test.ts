@@ -167,6 +167,45 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(json.data.content).toContain("Highest Score: **220**");
   });
 
+  it("should handle /profile command with guild_id and use guild-scoped query", async () => {
+    mockFirst.mockResolvedValue({
+      id: "12345",
+      name: "Alice",
+      wins: 1,
+      losses: 0,
+      draws: 0,
+      highest_score: 120,
+      solo_play_count: 1,
+      solo_highest_score: 120,
+      multi_wins: 0,
+      multi_losses: 0,
+      multi_draws: 0,
+      multi_highest_score: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+
+    const body = JSON.stringify({
+      type: 2,
+      guild_id: "guild-abc",
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        name: "profile"
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("LEFT JOIN guild_player_stats"));
+    expect(mockBind).toHaveBeenCalledWith("guild-abc", "12345");
+  });
+
   it("should handle /leaderboard command (default matching)", async () => {
     mockAll.mockResolvedValue({
       success: true,

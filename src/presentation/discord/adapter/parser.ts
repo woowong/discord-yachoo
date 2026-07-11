@@ -38,6 +38,7 @@ export const DiscordInteractionParserLive = Layer.succeed(
 
           const applicationId = raw.application_id || "";
           const token = raw.token || "";
+          const guildId = raw.guild_id || null;
 
           if (interactionType === 2) {
             const commandName = raw.data?.name;
@@ -57,6 +58,7 @@ export const DiscordInteractionParserLive = Layer.succeed(
               applicationId,
               token,
               user,
+              guildId,
               options
             } as const;
           }
@@ -73,6 +75,7 @@ export const DiscordInteractionParserLive = Layer.succeed(
               applicationId,
               token,
               user,
+              guildId,
               values: raw.data?.values || undefined
             } as const;
           }
