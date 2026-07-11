@@ -7,6 +7,7 @@ import { PlayerRepository, MatchRepository, GameRepository } from "./persistence
 import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./presentation/discord/adapter/signature";
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./presentation/discord/adapter/parser";
 import { DiscordResponseSerializer, DiscordResponseSerializerLive } from "./presentation/discord/adapter/serializer";
+import { DiscordApiService, DiscordApiServiceLive, DiscordBotToken } from "./presentation/discord/adapter/api";
 
 const randomDice = (): 1 | 2 | 3 | 4 | 5 | 6 =>
   (Math.floor(Math.random() * 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6;
@@ -230,6 +231,26 @@ const handleInteraction = (
         const parts = customId.split("_");
         const newHolds = parts[2];
         const responsePayload = serializer.serializeGame(gameState, newHolds);
+
+        // Delete mention on action
+        const apiService = yield* DiscordApiService;
+        if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+          ctx.waitUntil(
+            Effect.runPromise(
+              apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+                Effect.catchAll(() => Effect.void)
+              )
+            )
+          );
+
+          const nextState = {
+            ...gameState,
+            lastMentionMessageId: undefined,
+            lastMentionChannelId: undefined
+          };
+          yield* gameRepo.save(nextState);
+        }
+
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
         });
@@ -241,8 +262,25 @@ const handleInteraction = (
         const holds = parts[1] || "00000";
         const holdsTuple = holds.split("").map((h: string) => h === "1") as unknown as DiceHold;
 
-        const nextState = yield* rollDice(gameState, holdsTuple, rollProvider);
+        const nextStateRaw = yield* rollDice(gameState, holdsTuple, rollProvider);
+        const nextState = {
+          ...nextStateRaw,
+          lastMentionMessageId: undefined,
+          lastMentionChannelId: undefined
+        };
         yield* gameRepo.save(nextState);
+
+        // Delete mention on action
+        const apiService = yield* DiscordApiService;
+        if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+          ctx.waitUntil(
+            Effect.runPromise(
+              apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+                Effect.catchAll(() => Effect.void)
+              )
+            )
+          );
+        }
 
         const rollingPayload = serializer.serializeRolling(gameState, holds);
 
@@ -338,6 +376,46 @@ const handleInteraction = (
 
         yield* gameRepo.save(nextState);
 
+        // Turn mention notification
+        const channelId = interaction.channelId;
+        const apiService = yield* DiscordApiService;
+        if (nextState.mode === "multi" && nextState.status !== "Finished" && channelId) {
+          const nextPlayerId = nextState.players[nextState.currentPlayerIndex].playerId;
+          ctx.waitUntil(
+            Effect.runPromise(
+              Effect.gen(function* () {
+                if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+                  yield* apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId);
+                }
+                const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId);
+                if (newMsgId) {
+                  const stateWithMention = {
+                    ...nextState,
+                    lastMentionMessageId: newMsgId,
+                    lastMentionChannelId: channelId
+                  };
+                  yield* gameRepo.save(stateWithMention);
+                }
+              }).pipe(
+                Effect.catchAll((err) => {
+                  console.error("Error sending turn mention:", err);
+                  return Effect.void;
+                })
+              )
+            )
+          );
+        } else {
+          if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+            ctx.waitUntil(
+              Effect.runPromise(
+                apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+                  Effect.catchAll(() => Effect.void)
+                )
+              )
+            );
+          }
+        }
+
         const responsePayload = serializer.serializeGame(nextState);
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
@@ -357,7 +435,7 @@ const handleInteraction = (
   });
 
 export default {
-  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string }, ctx: any): Promise<Response> {
+  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string }, ctx: any): Promise<Response> {
     const signature = request.headers.get("x-signature-ed25519") || "";
     const timestamp = request.headers.get("x-signature-timestamp") || "";
 
@@ -391,13 +469,17 @@ export default {
       return yield* handleInteraction(body, rawJson, interaction, ctx);
     });
 
+    const botTokenLayer = Layer.succeed(DiscordBotToken, env.DISCORD_BOT_TOKEN || "");
+    const apiServiceLayer = DiscordApiServiceLive.pipe(Layer.provide(botTokenLayer));
+
     const mainLayer = Layer.mergeAll(
       DiscordSignatureVerifierLive,
       DiscordInteractionParserLive,
       DiscordResponseSerializerLive,
       D1PlayerRepositoryLive,
       D1MatchRepositoryLive,
-      D1GameRepositoryLive
+      D1GameRepositoryLive,
+      apiServiceLayer
     ).pipe(
       Layer.provide(Layer.succeed(D1Database, env.DB))
     );

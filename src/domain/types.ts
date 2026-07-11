@@ -48,5 +48,7 @@ export interface GameState {
   readonly rollCount: number; // 0 to 3
   readonly turnHistory: readonly TurnRecord[];
   readonly currentTurnRolls: readonly DiceRoll[];
+  readonly lastMentionMessageId?: string;
+  readonly lastMentionChannelId?: string;
 }
 

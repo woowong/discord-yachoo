@@ -74,6 +74,7 @@ export type ParsedInteraction =
       readonly token: string;
       readonly user: DiscordUser;
       readonly guildId: string | null;
+      readonly channelId: string | null;
       readonly options: Record<string, any>;
     }
   | {
@@ -83,5 +84,6 @@ export type ParsedInteraction =
       readonly token: string;
       readonly user: DiscordUser;
       readonly guildId: string | null;
+      readonly channelId: string | null;
       readonly values?: readonly string[];
     };

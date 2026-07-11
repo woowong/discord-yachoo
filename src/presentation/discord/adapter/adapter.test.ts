@@ -74,6 +74,7 @@ describe("Discord Webhook Adapter Layer", () => {
           username: "alice",
           global_name: "Alice"
         },
+        channel_id: "99999",
         data: {
           name: "challenge",
           options: [
@@ -92,6 +93,7 @@ describe("Discord Webhook Adapter Layer", () => {
         expect(result.commandName).toBe("challenge");
         expect(result.user.id).toBe("12345");
         expect(result.user.username).toBe("alice");
+        expect(result.channelId).toBe("99999");
         expect(result.options.opponent).toBe("67890");
       }
     });
@@ -106,6 +108,7 @@ describe("Discord Webhook Adapter Layer", () => {
             global_name: "Bob"
           }
         },
+        channel_id: "88888",
         data: {
           custom_id: "roll_00100"
         }
@@ -121,6 +124,7 @@ describe("Discord Webhook Adapter Layer", () => {
         expect(result.customId).toBe("roll_00100");
         expect(result.user.id).toBe("67890");
         expect(result.user.username).toBe("bob");
+        expect(result.channelId).toBe("88888");
       }
     });
   });

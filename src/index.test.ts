@@ -549,4 +549,148 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(json.type).toBe(7); // UpdateMessage
     expect(json.data.embeds[0].title).toBe("🏆 Recent Yacht Dice Matches");
   });
+
+  it("should send mention message to the next player on turn transition in multi mode", async () => {
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: "new-mention-msg-123" }),
+      text: async () => "{}"
+    });
+    global.fetch = fetchSpy;
+
+    const mockGameState = {
+      gameId: "game-multi-123",
+      mode: "multi",
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentPlayerIndex: 0,
+      status: "Rolling",
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockGameState)
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      channel_id: "channel-777",
+      data: {
+        custom_id: "select_category",
+        values: ["Aces"]
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-multi-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const ctx = {
+      waitUntil: vi.fn((promise) => promise)
+    };
+    
+    const res = await worker.fetch(
+      req, 
+      { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex, DISCORD_BOT_TOKEN: "mock-bot-token" }, 
+      ctx as any
+    );
+    expect(res.status).toBe(200);
+
+    if (ctx.waitUntil.mock.calls.length > 0) {
+      await Promise.all(ctx.waitUntil.mock.calls.map(call => call[0]));
+    }
+
+    expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO active_games"));
+    const savedStateStr = mockBind.mock.calls.find(call => typeof call[1] === "string" && call[1].includes("lastMentionMessageId"))?.[1];
+    expect(savedStateStr).toBeDefined();
+    const savedState = JSON.parse(savedStateStr);
+    expect(savedState.lastMentionMessageId).toBe("new-mention-msg-123");
+    expect(savedState.lastMentionChannelId).toBe("channel-777");
+
+    const mentionCall = fetchSpy.mock.calls.find(call => call[0].includes("/channels/channel-777/messages") && call[1]?.method === "POST");
+    expect(mentionCall).toBeDefined();
+    const mentionBody = JSON.parse(mentionCall[1].body);
+    expect(mentionBody.content).toContain("<@67890>");
+
+    global.fetch = originalFetch;
+  });
+
+  it("should delete existing mention message when player performs roll action", async () => {
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+      text: async () => "{}"
+    });
+    global.fetch = fetchSpy;
+
+    const mockGameState = {
+      gameId: "game-multi-123",
+      mode: "multi",
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentPlayerIndex: 1,
+      status: "Rolling",
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: [],
+      lastMentionMessageId: "mention-msg-abc",
+      lastMentionChannelId: "channel-777"
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockGameState)
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "67890", username: "bob" },
+      channel_id: "channel-777",
+      data: {
+        custom_id: "roll_00000"
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-multi-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const ctx = {
+      waitUntil: vi.fn((promise) => promise)
+    };
+    
+    const res = await worker.fetch(
+      req, 
+      { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex, DISCORD_BOT_TOKEN: "mock-bot-token" }, 
+      ctx as any
+    );
+    expect(res.status).toBe(200);
+
+    if (ctx.waitUntil.mock.calls.length > 0) {
+      await Promise.all(ctx.waitUntil.mock.calls.map(call => call[0]));
+    }
+
+    const deleteCall = fetchSpy.mock.calls.find(call => call[0].includes("/channels/channel-777/messages/mention-msg-abc") && call[1]?.method === "DELETE");
+    expect(deleteCall).toBeDefined();
+
+    const saveCall = mockBind.mock.calls.find(call => typeof call[1] === "string" && call[1].includes("game-multi-123"));
+    expect(saveCall).toBeDefined();
+    const savedState = JSON.parse(saveCall[1]);
+    expect(savedState.lastMentionMessageId).toBeUndefined();
+    expect(savedState.lastMentionChannelId).toBeUndefined();
+
+    global.fetch = originalFetch;
+  });
 });
