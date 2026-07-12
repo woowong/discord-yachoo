@@ -387,7 +387,7 @@ const handleInteraction = (
                 if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
                   yield* apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId);
                 }
-                const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId);
+                const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId, rawJson.message?.id);
                 if (newMsgId) {
                   const stateWithMention = {
                     ...nextState,

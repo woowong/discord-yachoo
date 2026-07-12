@@ -588,6 +588,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
         values: ["Aces"]
       },
       message: {
+        id: "game-board-msg-123",
         embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-multi-123" } }]
       }
     });
@@ -619,6 +620,10 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(mentionCall).toBeDefined();
     const mentionBody = JSON.parse(mentionCall[1].body);
     expect(mentionBody.content).toContain("<@67890>");
+    expect(mentionBody.message_reference).toEqual({
+      message_id: "game-board-msg-123",
+      fail_if_not_exists: false
+    });
 
     global.fetch = originalFetch;
   });

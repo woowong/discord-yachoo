@@ -1,7 +1,7 @@
 import { Effect, Context, Layer } from "effect";
 
 export interface DiscordApiService {
-  readonly sendMention: (channelId: string, userId: string) => Effect.Effect<string, Error>;
+  readonly sendMention: (channelId: string, userId: string, replyToMessageId?: string) => Effect.Effect<string, Error>;
   readonly deleteMessage: (channelId: string, messageId: string) => Effect.Effect<void, Error>;
 }
 
@@ -15,7 +15,7 @@ export const DiscordApiServiceLive = Layer.effect(
     const token = yield* DiscordBotToken;
 
     return {
-      sendMention: (channelId, userId) =>
+      sendMention: (channelId, userId, replyToMessageId) =>
         Effect.tryPromise({
           try: async () => {
             if (!token) {
@@ -29,7 +29,13 @@ export const DiscordApiServiceLive = Layer.effect(
                 "Content-Type": "application/json"
               },
               body: JSON.stringify({
-                content: `<@${userId}>님, 당신의 턴입니다! 주사위를 굴려주세요. 🎲`
+                content: `<@${userId}>님, 당신의 턴입니다! 주사위를 굴려주세요. 🎲`,
+                message_reference: replyToMessageId
+                  ? {
+                      message_id: replyToMessageId,
+                      fail_if_not_exists: false
+                    }
+                  : undefined
               })
             });
             if (!res.ok) {
@@ -69,9 +75,9 @@ export const DiscordApiServiceLive = Layer.effect(
 export const DiscordApiServiceMockLive = Layer.succeed(
   DiscordApiService,
   {
-    sendMention: (channelId, userId) =>
+    sendMention: (channelId, userId, replyToMessageId) =>
       Effect.sync(() => {
-        console.log(`[Mock Discord API] Send mention to User <@${userId}> in Channel ${channelId}`);
+        console.log(`[Mock Discord API] Send mention to User <@${userId}> in Channel ${channelId} (reply to: ${replyToMessageId})`);
         return `mock-msg-${Date.now()}`;
       }),
     deleteMessage: (channelId, messageId) =>
