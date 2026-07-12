@@ -1,6 +1,7 @@
 import { Effect, Layer, Option } from "effect";
 import { GameState, DiceHold, DiceRoll, ScoreCategory } from "./domain/types";
 import { initGame, rollDice, selectCategory } from "./domain/game";
+import { calculateScore } from "./domain/score";
 import { D1Database } from "./persistence/d1/database";
 import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive } from "./persistence/d1/repository";
 import { PlayerRepository, MatchRepository, GameRepository } from "./persistence/repository";
@@ -70,6 +71,8 @@ const handleInteraction = (
 
         const gameState = yield* initGame(players, mode);
         yield* gameRepo.save(gameState);
+
+        yield* Effect.logInfo(`Match initialized. Mode: ${mode}, Players: ${players.map(p => p.playerId).join(", ")}`);
 
         const serialized = serializer.serializeGame(gameState);
         // Force type to 4 (ChannelMessageWithSource) for initial slash command response
@@ -232,16 +235,20 @@ const handleInteraction = (
         const newHolds = parts[2];
         const responsePayload = serializer.serializeGame(gameState, newHolds);
 
+        yield* Effect.logInfo(`Dice hold state updated: ${newHolds}`);
+
         // Delete mention on action
         const apiService = yield* DiscordApiService;
         if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
-          ctx.waitUntil(
-            Effect.runPromise(
-              apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
-                Effect.catchAll(() => Effect.void)
-              )
-            )
+          const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+            Effect.catchAll(() => Effect.void),
+            Effect.annotateLogs("userId", interaction.user.id),
+            Effect.annotateLogs("guildId", interaction.guildId || "DM"),
+            Effect.annotateLogs("actionType", interaction._tag),
+            Effect.annotateLogs("actionName", interaction.customId),
+            Effect.annotateLogs("gameId", gameState.gameId)
           );
+          ctx.waitUntil(Effect.runPromise(deleteMentionTask));
 
           const nextState = {
             ...gameState,
@@ -264,6 +271,7 @@ const handleInteraction = (
 
         // If the game was already finished (stale button click recovered)
         if (gameState.status === "Finished") {
+          yield* Effect.logInfo("Ignore roll action. Game is already finished.");
           const finalPayload = serializer.serializeGame(gameState, holds);
           return new Response(JSON.stringify(finalPayload), {
             headers: { "content-type": "application/json" }
@@ -278,43 +286,48 @@ const handleInteraction = (
         };
         yield* gameRepo.save(nextState);
 
+        yield* Effect.logInfo(`Dice rolled. Roll count: ${nextState.rollCount}/3, holds: ${holds}, result: [${nextState.currentDice.join(", ")}]`);
+
         // Delete mention on action
         const apiService = yield* DiscordApiService;
         if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
-          ctx.waitUntil(
-            Effect.runPromise(
-              apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
-                Effect.catchAll(() => Effect.void)
-              )
-            )
+          const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+            Effect.catchAll(() => Effect.void),
+            Effect.annotateLogs("userId", interaction.user.id),
+            Effect.annotateLogs("guildId", interaction.guildId || "DM"),
+            Effect.annotateLogs("actionType", interaction._tag),
+            Effect.annotateLogs("actionName", interaction.customId),
+            Effect.annotateLogs("gameId", gameState.gameId)
           );
+          ctx.waitUntil(Effect.runPromise(deleteMentionTask));
         }
 
         const rollingPayload = serializer.serializeRolling(gameState, holds);
 
-        ctx.waitUntil(
-          Effect.runPromise(
-            Effect.gen(function* () {
-              yield* Effect.sleep("1.4 seconds");
-              const finalPayload = serializer.serializeGame(nextState, holds);
-              
-              yield* Effect.tryPromise({
-                try: () =>
-                  fetch(`https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`, {
-                    method: "PATCH",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify(finalPayload.data)
-                  }),
-                catch: (error) => new Error(`Failed to update interaction response: ${error}`)
-              });
-            }).pipe(
-              Effect.catchAll((error) => {
-                console.error("Error in background dice rolling task:", error);
-                return Effect.void;
-              })
-            )
-          )
+        const rollBgTask = Effect.gen(function* () {
+          yield* Effect.sleep("1.4 seconds");
+          const finalPayload = serializer.serializeGame(nextState, holds);
+          
+          yield* Effect.tryPromise({
+            try: () =>
+              fetch(`https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`, {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(finalPayload.data)
+              }),
+            catch: (error) => new Error(`Failed to update interaction response: ${error}`)
+          });
+        }).pipe(
+          Effect.catchAll((error) => 
+            Effect.logError(`Error in background dice rolling task: ${error}`)
+          ),
+          Effect.annotateLogs("userId", interaction.user.id),
+          Effect.annotateLogs("guildId", interaction.guildId || "DM"),
+          Effect.annotateLogs("actionType", interaction._tag),
+          Effect.annotateLogs("actionName", interaction.customId),
+          Effect.annotateLogs("gameId", nextState.gameId)
         );
+        ctx.waitUntil(Effect.runPromise(rollBgTask));
 
         return new Response(JSON.stringify(rollingPayload), {
           headers: { "content-type": "application/json" }
@@ -332,11 +345,15 @@ const handleInteraction = (
 
         // If the game was already finished (stale dropdown click recovered)
         if (gameState.status === "Finished") {
+          yield* Effect.logInfo("Ignore category selection. Game is already finished.");
           const responsePayload = serializer.serializeGame(gameState);
           return new Response(JSON.stringify(responsePayload), {
             headers: { "content-type": "application/json" }
           });
         }
+
+        const scoredPoints = calculateScore(category, gameState.currentDice);
+        yield* Effect.logInfo(`Category selected: ${category}, Points scored: ${scoredPoints}`);
 
         const nextState = yield* selectCategory(gameState, category);
 
@@ -372,10 +389,12 @@ const handleInteraction = (
           };
 
           yield* matchRepo.saveMatch(matchRecord);
+          yield* Effect.logInfo(`Game finished. Winner: ${winnerId || "Draw"}. Match record saved to D1.`);
 
           // Update stats
           if (mode === "single") {
             yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "single", "win", p1.totalScore);
+            yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} (single)`);
           } else if (p2) {
             if (p1.totalScore > p2.totalScore) {
               yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "win", p1.totalScore);
@@ -387,6 +406,7 @@ const handleInteraction = (
               yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "draw", p1.totalScore);
               yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "draw", p2.totalScore);
             }
+            yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} and Player 2: ${p2.playerId} (multi)`);
           }
         }
 
@@ -397,38 +417,41 @@ const handleInteraction = (
         const apiService = yield* DiscordApiService;
         if (nextState.mode === "multi" && nextState.status !== "Finished" && channelId) {
           const nextPlayerId = nextState.players[nextState.currentPlayerIndex].playerId;
-          ctx.waitUntil(
-            Effect.runPromise(
-              Effect.gen(function* () {
-                if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
-                  yield* apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId);
-                }
-                const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId, rawJson.message?.id);
-                if (newMsgId) {
-                  const stateWithMention = {
-                    ...nextState,
-                    lastMentionMessageId: newMsgId,
-                    lastMentionChannelId: channelId
-                  };
-                  yield* gameRepo.save(stateWithMention);
-                }
-              }).pipe(
-                Effect.catchAll((err) => {
-                  console.error("Error sending turn mention:", err);
-                  return Effect.void;
-                })
-              )
-            )
+          const sendMentionTask = Effect.gen(function* () {
+            if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+              yield* apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId);
+            }
+            const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId, rawJson.message?.id);
+            if (newMsgId) {
+              const stateWithMention = {
+                ...nextState,
+                lastMentionMessageId: newMsgId,
+                lastMentionChannelId: channelId
+              };
+              yield* gameRepo.save(stateWithMention);
+            }
+          }).pipe(
+            Effect.catchAll((err) => 
+              Effect.logError(`Error sending turn mention: ${err}`)
+            ),
+            Effect.annotateLogs("userId", interaction.user.id),
+            Effect.annotateLogs("guildId", interaction.guildId || "DM"),
+            Effect.annotateLogs("actionType", interaction._tag),
+            Effect.annotateLogs("actionName", interaction.customId),
+            Effect.annotateLogs("gameId", nextState.gameId)
           );
+          ctx.waitUntil(Effect.runPromise(sendMentionTask));
         } else {
           if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
-            ctx.waitUntil(
-              Effect.runPromise(
-                apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
-                  Effect.catchAll(() => Effect.void)
-                )
-              )
+            const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+              Effect.catchAll(() => Effect.void),
+              Effect.annotateLogs("userId", interaction.user.id),
+              Effect.annotateLogs("guildId", interaction.guildId || "DM"),
+              Effect.annotateLogs("actionType", interaction._tag),
+              Effect.annotateLogs("actionName", interaction.customId),
+              Effect.annotateLogs("gameId", nextState.gameId)
             );
+            ctx.waitUntil(Effect.runPromise(deleteMentionTask));
           }
         }
 
@@ -455,19 +478,19 @@ export default {
     const signature = request.headers.get("x-signature-ed25519") || "";
     const timestamp = request.headers.get("x-signature-timestamp") || "";
 
-    if (!signature || !timestamp) {
-      return new Response("Missing signature headers", { status: 401 });
-    }
-
-    const body = await request.text();
-    const publicKey = env.DISCORD_PUBLIC_KEY;
-    if (!publicKey) {
-      return new Response("DISCORD_PUBLIC_KEY is not configured", { status: 500 });
-    }
-
     const program = Effect.gen(function* () {
       const verifier = yield* DiscordSignatureVerifier;
       const parser = yield* DiscordInteractionParser;
+
+      if (!signature || !timestamp) {
+        return yield* Effect.fail({ _tag: "Unauthorized" as const, message: "Missing signature headers" });
+      }
+
+      const body = yield* Effect.promise(() => request.text());
+      const publicKey = env.DISCORD_PUBLIC_KEY;
+      if (!publicKey) {
+        return yield* Effect.fail({ _tag: "InternalError" as const, message: "DISCORD_PUBLIC_KEY is not configured" });
+      }
 
       const isVerified = yield* verifier.verify(body, signature, timestamp, publicKey);
       if (!isVerified) {
@@ -482,7 +505,34 @@ export default {
       }
 
       const interaction = yield* parser.parse(body);
-      return yield* handleInteraction(body, rawJson, interaction, ctx);
+
+      let annotated = handleInteraction(body, rawJson, interaction, ctx);
+
+      if (interaction._tag !== "Ping") {
+        const userId = interaction.user.id;
+        const guildId = interaction.guildId || "DM";
+        const actionType = interaction._tag;
+        const actionName = interaction._tag === "Command" ? interaction.commandName : interaction.customId;
+
+        const gameId = (interaction._tag === "Component")
+          ? (rawJson.message?.embeds?.[0]?.footer?.text || "").match(/Game ID:\s*([a-zA-Z0-9]+)/)?.[1]
+          : undefined;
+
+        annotated = annotated.pipe(
+          Effect.annotateLogs("userId", userId),
+          Effect.annotateLogs("guildId", guildId),
+          Effect.annotateLogs("actionType", actionType),
+          Effect.annotateLogs("actionName", actionName)
+        );
+
+        if (gameId) {
+          annotated = annotated.pipe(
+            Effect.annotateLogs("gameId", gameId)
+          );
+        }
+      }
+
+      return yield* annotated;
     });
 
     const botTokenLayer = Layer.succeed(DiscordBotToken, env.DISCORD_BOT_TOKEN || "");
@@ -502,26 +552,40 @@ export default {
 
     const runnable = program.pipe(
       Effect.catchTag("Unauthorized", (err) =>
-        Effect.succeed(new Response(err.message, { status: 401 }))
+        Effect.gen(function* () {
+          yield* Effect.logWarning(`Unauthorized request: ${err.message}`);
+          return new Response(err.message, { status: 401 });
+        })
       ),
       Effect.catchTag("BadRequest", (err) =>
-        Effect.succeed(new Response(err.message, { status: 400 }))
+        Effect.gen(function* () {
+          yield* Effect.logWarning(`Bad request: ${err.message}`);
+          return new Response(err.message, { status: 400 });
+        })
       ),
-      Effect.catchAll((err) => {
-        const message = err && typeof err === "object" && "message" in err ? (err as any).message : String(err);
-        const errorPayload = {
-          type: 4,
-          data: {
-            content: `❌ **Error:** ${message}`,
-            flags: 64
-          }
-        };
-        return Effect.succeed(
-          new Response(JSON.stringify(errorPayload), {
+      Effect.catchTag("ParseError", (err) =>
+        Effect.gen(function* () {
+          yield* Effect.logWarning(`Failed to parse interaction: ${err.message}`);
+          return new Response(err.message, { status: 400 });
+        })
+      ),
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          const message = err && typeof err === "object" && "message" in err ? (err as any).message : String(err);
+          const stack = err && typeof err === "object" && "stack" in err ? (err as any).stack : undefined;
+          yield* Effect.logError(`Unhandled error occurred: ${message}${stack ? `\n${stack}` : ""}`);
+          const errorPayload = {
+            type: 4,
+            data: {
+              content: `❌ **Error:** ${message}`,
+              flags: 64
+            }
+          };
+          return new Response(JSON.stringify(errorPayload), {
             headers: { "content-type": "application/json" }
-          })
-        );
-      }),
+          });
+        })
+      ),
       Effect.provide(mainLayer)
     );
 
