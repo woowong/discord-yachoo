@@ -207,7 +207,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         type: 7, // UpdateMessage
         data: {
           embeds: [embed],
-          components: components.length > 0 ? components : undefined
+          components: components
         }
       };
     },

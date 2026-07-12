@@ -262,6 +262,14 @@ const handleInteraction = (
         const holds = parts[1] || "00000";
         const holdsTuple = holds.split("").map((h: string) => h === "1") as unknown as DiceHold;
 
+        // If the game was already finished (stale button click recovered)
+        if (gameState.status === "Finished") {
+          const finalPayload = serializer.serializeGame(gameState, holds);
+          return new Response(JSON.stringify(finalPayload), {
+            headers: { "content-type": "application/json" }
+          });
+        }
+
         const nextStateRaw = yield* rollDice(gameState, holdsTuple, rollProvider);
         const nextState = {
           ...nextStateRaw,
@@ -320,6 +328,14 @@ const handleInteraction = (
             JSON.stringify(serializer.serializeError("No category selected")),
             { headers: { "content-type": "application/json" } }
           );
+        }
+
+        // If the game was already finished (stale dropdown click recovered)
+        if (gameState.status === "Finished") {
+          const responsePayload = serializer.serializeGame(gameState);
+          return new Response(JSON.stringify(responsePayload), {
+            headers: { "content-type": "application/json" }
+          });
         }
 
         const nextState = yield* selectCategory(gameState, category);

@@ -163,6 +163,31 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
     });
 
+    it("should serialize Finished GameState with empty components list to remove buttons in Discord", async () => {
+      const finishedGameState: GameState = {
+        ...mockGameState,
+        status: "Finished",
+        players: [
+          {
+            ...mockGameState.players[0],
+            scoreBoard: {
+              Aces: 3, Deuces: 6, Treys: 9, Fours: 12, Fives: 15, Sixes: 18,
+              Choice: 20, FourOfAKind: 24, FullHouse: 28, SmallStraight: 30, LargeStraight: 40, Yacht: 50
+            }
+          }
+        ]
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeGame(finishedGameState))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      expect(response.type).toBe(7); // UpdateMessage
+      expect(response.data?.embeds?.[0].description).toContain("🏆 **Game Finished!**");
+      expect(response.data?.components).toEqual([]); // Should be empty array, not undefined, to clear buttons
+    });
+
     it("should serialize GameState including last turn action details when turnHistory is not empty", async () => {
       const stateWithHistory: GameState = {
         ...mockGameState,

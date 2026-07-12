@@ -1,28 +1,43 @@
 import { ScoreCategory } from "./types";
 
-export class GameAlreadyOverError {
+export class GameAlreadyOverError extends Error {
   readonly _tag = "GameAlreadyOverError";
-  constructor(readonly gameId: string) {}
+  constructor(readonly gameId: string) {
+    super(`Game ${gameId} is already over.`);
+    this.name = "GameAlreadyOverError";
+  }
 }
 
-export class RollLimitExceededError {
+export class RollLimitExceededError extends Error {
   readonly _tag = "RollLimitExceededError";
-  constructor(readonly currentRollCount: number) {}
+  constructor(readonly currentRollCount: number) {
+    super(`Roll limit exceeded. Current roll count: ${currentRollCount}`);
+    this.name = "RollLimitExceededError";
+  }
 }
 
-export class CategoryAlreadyFilledError {
+export class CategoryAlreadyFilledError extends Error {
   readonly _tag = "CategoryAlreadyFilledError";
-  constructor(readonly category: ScoreCategory) {}
+  constructor(readonly category: ScoreCategory) {
+    super(`Category ${category} is already filled.`);
+    this.name = "CategoryAlreadyFilledError";
+  }
 }
 
-export class InvalidStateActionError {
+export class InvalidStateActionError extends Error {
   readonly _tag = "InvalidStateActionError";
-  constructor(readonly message: string) {}
+  constructor(readonly message: string) {
+    super(message);
+    this.name = "InvalidStateActionError";
+  }
 }
 
-export class NotYourTurnError {
+export class NotYourTurnError extends Error {
   readonly _tag = "NotYourTurnError";
-  constructor(readonly expectedPlayerId: string, readonly actualPlayerId: string) {}
+  constructor(readonly expectedPlayerId: string, readonly actualPlayerId: string) {
+    super(`It is not your turn. Expected player ID: ${expectedPlayerId}, actual: ${actualPlayerId}`);
+    this.name = "NotYourTurnError";
+  }
 }
 
 export type GameError =

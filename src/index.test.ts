@@ -698,4 +698,154 @@ describe("Discord Yacht Bot Integration Tests", () => {
 
     global.fetch = originalFetch;
   });
+
+  it("should return readable error message instead of [object Object] when RollLimitExceededError occurs", async () => {
+    // 1. Mock the game state database to return a game with rollCount = 3 (limit reached)
+    const mockGameState = {
+      gameId: "game-limit-123",
+      mode: "multi",
+      status: "Rolling",
+      currentPlayerIndex: 0,
+      players: [
+        {
+          playerId: "12345",
+          playerName: "Alice",
+          scoreBoard: {},
+          bonusScore: 0,
+          totalScore: 0
+        }
+      ],
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 3,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockGameState)
+    });
+
+    // 2. Prepare component interaction that attempts to roll dice
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      channel_id: "channel-777",
+      data: {
+        custom_id: "roll_00000"
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-limit-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4); // ChannelMessageWithSource
+    expect(json.data.content).toContain("❌ **Error:** Roll limit exceeded.");
+    expect(json.data.content).not.toContain("[object Object]");
+  });
+
+  it("should gracefully refresh game message and remove components when clicking roll on finished game", async () => {
+    const mockGameState = {
+      gameId: "game-finished-123",
+      mode: "single",
+      status: "Finished",
+      currentPlayerIndex: 0,
+      players: [
+        {
+          playerId: "12345",
+          playerName: "Alice",
+          scoreBoard: {
+            Aces: 3, Deuces: 6, Treys: 9, Fours: 12, Fives: 15, Sixes: 18,
+            Choice: 20, FourOfAKind: 24, FullHouse: 28, SmallStraight: 30, LargeStraight: 40, Yacht: 50
+          },
+          bonusScore: 0,
+          totalScore: 237
+        }
+      ],
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockGameState)
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      channel_id: "channel-777",
+      data: {
+        custom_id: "roll_00000"
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-finished-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(7); // UpdateMessage (UI refresh)
+    expect(json.data.components).toEqual([]); // Should be empty to clear stale buttons
+    expect(json.data.embeds[0].description).toContain("🏆 **Game Finished!**");
+  });
+
+  it("should gracefully refresh game message and remove components when selecting category on finished game", async () => {
+    const mockGameState = {
+      gameId: "game-finished-123",
+      mode: "single",
+      status: "Finished",
+      currentPlayerIndex: 0,
+      players: [
+        {
+          playerId: "12345",
+          playerName: "Alice",
+          scoreBoard: {
+            Aces: 3, Deuces: 6, Treys: 9, Fours: 12, Fives: 15, Sixes: 18,
+            Choice: 20, FourOfAKind: 24, FullHouse: 28, SmallStraight: 30, LargeStraight: 40, Yacht: 50
+          },
+          bonusScore: 0,
+          totalScore: 237
+        }
+      ],
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockGameState)
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      channel_id: "channel-777",
+      data: {
+        custom_id: "select_category",
+        values: ["Aces"]
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-finished-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(7); // UpdateMessage (UI refresh)
+    expect(json.data.components).toEqual([]); // Should be empty to clear stale dropdown
+    expect(json.data.embeds[0].description).toContain("🏆 **Game Finished!**");
+  });
 });
