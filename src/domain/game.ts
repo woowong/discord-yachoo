@@ -5,6 +5,7 @@ import {
   RollLimitExceededError,
   CategoryAlreadyFilledError,
   InvalidStateActionError,
+  AllDiceHeldError,
   GameError
 } from "./errors";
 import { calculateScore, calculateUpperSectionSum, calculateUpperBonus } from "./score";
@@ -62,6 +63,11 @@ export const rollDice = (
     // 2. Check if roll count exceeds limit
     if (state.rollCount >= 3) {
       yield* Effect.fail(new RollLimitExceededError(state.rollCount));
+    }
+
+    // 2.5. Check if all dice are held (and it's not the first roll)
+    if (state.rollCount > 0 && holds.every((h) => h)) {
+      yield* Effect.fail(new AllDiceHeldError());
     }
 
     // 3. Get the new dice roll from the provider

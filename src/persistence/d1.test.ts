@@ -65,6 +65,7 @@ describe("D1 Persistence Repositories", () => {
         multi_losses: 1,
         multi_draws: 0,
         multi_highest_score: 180,
+        elo: 1000,
         created_at: "2026-07-10T12:00:00.000Z",
         updated_at: "2026-07-10T12:00:00.000Z",
       });
@@ -90,7 +91,8 @@ describe("D1 Persistence Repositories", () => {
       expect(stats.multiLosses).toBe(1);
       expect(stats.multiDraws).toBe(0);
       expect(stats.multiHighestScore).toBe(180);
-      expect(mockDB.prepare).toHaveBeenCalledWith("SELECT * FROM players WHERE id = ?");
+      expect(stats.elo).toBe(1000);
+      expect(mockDB.prepare).toHaveBeenCalledWith("SELECT *, COALESCE(elo, 1000) as elo FROM players WHERE id = ?");
       expect(mockBind).toHaveBeenCalledWith("user-123");
       expect(mockFirst).toHaveBeenCalled();
     });
@@ -126,6 +128,7 @@ describe("D1 Persistence Repositories", () => {
         multi_losses: 1,
         multi_draws: 0,
         multi_highest_score: 180,
+        elo: 1000,
         created_at: "2026-07-10T12:00:00.000Z",
         updated_at: "2026-07-10T12:00:00.000Z",
       });

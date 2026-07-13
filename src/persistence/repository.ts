@@ -19,6 +19,7 @@ export interface PlayerStats {
   readonly multiLosses: number;
   readonly multiDraws: number;
   readonly multiHighestScore: number;
+  readonly elo: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -40,6 +41,7 @@ export interface PlayerRepository {
   readonly upsertPlayer: (id: string, name: string) => Effect.Effect<void, RepositoryError>;
   readonly getPlayer: (id: string, guildId?: string | null) => Effect.Effect<Option.Option<PlayerStats>, RepositoryError>;
   readonly updateStats: (id: string, guildId: string | null, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) => Effect.Effect<void, RepositoryError>;
+  readonly updateElo: (id: string, guildId: string | null, newElo: number) => Effect.Effect<void, RepositoryError>;
   readonly getLeaderboard: (mode: "single" | "multi", guildId: string | null, limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
 }
 

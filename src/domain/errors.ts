@@ -40,9 +40,18 @@ export class NotYourTurnError extends Error {
   }
 }
 
+export class AllDiceHeldError extends Error {
+  readonly _tag = "AllDiceHeldError";
+  constructor() {
+    super("Cannot roll when all dice are held.");
+    this.name = "AllDiceHeldError";
+  }
+}
+
 export type GameError =
   | GameAlreadyOverError
   | RollLimitExceededError
   | CategoryAlreadyFilledError
   | InvalidStateActionError
-  | NotYourTurnError;
+  | NotYourTurnError
+  | AllDiceHeldError;

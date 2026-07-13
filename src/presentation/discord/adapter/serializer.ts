@@ -26,13 +26,13 @@ const CATEGORIES: { key: ScoreCategory | "Subtotal" | "Bonus"; label: string }[]
   { key: "Fours", label: "Fours" },
   { key: "Fives", label: "Fives" },
   { key: "Sixes", label: "Sixes" },
-  { key: "Subtotal", label: "Subtotal" },
-  { key: "Bonus", label: "Upper Bonus" },
+  { key: "Subtotal", label: "Sub.T (63)" },
+  { key: "Bonus", label: "Bonus (35)" },
   { key: "Choice", label: "Choice" },
-  { key: "FourOfAKind", label: "4 of a Kind" },
-  { key: "FullHouse", label: "Full House" },
-  { key: "SmallStraight", label: "Small Str." },
-  { key: "LargeStraight", label: "Large Str." },
+  { key: "FourOfAKind", label: "4-Kind" },
+  { key: "FullHouse", label: "F.House" },
+  { key: "SmallStraight", label: "S.Str." },
+  { key: "LargeStraight", label: "L.Str." },
   { key: "Yacht", label: "Yacht" }
 ];
 
@@ -40,19 +40,19 @@ const formatScoreBoard = (state: GameState): string => {
   const players = state.players;
   const lines: string[] = [];
 
-  let header = "Category     ";
+  let header = "Category  ";
   for (const p of players) {
-    header += ` | ${p.playerName.substring(0, 10).padEnd(10)}`;
+    header += ` | ${p.playerName.substring(0, 4).padEnd(5)}`;
   }
   lines.push(header);
   lines.push("-".repeat(header.length));
 
   CATEGORIES.forEach((cat) => {
-    let row = `${cat.label.padEnd(12)}`;
+    let row = `${cat.label.padEnd(10)}`;
     for (const p of players) {
       let valStr = "-";
       if (cat.key === "Subtotal") {
-        valStr = calculateUpperSectionSum(p.scoreBoard).toString();
+        valStr = `${calculateUpperSectionSum(p.scoreBoard)}/63`;
       } else if (cat.key === "Bonus") {
         valStr = p.bonusScore.toString();
       } else {
@@ -61,15 +61,15 @@ const formatScoreBoard = (state: GameState): string => {
           valStr = val.toString();
         }
       }
-      row += ` | ${valStr.padStart(10)}`;
+      row += ` | ${valStr.padStart(5)}`;
     }
     lines.push(row);
   });
 
   lines.push("-".repeat(header.length));
-  let totalRow = "Total        ";
+  let totalRow = "Total     ";
   for (const p of players) {
-    totalRow += ` | ${p.totalScore.toString().padStart(10)}`;
+    totalRow += ` | ${p.totalScore.toString().padStart(5)}`;
   }
   lines.push(totalRow);
 
@@ -162,13 +162,14 @@ export const DiscordResponseSerializerLive = Layer.succeed(
 
         // Row 2: Roll button
         const canRoll = state.rollCount < 3;
+        const isAllHeld = state.rollCount > 0 && holds === "11111";
         const rollButton = {
           type: 2 as const,
           style: 1 as const,
-          label: `Roll Dice (${state.rollCount}/3)`,
+          label: isAllHeld ? "All Dice Held" : `Roll Dice (${state.rollCount}/3)`,
           emoji: { name: "🎲" },
           custom_id: `roll_${holds}`,
-          disabled: !canRoll
+          disabled: !canRoll || isAllHeld
         };
         components.push({
           type: 1,
@@ -256,10 +257,11 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       }
 
       // Row 2: Roll button (disabled, shows Rolling...)
+      const isAllHeld = state.rollCount > 0 && holds === "11111";
       const rollButton = {
         type: 2 as const,
         style: 1 as const,
-        label: `Rolling...`,
+        label: isAllHeld ? "All Dice Held" : `Rolling...`,
         emoji: { name: "🎲" },
         custom_id: `disabled_roll`,
         disabled: true
@@ -310,7 +312,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       const fields = topPlayers.map((player, idx) => {
         const value = mode === "single"
           ? `Best Score: **${player.soloHighestScore}** | Played: **${player.soloPlayCount}**`
-          : `Wins: **${player.multiWins}** | Losses: **${player.multiLosses}** | Best Score: **${player.multiHighestScore}**`;
+          : `Elo: **${player.elo}** | Wins: **${player.multiWins}** | Losses: **${player.multiLosses}** | Best Score: **${player.multiHighestScore}**`;
         return {
           name: `#${idx + 1} - ${player.name}`,
           value,

@@ -1,14 +1,4 @@
-# d1-database-schema Specification
-
-## Purpose
-플레이어의 전적(승패무 기록 및 최고 점수)과 경기 이력(매치 데이터)을 유지하기 위해 Cloudflare D1 데이터베이스에 적용할 SQLite 테이블 구조와 마이그레이션 방안을 정의합니다.
-## Requirements
-### Requirement: Database Schema Definition
-The system SHALL define a database schema for `players` and `matches` using an SQLite-compatible SQL migration script.
-
-#### Scenario: Running the schema migration
-- **WHEN** the schema migration script is executed in Cloudflare D1
-- **THEN** `players` and `matches` tables are created with the correct columns, primary keys, and default values.
+## MODIFIED Requirements
 
 ### Requirement: Players Table Structure
 The `players` table MUST store individual player statistics, containing:
@@ -31,22 +21,6 @@ The `players` table MUST store individual player statistics, containing:
 #### Scenario: Player record creation with Elo
 - **WHEN** a new player is registered in the database
 - **THEN** default values of 0 for all statistics columns and 1000 for the Elo rating MUST be applied.
-
-### Requirement: Matches Table Structure
-The `matches` table MUST store the history of played matches, containing:
-* `id` (TEXT, PRIMARY KEY): The unique match identifier.
-* `mode` (TEXT, NOT NULL): The game mode, either 'single' or 'multi'.
-* `guild_id` (TEXT, NULL): The Discord server ID where the match was played, nullable for legacy games or DMs.
-* `player1_id` (TEXT, NOT NULL): The primary player's ID.
-* `player2_id` (TEXT, NULL): The opponent's ID, which is nullable for single-player games.
-* `player1_score` (INTEGER, NOT NULL): The primary player's score.
-* `player2_score` (INTEGER, NULL): The opponent's score, nullable for single-player games.
-* `winner_id` (TEXT, NULL): The ID of the winner, or null in case of a draw or single-player game.
-* `played_at` (DATETIME, DEFAULT CURRENT_TIMESTAMP)
-
-#### Scenario: Single-player match recording
-- **WHEN** a single-player match is recorded
-- **THEN** `player2_id`, `player2_score`, and `winner_id` SHALL be recorded as NULL.
 
 ### Requirement: Guild-Specific Player Stats Table Structure
 The system SHALL maintain a dedicated database table `guild_player_stats` to store player statistics scoped to individual Discord servers, containing:
@@ -71,6 +45,8 @@ The system SHALL maintain a dedicated database table `guild_player_stats` to sto
 - **WHEN** player statistics are updated for a player in a guild for the first time
 - **THEN** a new row is inserted into `guild_player_stats` with all stats initialized to 0 and Elo initialized to 1000 before the update is applied.
 
+## ADDED Requirements
+
 ### Requirement: Elo rating migration
 The system SHALL add an `elo` column to both `players` and `guild_player_stats` tables via a new migration script. Existing rows MUST receive a default Elo of 1000.
 
@@ -78,4 +54,3 @@ The system SHALL add an `elo` column to both `players` and `guild_player_stats` 
 - **WHEN** the migration `0006_add_elo_rating.sql` is executed
 - **THEN** both `players` and `guild_player_stats` tables MUST have an `elo` column of type INTEGER with NOT NULL constraint and DEFAULT 1000
 - **THEN** all existing rows MUST have their elo column set to 1000
-

@@ -93,6 +93,27 @@ describe("Yacht Dice Game State Machine", () => {
         expect(failures[0]._tag).toBe("RollLimitExceededError");
       }
     });
+
+    it("should fail when all dice are held on subsequent rolls", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame([players[0]], "single");
+        const state1 = yield* rollDice(
+          initialState,
+          [false, false, false, false, false],
+          mockDiceProvider([1, 1, 1, 1, 1])
+        );
+        // Roll 2 with all holds -> should fail
+        yield* rollDice(state1, [true, true, true, true, true], mockDiceProvider([1, 1, 1, 1, 1]));
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+      
+      if (Exit.isFailure(result)) {
+        const failures = Array.from(Cause.failures(result.cause));
+        expect(failures[0]._tag).toBe("AllDiceHeldError");
+      }
+    });
   });
 
   describe("selectCategory", () => {

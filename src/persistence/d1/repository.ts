@@ -17,6 +17,7 @@ interface DBPlayerRow {
   readonly multi_losses: number;
   readonly multi_draws: number;
   readonly multi_highest_score: number;
+  readonly elo: number;
   readonly created_at: string;
   readonly updated_at: string;
 }
@@ -47,6 +48,7 @@ const mapRowToPlayerStats = (row: DBPlayerRow): PlayerStats => ({
   multiLosses: row.multi_losses,
   multiDraws: row.multi_draws,
   multiHighestScore: row.multi_highest_score,
+  elo: row.elo,
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
@@ -100,13 +102,14 @@ export const D1PlayerRepositoryLive = Layer.effect(
                   COALESCE(g.multi_wins, 0) as multi_wins,
                   COALESCE(g.multi_losses, 0) as multi_losses,
                   COALESCE(g.multi_draws, 0) as multi_draws,
-                  COALESCE(g.multi_highest_score, 0) as multi_highest_score
+                  COALESCE(g.multi_highest_score, 0) as multi_highest_score,
+                  COALESCE(g.elo, 1000) as elo
                 FROM players p
                 LEFT JOIN guild_player_stats g ON p.id = g.player_id AND g.guild_id = ?
                 WHERE p.id = ?
               `).bind(guildId, id).first<DBPlayerRow>();
             } else {
-              return db.prepare("SELECT * FROM players WHERE id = ?").bind(id).first<DBPlayerRow>();
+              return db.prepare("SELECT *, COALESCE(elo, 1000) as elo FROM players WHERE id = ?").bind(id).first<DBPlayerRow>();
             }
           },
           catch: (error) => new RepositoryError(`getPlayer failed: ${error}`, error)
@@ -196,6 +199,33 @@ export const D1PlayerRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`updateStats failed: ${error}`, error)
         }).pipe(Effect.asVoid),
 
+      updateElo: (id: string, guildId: string | null, newElo: number) =>
+        Effect.tryPromise({
+          try: () => {
+            const stmts = [];
+            if (guildId) {
+              stmts.push(
+                db.prepare(`
+                  INSERT INTO guild_player_stats (player_id, guild_id, elo, updated_at)
+                  VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                  ON CONFLICT(player_id, guild_id) DO UPDATE SET
+                    elo = excluded.elo,
+                    updated_at = CURRENT_TIMESTAMP
+                `).bind(id, guildId, newElo)
+              );
+            }
+            stmts.push(
+              db.prepare(`
+                UPDATE players
+                SET elo = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `).bind(newElo, id)
+            );
+            return db.batch(stmts);
+          },
+          catch: (error) => new RepositoryError(`updateElo failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
       getLeaderboard: (mode: "single" | "multi", guildId: string | null, limit: number) =>
         Effect.tryPromise({
           try: () => {
@@ -206,7 +236,8 @@ export const D1PlayerRepositoryLive = Layer.effect(
                     p.id, p.name, p.created_at, g.updated_at,
                     g.wins, g.losses, g.draws, g.highest_score,
                     g.solo_play_count, g.solo_highest_score,
-                    g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score
+                    g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score,
+                    COALESCE(g.elo, 1000) as elo
                   FROM guild_player_stats g
                   JOIN players p ON g.player_id = p.id
                   WHERE g.guild_id = ?
@@ -218,18 +249,19 @@ export const D1PlayerRepositoryLive = Layer.effect(
                     p.id, p.name, p.created_at, g.updated_at,
                     g.wins, g.losses, g.draws, g.highest_score,
                     g.solo_play_count, g.solo_highest_score,
-                    g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score
+                    g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score,
+                    COALESCE(g.elo, 1000) as elo
                   FROM guild_player_stats g
                   JOIN players p ON g.player_id = p.id
                   WHERE g.guild_id = ?
-                  ORDER BY g.multi_wins DESC, g.multi_highest_score DESC
+                  ORDER BY COALESCE(g.elo, 1000) DESC, g.multi_highest_score DESC
                   LIMIT ?
                 `;
               return db.prepare(query).bind(guildId, limit).all<DBPlayerRow>();
             } else {
               const query = mode === "single"
-                ? "SELECT * FROM players ORDER BY solo_highest_score DESC LIMIT ?"
-                : "SELECT * FROM players ORDER BY multi_wins DESC, multi_highest_score DESC LIMIT ?";
+                ? "SELECT *, COALESCE(elo, 1000) as elo FROM players ORDER BY solo_highest_score DESC LIMIT ?"
+                : "SELECT *, COALESCE(elo, 1000) as elo FROM players ORDER BY elo DESC, multi_highest_score DESC LIMIT ?";
               return db.prepare(query).bind(limit).all<DBPlayerRow>();
             }
           },

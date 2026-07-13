@@ -163,6 +163,41 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
     });
 
+    it("should render scoreboard within 27 characters per line for 2 players", async () => {
+      const state2Players: GameState = {
+        gameId: "game-123",
+        mode: "multi",
+        status: "Rolling",
+        currentPlayerIndex: 0,
+        rollCount: 0,
+        currentDice: [1, 1, 1, 1, 1],
+        players: [
+          { playerId: "p1", playerName: "Alice", scoreBoard: { Aces: 3 }, bonusScore: 0, totalScore: 3 },
+          { playerId: "p2", playerName: "Bob", scoreBoard: { Deuces: 6 }, bonusScore: 0, totalScore: 6 }
+        ],
+        turnHistory: [],
+        currentTurnRolls: []
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeGame(state2Players))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      const description = response.data?.embeds?.[0].description || "";
+      
+      const match = description.match(/```\n([\s\S]*?)\n```/);
+      expect(match).not.toBeNull();
+      
+      if (match) {
+        const scoreboardContent = match[1];
+        const lines = scoreboardContent.split("\n");
+        for (const line of lines) {
+          expect(line.length).toBeLessThanOrEqual(27);
+        }
+      }
+    });
+
     it("should serialize Finished GameState with empty components list to remove buttons in Discord", async () => {
       const finishedGameState: GameState = {
         ...mockGameState,

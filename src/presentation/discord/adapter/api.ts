@@ -3,6 +3,7 @@ import { Effect, Context, Layer } from "effect";
 export interface DiscordApiService {
   readonly sendMention: (channelId: string, userId: string, replyToMessageId?: string) => Effect.Effect<string, Error>;
   readonly deleteMessage: (channelId: string, messageId: string) => Effect.Effect<void, Error>;
+  readonly sendGameEndMessage: (channelId: string, content: string, replyToMessageId?: string) => Effect.Effect<void, Error>;
 }
 
 export const DiscordApiService = Context.GenericTag<DiscordApiService>("@services/DiscordApiService");
@@ -47,6 +48,36 @@ export const DiscordApiServiceLive = Layer.effect(
           catch: (error) => error as Error
         }),
 
+      sendGameEndMessage: (channelId, content, replyToMessageId) =>
+        Effect.tryPromise({
+          try: async () => {
+            if (!token) {
+              console.warn("DISCORD_BOT_TOKEN is not configured. Skipping sendGameEndMessage.");
+              return;
+            }
+            const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bot ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                content,
+                message_reference: replyToMessageId
+                  ? {
+                      message_id: replyToMessageId,
+                      fail_if_not_exists: false
+                    }
+                  : undefined
+              })
+            });
+            if (!res.ok) {
+              throw new Error(`Discord API error (sendGameEndMessage): ${res.status} ${await res.text()}`);
+            }
+          },
+          catch: (error) => error as Error
+        }).pipe(Effect.asVoid),
+
       deleteMessage: (channelId, messageId) =>
         Effect.tryPromise({
           try: async () => {
@@ -83,6 +114,11 @@ export const DiscordApiServiceMockLive = Layer.succeed(
     deleteMessage: (channelId, messageId) =>
       Effect.sync(() => {
         console.log(`[Mock Discord API] Delete message ${messageId} in Channel ${channelId}`);
+        return;
+      }),
+    sendGameEndMessage: (channelId, content, replyToMessageId) =>
+      Effect.sync(() => {
+        console.log(`[Mock Discord API] Send Game End Message to Channel ${channelId} (reply to: ${replyToMessageId}): ${content}`);
         return;
       })
   }

@@ -2,6 +2,8 @@ import { Effect, Layer, Option } from "effect";
 import { GameState, DiceHold, DiceRoll, ScoreCategory } from "./domain/types";
 import { initGame, rollDice, selectCategory } from "./domain/game";
 import { calculateScore } from "./domain/score";
+import { calculateEloChange } from "./domain/elo";
+import { InvalidStateActionError } from "./domain/errors";
 import { D1Database } from "./persistence/d1/database";
 import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive } from "./persistence/d1/repository";
 import { PlayerRepository, MatchRepository, GameRepository } from "./persistence/repository";
@@ -94,6 +96,7 @@ const handleInteraction = (
             `• Games Played: **${statsOption.value.soloPlayCount}**\n` +
             `• Highest Score: **${statsOption.value.soloHighestScore}**\n\n` +
             `⚔️ **Matching Mode (VS)**\n` +
+            `• Elo Rating: **${statsOption.value.elo}**\n` +
             `• Wins: **${statsOption.value.multiWins}**\n` +
             `• Losses: **${statsOption.value.multiLosses}**\n` +
             `• Draws: **${statsOption.value.multiDraws}**\n` +
@@ -278,7 +281,12 @@ const handleInteraction = (
           });
         }
 
-        const nextStateRaw = yield* rollDice(gameState, holdsTuple, rollProvider);
+        const rollResult = rollDice(gameState, holdsTuple, rollProvider).pipe(
+          Effect.catchTag("AllDiceHeldError", () =>
+            Effect.fail(new InvalidStateActionError("모든 주사위가 홀드된 상태에서는 굴릴 수 없습니다. 주사위 홀드를 일부 해제하거나 점수를 기록해 주세요."))
+          )
+        );
+        const nextStateRaw = yield* rollResult;
         const nextState = {
           ...nextStateRaw,
           lastMentionMessageId: undefined,
@@ -391,11 +399,30 @@ const handleInteraction = (
           yield* matchRepo.saveMatch(matchRecord);
           yield* Effect.logInfo(`Game finished. Winner: ${winnerId || "Draw"}. Match record saved to D1.`);
 
+          let endMsgContent = "";
+
           // Update stats
           if (mode === "single") {
             yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "single", "win", p1.totalScore);
             yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} (single)`);
+
+            endMsgContent = `🏁 게임 완료! <@${p1.playerId}> 님의 최종 스코어: **${p1.totalScore}**점`;
           } else if (p2) {
+            // Retrieve current Elo ratings
+            const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, interaction.guildId);
+            const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, interaction.guildId);
+            const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
+            const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
+
+            const outcome = p1.totalScore > p2.totalScore ? 1 : (p2.totalScore > p1.totalScore ? 0 : 0.5);
+            const eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
+
+            // Update Elo
+            yield* playerRepo.updateElo(p1.playerId, interaction.guildId, eloResult.newRatingA);
+            yield* playerRepo.updateElo(p2.playerId, interaction.guildId, eloResult.newRatingB);
+            yield* Effect.logInfo(`Updated Elo ratings. P1: ${eloResult.newRatingA}, P2: ${eloResult.newRatingB}`);
+
+            // Update other stats
             if (p1.totalScore > p2.totalScore) {
               yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "win", p1.totalScore);
               yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "loss", p2.totalScore);
@@ -407,6 +434,25 @@ const handleInteraction = (
               yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "draw", p2.totalScore);
             }
             yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} and Player 2: ${p2.playerId} (multi)`);
+
+            const formatDelta = (d: number) => d >= 0 ? `▲+${d}` : `▼${d}`;
+            if (p1.totalScore > p2.totalScore) {
+              endMsgContent = `🎉🏆 <@${p1.playerId}> 님이 승리했습니다! **${p1.totalScore}**점 대 **${p2.totalScore}**점! GG! 🎲\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            } else if (p2.totalScore > p1.totalScore) {
+              endMsgContent = `🎉🏆 <@${p2.playerId}> 님이 승리했습니다! **${p2.totalScore}**점 대 **${p1.totalScore}**점! GG! 🎲\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            } else {
+              endMsgContent = `🤝 무승부! <@${p1.playerId}> vs <@${p2.playerId}> - **${p1.totalScore}**점으로 동점!\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            }
+          }
+
+          // Send game end notification message in background
+          const apiService = yield* DiscordApiService;
+          const replyToMessageId = rawJson.message?.id;
+          if (interaction.channelId && endMsgContent) {
+            const endMessageTask = apiService.sendGameEndMessage(interaction.channelId, endMsgContent, replyToMessageId).pipe(
+              Effect.catchAll((err) => Effect.logError(`Error sending game end message: ${err}`))
+            );
+            ctx.waitUntil(Effect.runPromise(endMessageTask));
           }
         }
 
