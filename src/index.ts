@@ -1,6 +1,6 @@
 import { Effect, Layer, Option } from "effect";
 import { GameState, DiceHold, DiceRoll, ScoreCategory } from "./domain/types";
-import { initGame, rollDice, selectCategory } from "./domain/game";
+import { initGame, rollDice, selectCategory, surrenderGame } from "./domain/game";
 import { calculateScore } from "./domain/score";
 import { calculateEloChange } from "./domain/elo";
 import { InvalidStateActionError } from "./domain/errors";
@@ -35,6 +35,132 @@ const handleInteraction = (
     const matchRepo = yield* MatchRepository;
     const gameRepo = yield* GameRepository;
 
+    const handleGameEnd = (nextState: GameState) =>
+      Effect.gen(function* () {
+        const matchId = nextState.gameId;
+        const mode = nextState.mode;
+        const p1 = nextState.players[0];
+        const p2 = nextState.mode === "multi" ? nextState.players[1] : null;
+
+        let winnerId: string | null = null;
+        if (nextState.surrenderedPlayerId) {
+          if (mode === "multi" && p2) {
+            winnerId = nextState.surrenderedPlayerId === p1.playerId ? p2.playerId : p1.playerId;
+          } else {
+            winnerId = null;
+          }
+        } else {
+          if (mode === "multi" && p2) {
+            if (p1.totalScore > p2.totalScore) {
+              winnerId = p1.playerId;
+            } else if (p2.totalScore > p1.totalScore) {
+              winnerId = p2.playerId;
+            }
+          } else {
+            winnerId = p1.playerId;
+          }
+        }
+
+        const matchRecord = {
+          id: matchId,
+          mode,
+          guildId: interaction.guildId,
+          player1Id: p1.playerId,
+          player2Id: p2 ? p2.playerId : null,
+          player1Score: p1.totalScore,
+          player2Score: p2 ? p2.totalScore : null,
+          winnerId,
+          playedAt: new Date(),
+          historyJson: JSON.stringify(nextState.turnHistory)
+        };
+
+        yield* matchRepo.saveMatch(matchRecord);
+        yield* Effect.logInfo(`Game finished. Winner: ${winnerId || "Draw"}. Match record saved to D1.`);
+
+        let endMsgContent = "";
+
+        // Update stats
+        if (mode === "single") {
+          yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "single", "win", p1.totalScore);
+          yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} (single)`);
+
+          if (nextState.surrenderedPlayerId) {
+            endMsgContent = `🏳️ 항복! <@${p1.playerId}> 님이 게임을 기권하였습니다. 최종 스코어: **${p1.totalScore}**점`;
+          } else {
+            endMsgContent = `🏁 게임 완료! <@${p1.playerId}> 님의 최종 스코어: **${p1.totalScore}**점`;
+          }
+        } else if (p2) {
+          // Retrieve current Elo ratings
+          const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, interaction.guildId);
+          const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, interaction.guildId);
+          const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
+          const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
+
+          let outcome: number;
+          if (nextState.surrenderedPlayerId) {
+            outcome = nextState.surrenderedPlayerId === p1.playerId ? 0 : 1;
+          } else {
+            outcome = p1.totalScore > p2.totalScore ? 1 : (p2.totalScore > p1.totalScore ? 0 : 0.5);
+          }
+          const eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
+
+          // Update Elo
+          yield* playerRepo.updateElo(p1.playerId, interaction.guildId, eloResult.newRatingA);
+          yield* playerRepo.updateElo(p2.playerId, interaction.guildId, eloResult.newRatingB);
+          yield* Effect.logInfo(`Updated Elo ratings. P1: ${eloResult.newRatingA}, P2: ${eloResult.newRatingB}`);
+
+          // Update other stats
+          if (nextState.surrenderedPlayerId) {
+            if (nextState.surrenderedPlayerId === p1.playerId) {
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "loss", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "win", p2.totalScore);
+            } else {
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "win", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "loss", p2.totalScore);
+            }
+          } else {
+            if (p1.totalScore > p2.totalScore) {
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "win", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "loss", p2.totalScore);
+            } else if (p2.totalScore > p1.totalScore) {
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "loss", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "win", p2.totalScore);
+            } else {
+              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "draw", p1.totalScore);
+              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "draw", p2.totalScore);
+            }
+          }
+          yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} and Player 2: ${p2.playerId} (multi)`);
+
+          const formatDelta = (d: number) => d >= 0 ? `▲+${d}` : `▼${d}`;
+          if (nextState.surrenderedPlayerId) {
+            const surrenderedPlayer = nextState.players.find(p => p.playerId === nextState.surrenderedPlayerId);
+            const winningPlayer = nextState.players.find(p => p.playerId !== nextState.surrenderedPlayerId);
+            if (winningPlayer && surrenderedPlayer) {
+              endMsgContent = `🏳️ <@${surrenderedPlayer.playerId}> 님이 항복하여 <@${winningPlayer.playerId}> 님이 승리했습니다!\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            }
+          } else {
+            if (p1.totalScore > p2.totalScore) {
+              endMsgContent = `🎉🏆 <@${p1.playerId}> 님이 승리했습니다! **${p1.totalScore}**점 대 **${p2.totalScore}**점! GG! 🎲\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            } else if (p2.totalScore > p1.totalScore) {
+              endMsgContent = `🎉🏆 <@${p2.playerId}> 님이 승리했습니다! **${p2.totalScore}**점 대 **${p1.totalScore}**점! GG! 🎲\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            } else {
+              endMsgContent = `🤝 무승부! <@${p1.playerId}> vs <@${p2.playerId}> - **${p1.totalScore}**점으로 동점!\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
+            }
+          }
+        }
+
+        // Send game end notification message in background
+        const apiService = yield* DiscordApiService;
+        const replyToMessageId = rawJson.message?.id;
+        if (interaction.channelId && endMsgContent) {
+          const endMessageTask = apiService.sendGameEndMessage(interaction.channelId, endMsgContent, replyToMessageId).pipe(
+            Effect.catchAll((err) => Effect.logError(`Error sending game end message: ${err}`))
+          );
+          ctx.waitUntil(Effect.runPromise(endMessageTask));
+        }
+      });
+
     if (interaction._tag === "Ping") {
       return new Response(JSON.stringify({ type: 1 }), {
         headers: { "content-type": "application/json" }
@@ -44,6 +170,19 @@ const handleInteraction = (
     if (interaction._tag === "Command") {
       if (interaction.commandName === "challenge") {
         const opponentId = interaction.options.opponent;
+        if (opponentId && opponentId === interaction.user.id) {
+          return new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: "❌ 자기 자신에게는 도전할 수 없습니다! 싱글 모드로 플레이하거나 다른 대상을 지정해 주세요.",
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          );
+        }
+
         let opponentName = "Opponent";
         if (opponentId) {
           const resolvedUser = rawJson.data?.resolved?.users?.[opponentId];
@@ -218,6 +357,56 @@ const handleInteraction = (
       }
       const gameState = gameStateOption.value;
 
+      // Handle surrender
+      if (customId === "surrender") {
+        const isPlayerInGame = gameState.players.some((p) => p.playerId === interaction.user.id);
+        if (!isPlayerInGame) {
+          return new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ You are not a player in this game!`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          );
+        }
+
+        if (gameState.status === "Finished") {
+          yield* Effect.logInfo("Ignore surrender action. Game is already finished.");
+          const responsePayload = serializer.serializeGame(gameState);
+          return new Response(JSON.stringify(responsePayload), {
+            headers: { "content-type": "application/json" }
+          });
+        }
+
+        const nextState = yield* surrenderGame(gameState, interaction.user.id);
+        yield* gameRepo.save(nextState);
+        yield* Effect.logInfo(`Player ${interaction.user.id} surrendered game ${gameId}`);
+
+        // Delete mention on action
+        const apiService = yield* DiscordApiService;
+        if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+          const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+            Effect.catchAll(() => Effect.void),
+            Effect.annotateLogs("userId", interaction.user.id),
+            Effect.annotateLogs("guildId", interaction.guildId || "DM"),
+            Effect.annotateLogs("actionType", interaction._tag),
+            Effect.annotateLogs("actionName", interaction.customId),
+            Effect.annotateLogs("gameId", gameState.gameId)
+          );
+          ctx.waitUntil(Effect.runPromise(deleteMentionTask));
+        }
+
+        yield* handleGameEnd(nextState);
+
+        const responsePayload = serializer.serializeGame(nextState);
+        return new Response(JSON.stringify(responsePayload), {
+          headers: { "content-type": "application/json" }
+        });
+      }
+
       // Validate turn
       const currentPlayer = gameState.players[gameState.currentPlayerIndex];
       if (currentPlayer.playerId !== interaction.user.id) {
@@ -313,7 +502,7 @@ const handleInteraction = (
         const rollingPayload = serializer.serializeRolling(gameState, holds);
 
         const rollBgTask = Effect.gen(function* () {
-          yield* Effect.sleep("1.4 seconds");
+          yield* Effect.sleep("1.2 seconds");
           const finalPayload = serializer.serializeGame(nextState, holds);
           
           yield* Effect.tryPromise({
@@ -366,94 +555,7 @@ const handleInteraction = (
         const nextState = yield* selectCategory(gameState, category);
 
         if (nextState.status === "Finished") {
-          // Save match
-          const matchId = nextState.gameId;
-          const mode = nextState.mode;
-          const p1 = nextState.players[0];
-          const p2 = nextState.mode === "multi" ? nextState.players[1] : null;
-
-          let winnerId: string | null = null;
-          if (mode === "multi" && p2) {
-            if (p1.totalScore > p2.totalScore) {
-              winnerId = p1.playerId;
-            } else if (p2.totalScore > p1.totalScore) {
-              winnerId = p2.playerId;
-            }
-          } else {
-            winnerId = p1.playerId;
-          }
-
-          const matchRecord = {
-            id: matchId,
-            mode,
-            guildId: interaction.guildId,
-            player1Id: p1.playerId,
-            player2Id: p2 ? p2.playerId : null,
-            player1Score: p1.totalScore,
-            player2Score: p2 ? p2.totalScore : null,
-            winnerId,
-            playedAt: new Date(),
-            historyJson: JSON.stringify(nextState.turnHistory)
-          };
-
-          yield* matchRepo.saveMatch(matchRecord);
-          yield* Effect.logInfo(`Game finished. Winner: ${winnerId || "Draw"}. Match record saved to D1.`);
-
-          let endMsgContent = "";
-
-          // Update stats
-          if (mode === "single") {
-            yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "single", "win", p1.totalScore);
-            yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} (single)`);
-
-            endMsgContent = `🏁 게임 완료! <@${p1.playerId}> 님의 최종 스코어: **${p1.totalScore}**점`;
-          } else if (p2) {
-            // Retrieve current Elo ratings
-            const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, interaction.guildId);
-            const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, interaction.guildId);
-            const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
-            const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
-
-            const outcome = p1.totalScore > p2.totalScore ? 1 : (p2.totalScore > p1.totalScore ? 0 : 0.5);
-            const eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
-
-            // Update Elo
-            yield* playerRepo.updateElo(p1.playerId, interaction.guildId, eloResult.newRatingA);
-            yield* playerRepo.updateElo(p2.playerId, interaction.guildId, eloResult.newRatingB);
-            yield* Effect.logInfo(`Updated Elo ratings. P1: ${eloResult.newRatingA}, P2: ${eloResult.newRatingB}`);
-
-            // Update other stats
-            if (p1.totalScore > p2.totalScore) {
-              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "win", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "loss", p2.totalScore);
-            } else if (p2.totalScore > p1.totalScore) {
-              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "loss", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "win", p2.totalScore);
-            } else {
-              yield* playerRepo.updateStats(p1.playerId, interaction.guildId, "multi", "draw", p1.totalScore);
-              yield* playerRepo.updateStats(p2.playerId, interaction.guildId, "multi", "draw", p2.totalScore);
-            }
-            yield* Effect.logInfo(`Updated stats for Player 1: ${p1.playerId} and Player 2: ${p2.playerId} (multi)`);
-
-            const formatDelta = (d: number) => d >= 0 ? `▲+${d}` : `▼${d}`;
-            if (p1.totalScore > p2.totalScore) {
-              endMsgContent = `🎉🏆 <@${p1.playerId}> 님이 승리했습니다! **${p1.totalScore}**점 대 **${p2.totalScore}**점! GG! 🎲\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
-            } else if (p2.totalScore > p1.totalScore) {
-              endMsgContent = `🎉🏆 <@${p2.playerId}> 님이 승리했습니다! **${p2.totalScore}**점 대 **${p1.totalScore}**점! GG! 🎲\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
-            } else {
-              endMsgContent = `🤝 무승부! <@${p1.playerId}> vs <@${p2.playerId}> - **${p1.totalScore}**점으로 동점!\n• <@${p1.playerId}>: Elo **${eloResult.newRatingA}** (${formatDelta(eloResult.deltaA)})\n• <@${p2.playerId}>: Elo **${eloResult.newRatingB}** (${formatDelta(eloResult.deltaB)})`;
-            }
-          }
-
-          // Send game end notification message in background
-          const apiService = yield* DiscordApiService;
-          const replyToMessageId = rawJson.message?.id;
-          if (interaction.channelId && endMsgContent) {
-            const endMessageTask = apiService.sendGameEndMessage(interaction.channelId, endMsgContent, replyToMessageId).pipe(
-              Effect.catchAll((err) => Effect.logError(`Error sending game end message: ${err}`))
-            );
-            ctx.waitUntil(Effect.runPromise(endMessageTask));
-          }
+          yield* handleGameEnd(nextState);
         }
 
         yield* gameRepo.save(nextState);

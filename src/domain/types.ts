@@ -50,5 +50,6 @@ export interface GameState {
   readonly currentTurnRolls: readonly DiceRoll[];
   readonly lastMentionMessageId?: string;
   readonly lastMentionChannelId?: string;
+  readonly surrenderedPlayerId?: string;
 }
 

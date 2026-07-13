@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Effect, Exit, Cause } from "effect";
-import { initGame, rollDice, selectCategory } from "./game";
+import { initGame, rollDice, selectCategory, surrenderGame } from "./game";
 import { DiceRoll } from "./types";
 
 describe("Yacht Dice Game State Machine", () => {
@@ -267,6 +267,52 @@ describe("Yacht Dice Game State Machine", () => {
       });
 
       Effect.runSync(program);
+    });
+  });
+
+  describe("surrenderGame", () => {
+    it("should immediately finish the game with the surrenderedPlayerId recorded", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const nextState = yield* surrenderGame(initialState, "p1");
+        return nextState;
+      });
+
+      const result = Effect.runSync(program);
+      expect(result.status).toBe("Finished");
+      expect(result.surrenderedPlayerId).toBe("p1");
+    });
+
+    it("should fail to surrender if the game is already finished", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const finishedState = yield* surrenderGame(initialState, "p1");
+        // Second surrender should fail
+        yield* surrenderGame(finishedState, "p2");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+      
+      if (Exit.isFailure(result)) {
+        const failures = Array.from(Cause.failures(result.cause));
+        expect(failures[0]._tag).toBe("GameAlreadyOverError");
+      }
+    });
+
+    it("should fail to surrender if player is not in the game", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        yield* surrenderGame(initialState, "non-existent-player");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+
+      if (Exit.isFailure(result)) {
+        const failures = Array.from(Cause.failures(result.cause));
+        expect(failures[0]._tag).toBe("InvalidStateActionError");
+      }
     });
   });
 });

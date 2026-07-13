@@ -103,17 +103,27 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         }
       } else {
         description += `\n🏆 **Game Finished!**`;
-        if (state.mode === "single") {
-          description += `\nFinal Score: **${state.players[0].totalScore}**`;
+        if (state.surrenderedPlayerId) {
+          const surrenderedPlayer = state.players.find((p) => p.playerId === state.surrenderedPlayerId);
+          const winningPlayer = state.players.find((p) => p.playerId !== state.surrenderedPlayerId);
+          if (state.mode === "single") {
+            description += `\n🏳️ **Surrendered!**\n<@${state.players[0].playerId}> 님이 기권하였습니다.`;
+          } else if (winningPlayer && surrenderedPlayer) {
+            description += `\n🏳️ **Surrendered!**\nWinner: **${winningPlayer.playerName}** (상대방 기권 승)`;
+          }
         } else {
-          const p1 = state.players[0];
-          const p2 = state.players[1];
-          if (p1.totalScore > p2.totalScore) {
-            description += `\nWinner: **${p1.playerName}** (${p1.totalScore} vs ${p2.totalScore})`;
-          } else if (p2.totalScore > p1.totalScore) {
-            description += `\nWinner: **${p2.playerName}** (${p2.totalScore} vs ${p1.totalScore})`;
+          if (state.mode === "single") {
+            description += `\nFinal Score: **${state.players[0].totalScore}**`;
           } else {
-            description += `\nIt's a draw! (${p1.totalScore} vs ${p2.totalScore})`;
+            const p1 = state.players[0];
+            const p2 = state.players[1];
+            if (p1.totalScore > p2.totalScore) {
+              description += `\nWinner: **${p1.playerName}** (${p1.totalScore} vs ${p2.totalScore})`;
+            } else if (p2.totalScore > p1.totalScore) {
+              description += `\nWinner: **${p2.playerName}** (${p2.totalScore} vs ${p1.totalScore})`;
+            } else {
+              description += `\nIt's a draw! (${p1.totalScore} vs ${p2.totalScore})`;
+            }
           }
         }
       }
@@ -160,7 +170,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           });
         }
 
-        // Row 2: Roll button
+        // Row 2: Roll & Surrender buttons
         const canRoll = state.rollCount < 3;
         const isAllHeld = state.rollCount > 0 && holds === "11111";
         const rollButton = {
@@ -171,9 +181,16 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           custom_id: `roll_${holds}`,
           disabled: !canRoll || isAllHeld
         };
+        const surrenderButton = {
+          type: 2 as const,
+          style: 4 as const, // Danger (Red)
+          label: "기권 (Surrender)",
+          emoji: { name: "🏳️" },
+          custom_id: "surrender"
+        };
         components.push({
           type: 1,
-          components: [rollButton]
+          components: [rollButton, surrenderButton]
         });
 
         // Row 3: Select Menu for category scoring
@@ -256,7 +273,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         });
       }
 
-      // Row 2: Roll button (disabled, shows Rolling...)
+      // Row 2: Roll & Surrender buttons (disabled)
       const isAllHeld = state.rollCount > 0 && holds === "11111";
       const rollButton = {
         type: 2 as const,
@@ -266,9 +283,17 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         custom_id: `disabled_roll`,
         disabled: true
       };
+      const surrenderButton = {
+        type: 2 as const,
+        style: 4 as const,
+        label: "기권 (Surrender)",
+        emoji: { name: "🏳️" },
+        custom_id: `disabled_surrender`,
+        disabled: true
+      };
       components.push({
         type: 1,
-        components: [rollButton]
+        components: [rollButton, surrenderButton]
       });
 
       // Row 3: Select Menu (all disabled if it was visible)

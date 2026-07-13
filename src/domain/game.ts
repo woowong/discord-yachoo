@@ -194,3 +194,32 @@ export const selectCategory = (
     };
   });
 };
+
+/**
+ * Surrenders the game on behalf of a player, instantly finishing it.
+ */
+export const surrenderGame = (
+  state: GameState,
+  surrenderingPlayerId: string
+): Effect.Effect<GameState, GameError> => {
+  return Effect.gen(function* () {
+    // 1. Check if game is already finished
+    if (state.status === "Finished") {
+      yield* Effect.fail(new GameAlreadyOverError(state.gameId));
+    }
+
+    // 2. Validate that the surrendering player is indeed in the game
+    const isPlayerInGame = state.players.some((p) => p.playerId === surrenderingPlayerId);
+    if (!isPlayerInGame) {
+      yield* Effect.fail(new InvalidStateActionError(`Player ${surrenderingPlayerId} is not in this game.`));
+    }
+
+    // 3. Mark the game as Finished and record the surrendering player
+    return {
+      ...state,
+      status: "Finished",
+      surrenderedPlayerId: surrenderingPlayerId
+    };
+  });
+};
+

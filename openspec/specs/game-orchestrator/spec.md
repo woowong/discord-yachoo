@@ -22,15 +22,19 @@ The system SHALL handle PING (Type 1) interactions by returning a PONG response.
 - **THEN** the system SHALL return a JSON response with type 1.
 
 ### Requirement: Discord Challenge Slash Command
-The system SHALL handle the `/challenge` slash command to start a new Yacht game.
+The system SHALL handle the `/challenge` slash command to start a new Yacht game. The system MUST prevent a user from challenging themselves in multiplayer mode.
 
 #### Scenario: Start Single Player Game
 - **WHEN** user executes `/challenge` command without options
 - **THEN** the system SHALL initialize a new single-player game, save it, and return the serialized game embed.
 
 #### Scenario: Start Multiplayer Game
-- **WHEN** user executes `/challenge` command with opponent option
+- **WHEN** user executes `/challenge` command with opponent option where the opponent is NOT the user
 - **THEN** the system SHALL initialize a new multiplayer game between the user and the opponent, save it, and return the serialized game embed.
+
+#### Scenario: Prevent Self Challenge in Multiplayer Game
+- **WHEN** user executes `/challenge` command with opponent option where the opponent IS the user
+- **THEN** the system MUST return an error message indicating that self-challenging is not allowed, and prevent game initialization.
 
 ### Requirement: Discord Profile Slash Command
 The system SHALL handle the `/profile` slash command to display user statistics scoped to the current Discord server (guild).
@@ -85,5 +89,4 @@ The system SHALL display the previous turn's action details in the main Discord 
 #### Scenario: Rendering game board with turn history
 - **WHEN** serializing the game state and the game has at least one record in `turnHistory`
 - **THEN** the system MUST extract the last turn record, format the action details (including player name, chosen category, score, and final dice values with emoji representation), and append this information to the embed's description.
-
 

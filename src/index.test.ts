@@ -125,6 +125,44 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO active_games"));
   });
 
+  it("should block self-challenge in /challenge slash command", async () => {
+    const body = JSON.stringify({
+      type: 2,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        name: "challenge",
+        options: [
+          {
+            name: "opponent",
+            value: "12345"
+          }
+        ],
+        resolved: {
+          users: {
+            "12345": {
+              id: "12345",
+              username: "alice",
+              global_name: "Alice"
+            }
+          }
+        }
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4);
+    expect(json.data.content).toContain("자기 자신에게는 도전할 수 없습니다");
+    expect(json.data.flags).toBe(64);
+  });
+
   it("should handle /profile command", async () => {
     mockFirst.mockResolvedValue({
       id: "12345",
