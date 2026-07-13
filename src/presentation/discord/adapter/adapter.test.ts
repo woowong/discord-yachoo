@@ -249,6 +249,29 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].description).toContain(":one: :one: :one: :four: :five:");
     });
 
+    it("should serialize rolling state with a random Giphy URL from the pool", async () => {
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeRolling(mockGameState, "00100"))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      expect(response.type).toBe(7); // UpdateMessage
+      expect(response.data?.embeds?.[0].title).toBe("🎲 Yacht Dice Game");
+      const imageUrl = response.data?.embeds?.[0].image?.url;
+      expect(imageUrl).toBeDefined();
+      
+      const allowedGiphys = [
+        "https://media.giphy.com/media/VGoZVlR9naOZCiRLSy/giphy.gif",
+        "https://media.giphy.com/media/3ohjUMQWKmu9GbjP4A/giphy.gif",
+        "https://media.giphy.com/media/lTYLtiktVNr0k3SVOP/giphy.gif",
+        "https://media.giphy.com/media/p24SMLHXZhmUgKOx1F/giphy.gif",
+        "https://media.giphy.com/media/7upMd5l83SsP2GMxmL/giphy.gif",
+        "https://media.giphy.com/media/YQmyu4dbNa9qdNh4iI/giphy.gif",
+        "https://media.giphy.com/media/sLwfBfMlWTDbVLJApS/giphy.gif"
+      ];
+      expect(allowedGiphys).toContain(imageUrl);
+    });
+
     it("should serialize leaderboard into message interaction response", async () => {
       const mockLeaderboard: PlayerStats[] = [
         {

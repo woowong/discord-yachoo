@@ -19,6 +19,16 @@ export const DiscordResponseSerializer = Context.GenericTag<DiscordResponseSeria
 const DICE_EMOJIS = ["", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:"] as const;
 const DICE_BUTTON_EMOJIS = ["", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"] as const;
 
+const DICE_ROLL_GIPHY_POOL = [
+  "https://media.giphy.com/media/VGoZVlR9naOZCiRLSy/giphy.gif",
+  "https://media.giphy.com/media/3ohjUMQWKmu9GbjP4A/giphy.gif",
+  "https://media.giphy.com/media/lTYLtiktVNr0k3SVOP/giphy.gif",
+  "https://media.giphy.com/media/p24SMLHXZhmUgKOx1F/giphy.gif",
+  "https://media.giphy.com/media/7upMd5l83SsP2GMxmL/giphy.gif",
+  "https://media.giphy.com/media/YQmyu4dbNa9qdNh4iI/giphy.gif",
+  "https://media.giphy.com/media/sLwfBfMlWTDbVLJApS/giphy.gif"
+] as const;
+
 const CATEGORIES: { key: ScoreCategory | "Subtotal" | "Bonus"; label: string }[] = [
   { key: "Aces", label: "Aces" },
   { key: "Deuces", label: "Deuces" },
@@ -241,12 +251,14 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       description += `\n**Rolls:** ${nextRollCount}/3`;
       description += `\n**Current Dice:** 🎲 **Rolling the dice...**`;
 
+      const randomGiphy = DICE_ROLL_GIPHY_POOL[Math.floor(Math.random() * DICE_ROLL_GIPHY_POOL.length)];
+
       const embed: DiscordEmbed = {
         title: "🎲 Yacht Dice Game",
         description,
         color: 0x5865F2,
         image: {
-          url: "https://media.giphy.com/media/VGoZVlR9naOZCiRLSy/giphy.gif"
+          url: randomGiphy
         },
         footer: { text: `Game ID: ${state.gameId}` }
       };
