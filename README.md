@@ -16,6 +16,9 @@ A serverless Discord bot for playing the **Yacht Dice** (Yacht / Yahtzee) game, 
 - **Serverless & Webhook-based:** Runs entirely on Cloudflare Workers using Discord's Webhook Interactions. No persistent websocket connections needed, keeping execution costs at zero (under the free tier).
 - **Interactive UI Components:** Play the game directly inside Discord chat threads using rich embeds, select menus, and buttons.
 - **Dual-mode Gameplay:** Supports both Single-player (solo score attack) and Multi-player (1v1 duel) match options.
+- **ELO Rating & Leaderboard:** Tracks competitive player ratings (ELO) for multiplayer games, displaying ratings in profiles and sorting the guild leaderboard by ELO.
+- **Surrender & Safety Controls:** Allows players to forfeit an active game at any point. Prevents self-challenging and blocks redundant rolls when all 5 dice are held.
+- **Mobile-Optimized Presentation:** Renders the ASCII scoreboard within 27 characters to prevent line wrapping on mobile clients, with player name truncation and a bonus progress tracker (`current/63`).
 - **Pure Game Engine:** All core business logic (dice rolling, score calculations, game turns) is written in pure functions, making it 100% testable.
 - **Local CLI Simulator:** Test and play the game directly in your local terminal without deploying to Discord or Cloudflare.
 

@@ -40,6 +40,12 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 - **Single-player (single)**: The turn remains with the same player.
 - **Multiplayer (multi)**: The turn switches to the opponent player. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L49-L59)
 
+### Q. What happens if I try to roll when all 5 dice are held?
+**A.** The system prevents redundant actions. The Discord presentation layer will render the "Roll Dice" button with `disabled: true` when all 5 dice are held, and the game state machine enforces this via an `AllDiceHeldError` if bypassed. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L82-L96)
+
+### Q. Can I surrender or forfeit an ongoing match?
+**A.** Yes. Any active player can click the "Surrender" button to forfeit the match at any point, regardless of whose turn it is. The game immediately transitions to a 'Finished' state, declaring the other player the winner and calculating ELO rating changes accordingly. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L119-L133)
+
 ---
 
 ## 2. Discord Integration & Commands
@@ -63,6 +69,12 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 ### Q. How is Discord webhook security ensured?
 **A.** Every incoming HTTP POST request from Discord is cryptographically verified using its `X-Signature-Ed25519` and `X-Signature-Timestamp` headers matching the bot's configured public key. Invalid requests are rejected with a 401 Unauthorized response. [discord-signature-verifier/spec.md](./openspec/specs/discord-signature-verifier/spec.md#L8-L22)
 
+### Q. Can I challenge myself to a 1v1 match?
+**A.** No. The `/challenge` command checks the opponent option. If you attempt to challenge yourself, the system returns an error message and blocks the game initialization. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L30-L34)
+
+### Q. How is the scoreboard optimized for mobile Discord clients?
+**A.** The ASCII scoreboard table is dynamically rendered to fit within a maximum width of 27 characters (with player names truncated to a max of 4 characters). This prevents ugly line wrapping. It also displays a bonus progress tracker (`currentSum/63`) for the Upper Section. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L97-L118)
+
 ---
 
 ## 3. Persistence & D1 DB Schema
@@ -77,6 +89,9 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 
 ### Q. What database does the project use?
 **A.** The system uses Cloudflare D1 (a serverless SQLite database). Using `Effect.ts`, the database connection is resolved dynamically from the context Layer (`D1Database` service), decoupling repository logic from any specific database driver. [persistence-repository/spec.md](./openspec/specs/persistence-repository/spec.md#L51-L57)
+
+### Q. How is the leaderboard ranking determined?
+**A.** The leaderboard is sorted in descending order of the players' **ELO rating** (starting default is 1000) instead of raw wins, providing a more competitive matchmaking indicator. [elo-rating/spec.md](./openspec/specs/elo-rating/spec.md#L12-L21)
 
 ---
 
@@ -94,3 +109,10 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
   - `src/presentation/`: Discord webhook entry points, signature verifier, and CLI interactive game loop.
 > [!TIP]
 > Refer to [AGENTS.md](./AGENTS.md) in the project root for strict architecture rules.
+
+### Q. What should we do if a game gets stuck due to network drops or unhandled errors?
+**A.** Operators can run the admin script to force-finish any stale games:
+```bash
+npm run patch-finished-game -- <game-id>
+```
+This updates the database entry to a finished state and clears active buttons, preventing the Discord channel from being locked with unresponsive components.

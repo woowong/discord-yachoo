@@ -58,6 +58,8 @@ graph TD
 
 - **Effect.ts**: Manages side-effects, manages dependency injection (`Context`, `Layer`), and coordinates programmatic pipelines.
 - **Safe Error Handling**: Eliminates traditional `try-catch` blocks and runtime `throw` statements. Leverages Effect's native error handling channel and generator syntax (`Effect.gen`).
+- **Operational Audit Logging**: Leverages Effect's log annotations to trace system events and operational workflows securely.
+- **ELO Rating System**: Calculates competitive ratings on game completion using pure mathematical domains to ensure persistent, fair rankings.
 - **Cloudflare Workers**: Powering serverless, event-driven Discord interactions via Webhook POST requests.
 - **Cloudflare D1**: Provides serverless SQLite database capabilities for persistent game configurations and match history.
 - **Vitest**: Runs fast unit tests against pure game engine domains.

@@ -40,6 +40,12 @@
 - **1인용(Single)**: 동일한 플레이어에게 턴이 계속 유지됩니다.
 - **2인용(Multi)**: 상대 플레이어로 턴이 전환됩니다. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L49-L59)
 
+### Q. 주사위를 5개 모두 홀드(Hold)하고 롤(Roll)을 누르면 어떻게 되나요?
+**A.** 무의미한 롤링 액션을 방지하기 위해 디스코드 UI 상에서 "주사위 굴리기" 버튼이 비활성화(`disabled: true`) 처리됩니다. 상태 머신 내부적으로도 5개 모두 홀드된 상태로의 롤링 요청은 `AllDiceHeldError`로 차단됩니다. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L82-L96)
+
+### Q. 게임 도중에 기권(항복)할 수 있나요?
+**A.** 네, 게임이 진행 중일 때 자신의 차례가 아니더라도 "기권(Surrender)" 버튼을 클릭하여 즉시 게임을 포기할 수 있습니다. 항복하면 게임 상태가 즉시 'Finished'로 전환되며, 상대방이 승리하고 항복한 플레이어는 ELO 레이팅이 삭감됩니다. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L119-L133)
+
 ---
 
 ## 2. 디스코드 봇 연동 및 명령어 (Discord Integration & Commands)
@@ -63,6 +69,12 @@
 ### Q. 디스코드 웹훅의 보안을 어떻게 유지하나요?
 **A.** 디스코드 서버에서 오는 모든 웹훅 요청은 `X-Signature-Ed25519` 및 `X-Signature-Timestamp` 헤더와 봇의 공개 키를 사용하여 **Ed25519 서명 검증**을 거칩니다. 검증되지 않거나 헤더가 없는 요청은 401 Unauthorized로 거부됩니다. [discord-signature-verifier/spec.md](./openspec/specs/discord-signature-verifier/spec.md#L8-L22)
 
+### Q. 나 자신에게 1v1 결투 신청(/challenge)을 할 수 있나요?
+**A.** 아니요. 디스코드에서 상대방을 자신으로 선택하여 `/challenge`를 실행하면 에러 메시지와 함께 게임 생성이 차단됩니다. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L30-L34)
+
+### Q. 디스코드 모바일 화면에서 아스키 스코어보드 줄이 깨지는데 해결되었나요?
+**A.** 모바일 화면 최적화를 위해 스코어보드가 가로 27자 이내로 자동 축소 설계되었습니다. 플레이어 이름은 최대 4글자로 자동 줄임 처리되며, 보너스(35점) 달성도 현황(`현재합계/63`)을 실시간으로 표시하여 모바일 환경에서도 깔끔하게 보실 수 있습니다. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L97-L118)
+
 ---
 
 ## 3. 영속성 및 데이터베이스 구조 (Persistence & D1 DB Schema)
@@ -77,6 +89,9 @@
 
 ### Q. 데이터베이스는 무엇을 사용하며 어떻게 주입받나요?
 **A.** Cloudflare D1 (SQLite 기반 서버리스 데이터베이스)을 사용하여 플레이어 데이터와 매치 로그를 보관합니다. `Effect.ts` 환경에서 `D1Database` 바인딩을 의존성 주입(Dependency Injection)받아 설계되어 특정 데이터베이스 드라이버나 모듈에 강결합되지 않습니다. [persistence-repository/spec.md](./openspec/specs/persistence-repository/spec.md#L51-L57)
+
+### Q. 리더보드 순위는 어떤 기준으로 나열되나요?
+**A.** 기존의 단순 승리 수 기준 정렬에서, 1v1 대결 결과를 바탕으로 변동되는 **ELO 레이팅(기본값 1000)** 기준으로 순위표가 산출되며 내림차순 정렬됩니다. [elo-rating/spec.md](./openspec/specs/elo-rating/spec.md#L12-L21)
 
 ---
 
@@ -94,3 +109,10 @@
   - `src/presentation/`: 디스코드 인터랙션 웹훅 처리, 서명 검증(Ed25519) 및 CLI 게임 시뮬레이터.
 > [!TIP]
 > 아키텍처 원칙에 관한 세부 원칙은 프로젝트 루트의 [AGENTS.md](./AGENTS.md)를 참조하십시오.
+
+### Q. 오류나 네트워크 끊김 등으로 멈춰버린 게임이 있으면 어떻게 조치하나요?
+**A.** 운영자는 아래 패치 스크립트를 실행하여 멈춘 특정 게임 ID를 강제 종료 상태로 마이그레이션할 수 있습니다:
+```bash
+npm run patch-finished-game -- <game-id>
+```
+이 스크립트는 해당 매치를 강제 완료 상태로 갱신하고 디스코드 메시지의 상호작용 컴포넌트를 모두 정리합니다.
