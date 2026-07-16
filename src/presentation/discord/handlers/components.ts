@@ -115,7 +115,7 @@ export const handleSurrender = (
                   type: 2,
                   style: 4, // Danger (Red)
                   label: KoreanMessages.surrender.confirmButtonLabel,
-                  custom_id: `confirm_surrender_${targetMessageId}`,
+                  custom_id: `confirm_surrender_${gameState.gameId}_${targetMessageId}`,
                   emoji: { name: "🏳️" }
                 }
               ]
@@ -136,7 +136,7 @@ export const handleConfirmSurrender = (
     const workflow = yield* GameWorkflowService;
 
     const parts = interaction.customId.split("_");
-    const targetMessageId = parts[2] || "";
+    const targetMessageId = parts[3] || "";
     const guildId = interaction.guildId || "@me";
     const channelId = interaction.channelId || "";
 

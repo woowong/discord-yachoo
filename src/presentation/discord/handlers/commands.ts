@@ -89,22 +89,43 @@ export const handleProfile = (
 ) =>
   Effect.gen(function* () {
     const playerRepo = yield* PlayerRepository;
+    const matchRepo = yield* MatchRepository;
     const serializer = yield* DiscordResponseSerializer;
 
     const statsOption = yield* playerRepo.getPlayer(interaction.user.id, interaction.guildId);
-    const content = Option.isSome(statsOption)
-      ? `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
+    
+    let content = "";
+    if (Option.isSome(statsOption)) {
+      const avgSoloScore = yield* matchRepo.getPlayerAverageScore(interaction.user.id, interaction.guildId, "single");
+      const avgMultiScore = yield* matchRepo.getPlayerAverageScore(interaction.user.id, interaction.guildId, "multi");
+      const recentMatches = yield* matchRepo.getRecentMatches(interaction.user.id, interaction.guildId, 10);
+      
+      let recentStr = "None";
+      const multiMatches = recentMatches.filter(m => m.mode === "multi");
+      if (multiMatches.length > 0) {
+        const symbols = multiMatches.map((m) => {
+          if (m.winnerId === interaction.user.id) return "🟩"; // Win
+          if (m.winnerId === null) return "🟨"; // Draw
+          return "🟥"; // Loss
+        });
+        recentStr = symbols.join(" ");
+      }
+
+      content = `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
         `🎮 **Solo Mode**\n` +
         `• Games Played: **${statsOption.value.soloPlayCount}**\n` +
-        `• Highest Score: **${statsOption.value.soloHighestScore}**\n\n` +
+        `• Avg Score: **${avgSoloScore}**점\n` +
+        `• Highest Score: **${statsOption.value.soloHighestScore}**점\n\n` +
         `⚔️ **Matching Mode (VS)**\n` +
         `• Elo Rating: **${statsOption.value.elo}**\n` +
-        `• Wins: **${statsOption.value.multiWins}**\n` +
-        `• Losses: **${statsOption.value.multiLosses}**\n` +
-        `• Draws: **${statsOption.value.multiDraws}**\n` +
-        `• Highest Score: **${statsOption.value.multiHighestScore}**`
-      : `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
+        `• Wins: **${statsOption.value.multiWins}** | Losses: **${statsOption.value.multiLosses}** | Draws: **${statsOption.value.multiDraws}**\n` +
+        `• Avg Score: **${avgMultiScore}**점\n` +
+        `• Highest Score: **${statsOption.value.multiHighestScore}**점\n` +
+        `• Recent 10 Matches: ${recentStr}`;
+    } else {
+      content = `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
         `No games played yet. Use \`/challenge\` to start your first game!`;
+    }
 
     const responsePayload = serializer.serializeMessage(content);
     return new Response(JSON.stringify(responsePayload), {

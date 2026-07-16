@@ -7,9 +7,48 @@ import { DiscordResponseSerializerLive } from "./presentation/discord/adapter/se
 import { DiscordApiServiceLive, DiscordBotToken } from "./presentation/discord/adapter/api";
 import { GameWorkflowServiceLive } from "./application/GameWorkflowService";
 import { routeInteraction } from "./presentation/discord/router";
+import { handleWebRequest } from "./presentation/web/router";
 
 export default {
   async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string }, ctx: any): Promise<Response> {
+    const url = new URL(request.url);
+    const isGet = request.method === "GET";
+    const isWebRoute = url.pathname === "/" || url.pathname.startsWith("/web");
+
+    const botTokenLayer = Layer.succeed(DiscordBotToken, env.DISCORD_BOT_TOKEN || "");
+    const apiServiceLayer = DiscordApiServiceLive.pipe(Layer.provide(botTokenLayer));
+
+    const mainLayer = Layer.mergeAll(
+      DiscordSignatureVerifierLive,
+      DiscordInteractionParserLive,
+      DiscordResponseSerializerLive,
+      D1PlayerRepositoryLive,
+      D1MatchRepositoryLive,
+      D1GameRepositoryLive,
+      apiServiceLayer,
+      GameWorkflowServiceLive
+    ).pipe(
+      Layer.provide(Layer.succeed(D1Database, env.DB))
+    );
+
+    // Route web request early to bypass Discord signature verification
+    if (isGet && isWebRoute) {
+      const webProgram = handleWebRequest(request).pipe(
+        Effect.catchAll((err) =>
+          Effect.gen(function* () {
+            const message = err && typeof err === "object" && "message" in err ? (err as any).message : String(err);
+            yield* Effect.logError(`Web request error: ${message}`);
+            return new Response(JSON.stringify({ error: message }), {
+              status: 500,
+              headers: { "content-type": "application/json" }
+            });
+          })
+        ),
+        Effect.provide(mainLayer)
+      );
+      return Effect.runPromise(webProgram);
+    }
+
     const signature = request.headers.get("x-signature-ed25519") || "";
     const timestamp = request.headers.get("x-signature-timestamp") || "";
 
@@ -56,9 +95,13 @@ export default {
         const actionType = interaction._tag;
         const actionName = interaction._tag === "Command" ? interaction.commandName : interaction.customId;
 
-        const gameId = (interaction._tag === "Component")
+        let gameId = (interaction._tag === "Component")
           ? (rawJson.message?.embeds?.[0]?.footer?.text || "").match(/Game ID:\s*([a-zA-Z0-9]+)/)?.[1]
           : undefined;
+
+        if (!gameId && interaction._tag === "Component" && interaction.customId.startsWith("confirm_surrender_")) {
+          gameId = interaction.customId.split("_")[2];
+        }
 
         annotated = annotated.pipe(
           Effect.annotateLogs("userId", userId),
@@ -76,22 +119,6 @@ export default {
 
       return yield* annotated;
     });
-
-    const botTokenLayer = Layer.succeed(DiscordBotToken, env.DISCORD_BOT_TOKEN || "");
-    const apiServiceLayer = DiscordApiServiceLive.pipe(Layer.provide(botTokenLayer));
-
-    const mainLayer = Layer.mergeAll(
-      DiscordSignatureVerifierLive,
-      DiscordInteractionParserLive,
-      DiscordResponseSerializerLive,
-      D1PlayerRepositoryLive,
-      D1MatchRepositoryLive,
-      D1GameRepositoryLive,
-      apiServiceLayer,
-      GameWorkflowServiceLive
-    ).pipe(
-      Layer.provide(Layer.succeed(D1Database, env.DB))
-    );
 
     const runnable = program.pipe(
       Effect.catchTag("Unauthorized", (err) =>

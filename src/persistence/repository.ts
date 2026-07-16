@@ -51,6 +51,8 @@ export interface MatchRepository {
   readonly saveMatch: (match: MatchRecord) => Effect.Effect<void, RepositoryError>;
   readonly getRecentMatches: (playerId: string, guildId: string | null, limit: number) => Effect.Effect<readonly MatchRecord[], RepositoryError>;
   readonly getMatchById: (matchId: string) => Effect.Effect<Option.Option<MatchRecord>, RepositoryError>;
+  readonly getPlayerAverageScore: (playerId: string, guildId: string | null, mode: "single" | "multi") => Effect.Effect<number, RepositoryError>;
+  readonly getGlobalRecentMatches: (guildId: string | null, limit: number) => Effect.Effect<readonly MatchRecord[], RepositoryError>;
 }
 
 export const MatchRepository = Context.GenericTag<MatchRepository>("@services/MatchRepository");

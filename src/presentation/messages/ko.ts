@@ -93,12 +93,15 @@ export const determineTeasingNotification = (
   const lastTurn = gameStateAfter.turnHistory[gameStateAfter.turnHistory.length - 1];
   if (!lastTurn) return "";
 
+  const activePlayer = gameStateAfter.players[lastTurn.playerIndex];
+  const activePlayerId = activePlayer ? activePlayer.playerId : lastTurn.playerName;
+
   // 1. Yacht 달성 축하
   if (lastTurn.category === "Yacht" && lastTurn.score === 50) {
     const lastDice = lastTurn.rolls[lastTurn.rolls.length - 1];
     const diceStr = lastDice ? lastDice.join(", ") : "";
     const msgFunc = getRandomElement(YACHT_CELEBRATION_POOL);
-    return msgFunc(lastTurn.playerName, diceStr);
+    return msgFunc(activePlayerId, diceStr);
   }
 
   // 2. 야추 헛박제 놀림
@@ -110,7 +113,7 @@ export const determineTeasingNotification = (
 
   if (isYachtDice(prevDice) && hasPrevYachtFilled && lastTurn.category !== "Yacht") {
     const msgFunc = getRandomElement(YACHT_FAILED_TEASE_POOL);
-    return msgFunc(lastTurn.playerName, prevDice.join(", "));
+    return msgFunc(activePlayerId, prevDice.join(", "));
   }
 
   // 3. 낮은 점수 확정 놀림
@@ -119,7 +122,7 @@ export const determineTeasingNotification = (
     (lastTurn.category === "Choice" && lastTurn.score < 5);
   if (isLowScore) {
     const msgFunc = getRandomElement(LOW_SCORE_TEASE_POOL);
-    return msgFunc(lastTurn.playerName, lastTurn.category, lastTurn.score);
+    return msgFunc(activePlayerId, lastTurn.category, lastTurn.score);
   }
 
   // 4. 연속 0점 기록 놀림
@@ -135,7 +138,7 @@ export const determineTeasingNotification = (
     }
     if (zeroStreak >= 2) {
       const msgFunc = getRandomElement(STREAK_ZEROS_TEASE_POOL);
-      return (msgFunc as any)(lastTurn.playerName, zeroStreak);
+      return (msgFunc as any)(activePlayerId, zeroStreak);
     }
   }
 
@@ -146,7 +149,7 @@ export const determineTeasingNotification = (
     if (p1.totalScore !== p2.totalScore) {
       const loser = p1.totalScore < p2.totalScore ? p1 : p2;
       const msgFunc = getRandomElement(LAST_PLACE_TEASE_POOL);
-      return msgFunc(loser.playerName);
+      return msgFunc(loser.playerId);
     }
   }
 

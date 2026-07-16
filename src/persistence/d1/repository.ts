@@ -331,6 +331,46 @@ export const D1MatchRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`getMatchById failed: ${error}`, error)
         }).pipe(
           Effect.map((row) => (row ? Option.some(mapRowToMatchRecord(row)) : Option.none()))
+        ),
+
+      getPlayerAverageScore: (playerId: string, guildId: string | null, mode: "single" | "multi") =>
+        Effect.tryPromise({
+          try: () => {
+            if (mode === "single") {
+              const query = guildId
+                ? "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id = ?"
+                : "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id IS NULL";
+              const bindParams = guildId ? [playerId, guildId] : [playerId];
+              return db.prepare(query).bind(...bindParams).first<{ avgScore: number | null }>();
+            } else {
+              const query = guildId
+                ? `SELECT AVG(CASE WHEN player1_id = ? THEN player1_score ELSE player2_score END) as avgScore
+                   FROM matches
+                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id = ?`
+                : `SELECT AVG(CASE WHEN player1_id = ? THEN player1_score ELSE player2_score END) as avgScore
+                   FROM matches
+                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id IS NULL`;
+              const bindParams = guildId ? [playerId, playerId, playerId, guildId] : [playerId, playerId, playerId];
+              return db.prepare(query).bind(...bindParams).first<{ avgScore: number | null }>();
+            }
+          },
+          catch: (error) => new RepositoryError(`getPlayerAverageScore failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => (row && row.avgScore !== null) ? Math.round(row.avgScore * 10) / 10 : 0)
+        ),
+
+      getGlobalRecentMatches: (guildId: string | null, limit: number) =>
+        Effect.tryPromise({
+          try: () => {
+            if (guildId) {
+              return db.prepare("SELECT * FROM matches WHERE guild_id = ? ORDER BY played_at DESC LIMIT ?").bind(guildId, limit).all<DBMatchRow>();
+            } else {
+              return db.prepare("SELECT * FROM matches ORDER BY played_at DESC LIMIT ?").bind(limit).all<DBMatchRow>();
+            }
+          },
+          catch: (error) => new RepositoryError(`getGlobalRecentMatches failed: ${error}`, error)
+        }).pipe(
+          Effect.map((res) => res.results.map(mapRowToMatchRecord))
         )
     };
   })

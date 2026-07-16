@@ -65,15 +65,24 @@ export const routeInteraction = (
       }
 
       // Load active game for gameplay components
-      const footerText = rawJson.message?.embeds?.[0]?.footer?.text || "";
-      const gameIdMatch = footerText.match(/Game ID:\s*([a-zA-Z0-9]+)/);
-      if (!gameIdMatch) {
+      let gameId: string | null = null;
+      if (customId.startsWith("confirm_surrender_")) {
+        const parts = customId.split("_");
+        gameId = parts[2] || null;
+      } else {
+        const footerText = rawJson.message?.embeds?.[0]?.footer?.text || "";
+        const gameIdMatch = footerText.match(/Game ID:\s*([a-zA-Z0-9]+)/);
+        if (gameIdMatch) {
+          gameId = gameIdMatch[1];
+        }
+      }
+
+      if (!gameId) {
         return new Response(
           JSON.stringify(serializer.serializeError("Game ID not found in message")),
           { headers: { "content-type": "application/json" } }
         );
       }
-      const gameId = gameIdMatch[1];
       const gameRepo = yield* GameRepository;
       const gameStateOption = yield* gameRepo.findById(gameId);
       if (Option.isNone(gameStateOption)) {

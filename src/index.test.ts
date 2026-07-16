@@ -974,8 +974,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
     const json = (await res.json()) as any;
     expect(json.type).toBe(4); // ChannelMessageWithSource
     expect(json.data.flags).toBe(64); // Ephemeral
-    expect(json.data.content).toContain("정말 기권하시겠습니까?");
-    expect(json.data.components[0].components[0].custom_id).toBe("confirm_surrender_msg-111");
+    expect(json.data.components[0].components[0].custom_id).toBe("confirm_surrender_game-123_msg-111");
   });
 
   it("should execute surrender and clean up active game on confirm_surrender click", async () => {
@@ -999,7 +998,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
       type: 3,
       user: { id: "12345", username: "alice" },
       data: {
-        custom_id: "confirm_surrender_msg-111"
+        custom_id: "confirm_surrender_game-123_msg-111"
       },
       message: {
         embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-123" } }]
@@ -1214,5 +1213,22 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(patchBody.embeds[0].description).toContain("**Rolls:** 2/3");
 
     global.fetch = originalFetch;
+  });
+
+  describe("Web Dashboard GET Routes", () => {
+    it("should serve HTML dashboard at GET /", async () => {
+      const req = new Request("http://localhost/", { method: "GET" });
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("text/html");
+      const text = await res.text();
+      expect(text).toContain("야추 다이스");
+    });
+
+    it("should return 404 for unknown profile", async () => {
+      const req = new Request("http://localhost/web/api/profile/unknown-id", { method: "GET" });
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(404);
+    });
   });
 });

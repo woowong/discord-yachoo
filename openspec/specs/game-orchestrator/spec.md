@@ -41,11 +41,11 @@ The system SHALL handle the `/challenge` slash command to start a new Yacht game
 - **THEN** the system MUST block game creation and return an ephemeral message containing a direct link (`https://discord.com/channels/{guildId}/{channelId}/{messageId}`) to the existing game message using the stored message ID.
 
 ### Requirement: Discord Profile Slash Command
-The system SHALL handle the `/profile` slash command to display user statistics scoped to the current Discord server (guild).
+The system SHALL handle the `/profile` slash command to display user statistics scoped to the current Discord server (guild), including the overall average score and the outcome list (W/L/D) of their recent 10 multiplayer matches.
 
 #### Scenario: Show Player Profile
 - **WHEN** user executes `/profile` command in a specific server (guild)
-- **THEN** the system SHALL fetch guild-specific stats from PlayerRepository using the `guildId` and return them in a message.
+- **THEN** the system SHALL fetch guild-specific stats from PlayerRepository, compute the player's average score over all matches in that guild, retrieve the outcomes of their recent 10 matchmaking matches, and return a summary message containing ELO, wins, losses, average score, and the recent W/L/D streak.
 
 ### Requirement: Discord Leaderboard Slash Command
 The system SHALL handle the `/leaderboard` slash command to display top players for the current Discord server (guild).
@@ -55,7 +55,7 @@ The system SHALL handle the `/leaderboard` slash command to display top players 
 - **THEN** the system SHALL fetch top players for that `guildId` from PlayerRepository and return the serialized leaderboard embed.
 
 ### Requirement: Discord Game Interaction Handling
-The system SHALL handle component interactions (hold buttons, roll buttons, category selection) to progress the game state. When the game finishes, it MUST save the match record and update player statistics scoped to the guild where the interaction occurred. For surrender interactions, the system MUST first send an ephemeral confirmation message to prevent accidental surrenders before executing the actual surrender state transition.
+The system SHALL handle component interactions (hold buttons, roll buttons, category selection) to progress the game state. When the game finishes, it MUST save the match record and update player statistics scoped to the guild where the interaction occurred. For surrender interactions, the system MUST first send an ephemeral confirmation message containing a confirmation button that embeds the `gameId` in its `custom_id` to prevent accidental surrenders and allow resolution of the game state from the ephemeral context.
 
 #### Scenario: Handle Dice Roll Interaction
 - **WHEN** user clicks "Roll Dice" button for their active game
@@ -71,11 +71,11 @@ The system SHALL handle component interactions (hold buttons, roll buttons, cate
 
 #### Scenario: Ephemeral Surrender Confirmation Request
 - **WHEN** a player clicks the surrender (`🏳️`) button on the active game board
-- **THEN** the system SHALL return an ephemeral response containing a confirmation button ("정말 기권하시겠습니까?") without updating the game state.
+- **THEN** the system SHALL return an ephemeral response containing a confirmation button ("정말 기권하시겠습니까?") whose `custom_id` includes the `gameId` (formatted as `confirm_surrender_${gameId}_${targetMessageId}`), without updating the game state.
 
 #### Scenario: Execute Confirmed Surrender
 - **WHEN** a player clicks the actual surrender confirmation button in the ephemeral message
-- **THEN** the system SHALL proceed to surrender the game, transit the state to Finished, record the game end statistics, and patch the main game board message to show the finished status.
+- **THEN** the system SHALL extract the `gameId` from the custom ID, load the active game, proceed to surrender the game, transition the state to Finished, record the game end statistics, and patch the main game board message to show the finished status.
 
 ### Requirement: Discord History Slash Command
 The system SHALL support the `/history` slash command to allow players to view recent games and detailed turn-by-turn logs for the current Discord server (guild).
@@ -124,5 +124,4 @@ All existing scenarios MUST be fully verified by this test suite, and the tests 
 #### Scenario: Verify Integration Test Suite execution
 - **WHEN** the test suite is run on the worker entry point (`src/index.ts`)
 - **THEN** it SHALL simulate Discord webhook requests and verify that all database updates, Discord API calls, and final responses match the original behavior.
-
 

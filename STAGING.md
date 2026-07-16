@@ -12,7 +12,7 @@
 * **Staging Worker Name**: `discord-yachoo-stage`
 * **Staging D1 Database**: `yacht_dice_stage`
   * **Database ID**: `f8368ba8-d490-418a-884d-cd27ab0cc3e7`
-* **Endpoint URL**: `https://discord-yachoo-stage.woowong.workers.dev/`
+* **Endpoint URL**: `https://[your-subdomain].workers.dev/`
 
 ---
 
@@ -27,7 +27,7 @@
    * **Bot** 탭 하단의 `Message Content Intent` 와 `Server Members Intent` 활성화 및 저장.
 
 2. **Interactions Endpoint URL 등록**:
-   * **General Information**의 `Interactions Endpoint URL` 자리에 스테이징 Workers Endpoint URL(`https://discord-yachoo-stage.woowong.workers.dev/`)을 입력하고 저장합니다.
+   * **General Information**의 `Interactions Endpoint URL` 자리에 스테이징 Workers Endpoint URL(`https://[your-subdomain].workers.dev/`)을 입력하고 저장합니다.
    * *주의: Workers가 먼저 배포되고 `DISCORD_PUBLIC_KEY` 비밀 변수가 세팅되어야 정상 저장됩니다.*
 
 3. **개발 봇 서버 초대**:
