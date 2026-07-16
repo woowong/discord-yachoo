@@ -7,3 +7,10 @@ binding = "DB"
 database_name = "yacht_dice"
 database_id = "d30f4a69-d298-4374-ab91-7fea361a693a"
 
+[env.staging]
+name = "discord-yachoo-stage"
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "yacht_dice_stage"
+database_id = "f8368ba8-d490-418a-884d-cd27ab0cc3e7"
+

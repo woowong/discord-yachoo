@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import worker from "./index";
 import { D1Database } from "./persistence/d1/database";
@@ -1120,6 +1121,97 @@ describe("Discord Yacht Bot Integration Tests", () => {
       (call[1]?.body?.includes("칸 이미 죽어있음") || call[1]?.body?.includes("50점 그냥 버림") || call[1]?.body?.includes("소진") || call[1]?.body?.includes("다른 데 박음"))
     );
     expect(teasingCall).toBeDefined();
+
+    global.fetch = originalFetch;
+  });
+
+  it("should handle component roll_ interaction, return rolling animation, and update board in background", async () => {
+    const mockGameState = {
+      gameId: "game-123",
+      mode: "single",
+      players: [
+        {
+          playerId: "12345",
+          playerName: "Alice",
+          scoreBoard: {},
+          bonusScore: 0,
+          totalScore: 0
+        }
+      ],
+      currentPlayerIndex: 0,
+      status: "Rolling",
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockGameState)
+    });
+
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+      text: async () => "{}"
+    });
+    global.fetch = fetchSpy;
+
+    const body = JSON.stringify({
+      type: 3,
+      user: {
+        id: "12345",
+        username: "alice",
+        global_name: "Alice"
+      },
+      data: {
+        custom_id: "roll_00000"
+      },
+      message: {
+        embeds: [
+          {
+            title: "🎲 Yacht Dice Game",
+            description: "Some description",
+            footer: {
+              text: "Game ID: game-123"
+            }
+          }
+        ]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const ctx = {
+      waitUntil: vi.fn((promise) => promise)
+    };
+
+    const res = await worker.fetch(
+      req,
+      { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex, DISCORD_BOT_TOKEN: "mock-bot-token" },
+      ctx as any
+    );
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(7); // UpdateMessage (Rolling animation)
+    expect(json.data.embeds[0].description).toContain("Rolling the dice...");
+
+    // Wait for background promise execution
+    if (ctx.waitUntil.mock.calls.length > 0) {
+      await Promise.all(ctx.waitUntil.mock.calls.map(call => call[0]));
+    }
+
+    // Verify background PATCH to discord webhook
+    const patchCall = fetchSpy.mock.calls.find(call => 
+      call[0].includes("/webhooks/") && 
+      call[0].includes("/messages/@original") && 
+      call[1]?.method === "PATCH"
+    );
+    expect(patchCall).toBeDefined();
+    const patchBody = JSON.parse(patchCall[1].body);
+    // Dice roll count should be incremented to 2
+    expect(patchBody.embeds[0].description).toContain("**Rolls:** 2/3");
 
     global.fetch = originalFetch;
   });

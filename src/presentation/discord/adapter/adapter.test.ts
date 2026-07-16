@@ -287,6 +287,7 @@ describe("Discord Webhook Adapter Layer", () => {
           multiLosses: 2,
           multiDraws: 0,
           multiHighestScore: 240,
+          elo: 1200,
           createdAt: new Date(),
           updatedAt: new Date()
         }
