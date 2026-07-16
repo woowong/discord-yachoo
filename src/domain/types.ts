@@ -51,5 +51,6 @@ export interface GameState {
   readonly lastMentionMessageId?: string;
   readonly lastMentionChannelId?: string;
   readonly surrenderedPlayerId?: string;
+  readonly initialMessageId?: string;
 }
 

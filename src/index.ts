@@ -15,6 +15,40 @@ import { DiscordApiService, DiscordApiServiceLive, DiscordBotToken } from "./pre
 const randomDice = (): 1 | 2 | 3 | 4 | 5 | 6 =>
   (Math.floor(Math.random() * 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6;
 
+const YACHT_CELEBRATION_POOL = [
+  (user: string, dice: string) => `<@${user}> 이걸 진짜 띄운다고... [ ${dice} ] 야추 확정.\n오늘 하루치 운 여기다 다 태웠다고 보면 됨. 저장각.`,
+  (user: string, dice: string) => `속보) <@${user}> 확률 뚫음.\n[ ${dice} ]\n이 판 원탑 인정. 이견 있으면 본인도 야추 띄우고 오든가.`,
+  (user: string, dice: string) => `이거 혼모노 아니냐...\n<@${user}> [ ${dice} ] 야추 완성.\n다른 사람들 지금 뭐하냐, 구경만 할 거야?`,
+  (user: string, dice: string) => `야추 갓 등판.\n<@${user}> [ ${dice} ]\n이쯤되면 실력임. 박제하고 갑니다.`
+];
+
+const YACHT_FAILED_TEASE_POOL = [
+  (user: string, dice: string) => `<@${user}>님?\n[ ${dice} ] 이거 야추인데 칸 이미 죽어있음.\n뇌절도 이런 뇌절이 없다. 저장각.`,
+  (user: string, dice: string) => `속보) <@${user}> 50점 그냥 버림.\n칸 없어서 다른 데 박아야 되는 상황.\n위로할 말이 없다, 그냥 없다.`,
+  (user: string, dice: string) => `레전드긴 한데 안 좋은 쪽 레전드.\n<@${user}> [ ${dice} ] 야추 칸 이미 소진.\n이번 판은 그냥 손절라고 보면 됨.`,
+  (user: string, dice: string) => `<@${user}> 이거 보고 다들 잠깐 숨죽였는데\n칸 없어서 조용히 다른 데 박음.\n박제함. 다음에 또 이러면 그건 실력임.`
+];
+
+const LOW_SCORE_TEASE_POOL = [
+  (user: string, category: string, score: number) => `속보) <@${user}> 점수 꼬라지 실화? [ ${category} ]에 [ ${score}점 ] 적고 턴 넘김. 이건 손절각.`,
+  (user: string, category: string, score: number) => `<@${user}>님? 주사위 그렇게 굴리고 겨우 [ ${score}점 ] 얻으려고 뇌절한 거 맞죠.`,
+  (user: string, category: string, score: number) => `이거 혼모노 아니냐...\n<@${user}> [ ${category} ]에 [ ${score}점 ] 기록함. 저장각.`
+];
+
+const STREAK_ZEROS_TEASE_POOL = [
+  (user: string) => `속보) <@${user}> 연속 0점 뇌절 중.\n오늘 주사위 다 갖다 버렸나 봄.`,
+  (user: string) => `<@${user}>님? 연속 0점은 실력임. 이 판 그냥 손절 추천.`,
+  (user: string, count: number) => `레게노 갱신.\n<@${user}> 연속 [ ${count} ]턴 0점 행진 중.\n구경꾼들 다 숨죽임.`
+];
+
+const LAST_PLACE_TEASE_POOL = [
+  (user: string) => `<@${user}>님? 최종 스코어 실화? 꼴찌 저장각.`,
+  (user: string) => `속보) <@${user}> 처참한 꼴찌 확정.\n오늘 야추는 그냥 접는 거 추천.`,
+  (user: string) => `이건 쉴드 불가능.\n<@${user}> 꼴찌 레게노 갱신.\n다음 판에 또 이러면 그건 실력임.`
+];
+
+const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
 const rollProvider: Effect.Effect<DiceRoll, never> = Effect.sync(() => [
   randomDice(),
   randomDice(),
@@ -197,6 +231,34 @@ const handleInteraction = (
         };
 
         const mode = opponentId ? "multi" : "single";
+        if (mode === "multi" && opponentId) {
+          const activeGameOpt = yield* gameRepo.findActiveGameByPlayers(player1.playerId, opponentId);
+          if (Option.isSome(activeGameOpt)) {
+            const activeGame = activeGameOpt.value;
+            const guildId = interaction.guildId || "@me";
+            const channelId = interaction.channelId;
+            const messageId = activeGame.initialMessageId;
+
+            let linkMsg = `❌ 이미 상대와 진행 중인 대전이 있습니다.`;
+            if (messageId && channelId) {
+              const url = `https://discord.com/channels/${guildId}/${channelId}/${messageId}`;
+              linkMsg += `\n[👉 진행 중인 게임으로 이동하기](${url})`;
+            } else {
+              linkMsg += `\n진행 중인 게임 보드를 확인해 주세요.`;
+            }
+
+            return new Response(
+              JSON.stringify({
+                type: 4,
+                data: {
+                  content: linkMsg,
+                  flags: 64
+                }
+              }),
+              { headers: { "content-type": "application/json" } }
+            );
+          }
+        }
         const players = opponentId
           ? [
               player1,
@@ -221,6 +283,37 @@ const handleInteraction = (
           ...serialized,
           type: 4
         };
+
+        const getOriginalMessageTask = Effect.gen(function* () {
+          yield* Effect.sleep("1.5 seconds");
+          const response = yield* Effect.tryPromise({
+            try: () =>
+              fetch(`https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`, {
+                method: "GET"
+              }),
+            catch: (error) => new Error(`Failed to fetch original message: ${error}`)
+          });
+
+          if (response.ok) {
+            const msgJson: any = yield* Effect.promise(() => response.json());
+            const messageId = msgJson.id;
+            if (messageId) {
+              const updatedState = {
+                ...gameState,
+                initialMessageId: messageId
+              };
+              yield* gameRepo.save(updatedState);
+              yield* Effect.logInfo(`Saved initialMessageId ${messageId} for game ${gameState.gameId}`);
+            }
+          } else {
+            yield* Effect.logError(`Failed to fetch original message. Status: ${response.status}`);
+          }
+        }).pipe(
+          Effect.catchAll((error) =>
+            Effect.logError(`Error in background task for fetching initial message: ${error}`)
+          )
+        );
+        ctx.waitUntil(Effect.runPromise(getOriginalMessageTask));
 
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
@@ -357,7 +450,7 @@ const handleInteraction = (
       }
       const gameState = gameStateOption.value;
 
-      // Handle surrender
+      // Handle surrender (ephemeral confirmation request)
       if (customId === "surrender") {
         const isPlayerInGame = gameState.players.some((p) => p.playerId === interaction.user.id);
         if (!isPlayerInGame) {
@@ -381,9 +474,70 @@ const handleInteraction = (
           });
         }
 
+        const targetMessageId = rawJson.message?.id || "";
+
+        return new Response(
+          JSON.stringify({
+            type: 4,
+            data: {
+              content: "⚠️ **정말 기권하시겠습니까?**\n기권하면 즉시 패배 처리되며 상대방이 승리합니다.",
+              flags: 64, // Ephemeral
+              components: [
+                {
+                  type: 1,
+                  components: [
+                    {
+                      type: 2,
+                      style: 4, // Danger (Red)
+                      label: "실제 기권하기",
+                      custom_id: `confirm_surrender_${targetMessageId}`,
+                      emoji: { name: "🏳️" }
+                    }
+                  ]
+                }
+              ]
+            }
+          }),
+          { headers: { "content-type": "application/json" } }
+        );
+      }
+
+      // Handle confirmed surrender
+      if (customId.startsWith("confirm_surrender_")) {
+        const parts = customId.split("_");
+        const targetMessageId = parts[2] || "";
+
+        const isPlayerInGame = gameState.players.some((p) => p.playerId === interaction.user.id);
+        if (!isPlayerInGame) {
+          return new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ You are not a player in this game!`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          );
+        }
+
+        if (gameState.status === "Finished") {
+          yield* Effect.logInfo("Ignore confirm_surrender action. Game is already finished.");
+          return new Response(
+            JSON.stringify({
+              type: 7,
+              data: {
+                content: "✅ 이미 종료된 게임입니다.",
+                components: []
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          );
+        }
+
         const nextState = yield* surrenderGame(gameState, interaction.user.id);
-        yield* gameRepo.save(nextState);
-        yield* Effect.logInfo(`Player ${interaction.user.id} surrendered game ${gameId}`);
+        yield* gameRepo.delete(gameState.gameId);
+        yield* Effect.logInfo(`Player ${interaction.user.id} surrendered game ${gameId}. Active game deleted.`);
 
         // Delete mention on action
         const apiService = yield* DiscordApiService;
@@ -401,10 +555,25 @@ const handleInteraction = (
 
         yield* handleGameEnd(nextState);
 
-        const responsePayload = serializer.serializeGame(nextState);
-        return new Response(JSON.stringify(responsePayload), {
-          headers: { "content-type": "application/json" }
-        });
+        // Edit main board message to finished state
+        if (interaction.channelId && targetMessageId) {
+          const finishedPayload = serializer.serializeGame(nextState);
+          const editMainBoardTask = apiService.editMessage(interaction.channelId, targetMessageId, finishedPayload.data).pipe(
+            Effect.catchAll((err) => Effect.logError(`Failed to update main game board on surrender: ${err}`))
+          );
+          ctx.waitUntil(Effect.runPromise(editMainBoardTask));
+        }
+
+        return new Response(
+          JSON.stringify({
+            type: 7, // UpdateMessage
+            data: {
+              content: "✅ 기권 처리가 완료되었습니다.",
+              components: []
+            }
+          }),
+          { headers: { "content-type": "application/json" } }
+        );
       }
 
       // Validate turn
@@ -556,9 +725,11 @@ const handleInteraction = (
 
         if (nextState.status === "Finished") {
           yield* handleGameEnd(nextState);
+          yield* gameRepo.delete(nextState.gameId);
+          yield* Effect.logInfo(`Game finished. Deleted active game ${nextState.gameId}`);
+        } else {
+          yield* gameRepo.save(nextState);
         }
-
-        yield* gameRepo.save(nextState);
 
         // Turn mention notification
         const channelId = interaction.channelId;
@@ -603,6 +774,80 @@ const handleInteraction = (
           }
         }
 
+        // Yacht & Teasing Notification Task
+        const lastTurn = nextState.turnHistory[nextState.turnHistory.length - 1];
+        if (lastTurn && channelId) {
+          const notifyTask = Effect.gen(function* () {
+            let notificationContent = "";
+
+            // 1. Yacht 달성 축하
+            if (lastTurn.category === "Yacht" && lastTurn.score === 50) {
+              const lastDice = lastTurn.rolls[lastTurn.rolls.length - 1];
+              const diceStr = lastDice ? lastDice.join(", ") : "";
+              const msgFunc = getRandomElement(YACHT_CELEBRATION_POOL);
+              notificationContent = msgFunc(lastTurn.playerName, diceStr);
+            }
+            // 2. 야추 헛박제 놀림
+            else {
+              const isYachtDice = (dice: readonly number[]) => dice.length === 5 && dice.every(d => d === dice[0]);
+              const prevDice = gameState.currentDice;
+              const hasPrevYachtFilled = gameState.players[gameState.currentPlayerIndex].scoreBoard.Yacht !== undefined;
+              if (isYachtDice(prevDice) && hasPrevYachtFilled && lastTurn.category !== "Yacht") {
+                const msgFunc = getRandomElement(YACHT_FAILED_TEASE_POOL);
+                notificationContent = msgFunc(lastTurn.playerName, prevDice.join(", "));
+              }
+            }
+
+            // 3. 낮은 점수 확정 놀림
+            if (!notificationContent) {
+              const isLowScore = 
+                (lastTurn.category === "Aces" && lastTurn.score <= 1) ||
+                (lastTurn.category === "Choice" && lastTurn.score < 5);
+              if (isLowScore) {
+                const msgFunc = getRandomElement(LOW_SCORE_TEASE_POOL);
+                notificationContent = msgFunc(lastTurn.playerName, lastTurn.category, lastTurn.score);
+              }
+            }
+
+            // 4. 연속 0점 기록 놀림
+            if (!notificationContent && lastTurn.score === 0) {
+              const pTurns = nextState.turnHistory.filter(t => t.playerIndex === lastTurn.playerIndex);
+              let zeroStreak = 0;
+              for (let i = pTurns.length - 1; i >= 0; i--) {
+                if (pTurns[i].score === 0) {
+                  zeroStreak++;
+                } else {
+                  break;
+                }
+              }
+              if (zeroStreak >= 2) {
+                const msgFunc = getRandomElement(STREAK_ZEROS_TEASE_POOL);
+                notificationContent = (msgFunc as any)(lastTurn.playerName, zeroStreak);
+              }
+            }
+
+            // 5. 최종 꼴찌 놀림
+            if (!notificationContent && nextState.status === "Finished" && nextState.mode === "multi" && !nextState.surrenderedPlayerId) {
+              const p1 = nextState.players[0];
+              const p2 = nextState.players[1];
+              if (p1.totalScore !== p2.totalScore) {
+                const loser = p1.totalScore < p2.totalScore ? p1 : p2;
+                const msgFunc = getRandomElement(LAST_PLACE_TEASE_POOL);
+                notificationContent = msgFunc(loser.playerName);
+              }
+            }
+
+            if (notificationContent) {
+              yield* apiService.sendGameEndMessage(channelId, notificationContent, rawJson.message?.id);
+            }
+          }).pipe(
+            Effect.catchAll((err) => 
+              Effect.logError(`Error sending gameplay notification: ${err}`)
+            )
+          );
+          ctx.waitUntil(Effect.runPromise(notifyTask));
+        }
+
         const responsePayload = serializer.serializeGame(nextState);
         return new Response(JSON.stringify(responsePayload), {
           headers: { "content-type": "application/json" }
@@ -625,6 +870,13 @@ export default {
   async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string }, ctx: any): Promise<Response> {
     const signature = request.headers.get("x-signature-ed25519") || "";
     const timestamp = request.headers.get("x-signature-timestamp") || "";
+
+    const safeCtx = {
+      ...ctx,
+      waitUntil: (ctx && typeof ctx.waitUntil === "function")
+        ? (p: any) => ctx.waitUntil(p)
+        : (p: any) => { p.catch(() => {}); }
+    };
 
     const program = Effect.gen(function* () {
       const verifier = yield* DiscordSignatureVerifier;
@@ -654,7 +906,7 @@ export default {
 
       const interaction = yield* parser.parse(body);
 
-      let annotated = handleInteraction(body, rawJson, interaction, ctx);
+      let annotated = handleInteraction(body, rawJson, interaction, safeCtx);
 
       if (interaction._tag !== "Ping") {
         const userId = interaction.user.id;

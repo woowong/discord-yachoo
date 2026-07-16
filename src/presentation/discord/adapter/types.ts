@@ -26,7 +26,7 @@ export interface DiscordEmbed {
 export interface DiscordButton {
   readonly type: 2;
   readonly style: 1 | 2 | 3 | 4 | 5;
-  readonly label: string;
+  readonly label?: string;
   readonly custom_id?: string;
   readonly url?: string;
   readonly disabled?: boolean;

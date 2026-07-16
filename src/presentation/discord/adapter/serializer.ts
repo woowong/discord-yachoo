@@ -58,6 +58,9 @@ const formatScoreBoard = (state: GameState): string => {
   lines.push("-".repeat(header.length));
 
   CATEGORIES.forEach((cat) => {
+    if (cat.key === "Subtotal" || cat.key === "Choice") {
+      lines.push("=".repeat(header.length));
+    }
     let row = `${cat.label.padEnd(10)}`;
     for (const p of players) {
       let valStr = "-";
@@ -169,7 +172,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
             return {
               type: 2 as const,
               style: isHeld ? (3 as const) : (2 as const),
-              label: `[${idx + 1}]${isHeld ? " Held" : ""}`,
+              label: isHeld ? "🔒" : `[${idx + 1}]`,
               emoji: { name: emojiName },
               custom_id: `hold_${idx}_${newHolds}`
             };
@@ -194,7 +197,6 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         const surrenderButton = {
           type: 2 as const,
           style: 4 as const, // Danger (Red)
-          label: "기권 (Surrender)",
           emoji: { name: "🏳️" },
           custom_id: "surrender"
         };

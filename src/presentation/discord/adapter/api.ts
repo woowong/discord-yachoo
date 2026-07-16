@@ -4,6 +4,7 @@ export interface DiscordApiService {
   readonly sendMention: (channelId: string, userId: string, replyToMessageId?: string) => Effect.Effect<string, Error>;
   readonly deleteMessage: (channelId: string, messageId: string) => Effect.Effect<void, Error>;
   readonly sendGameEndMessage: (channelId: string, content: string, replyToMessageId?: string) => Effect.Effect<void, Error>;
+  readonly editMessage: (channelId: string, messageId: string, payload: any) => Effect.Effect<void, Error>;
 }
 
 export const DiscordApiService = Context.GenericTag<DiscordApiService>("@services/DiscordApiService");
@@ -98,7 +99,29 @@ export const DiscordApiServiceLive = Layer.effect(
           catch: (error) => error as Error
         }).pipe(
           Effect.catchAll(() => Effect.void)
-        )
+        ),
+
+      editMessage: (channelId, messageId, payload) =>
+        Effect.tryPromise({
+          try: async () => {
+            if (!token) {
+              console.warn("DISCORD_BOT_TOKEN is not configured. Skipping editMessage.");
+              return;
+            }
+            const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages/${messageId}`, {
+              method: "PATCH",
+              headers: {
+                Authorization: `Bot ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+              throw new Error(`Discord API error (editMessage): ${res.status} ${await res.text()}`);
+            }
+          },
+          catch: (error) => error as Error
+        }).pipe(Effect.asVoid)
     };
   })
 );
@@ -119,6 +142,11 @@ export const DiscordApiServiceMockLive = Layer.succeed(
     sendGameEndMessage: (channelId, content, replyToMessageId) =>
       Effect.sync(() => {
         console.log(`[Mock Discord API] Send Game End Message to Channel ${channelId} (reply to: ${replyToMessageId}): ${content}`);
+        return;
+      }),
+    editMessage: (channelId, messageId, payload) =>
+      Effect.sync(() => {
+        console.log(`[Mock Discord API] Edit message ${messageId} in Channel ${channelId} with payload:`, payload);
         return;
       })
   }

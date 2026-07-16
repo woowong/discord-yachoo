@@ -42,7 +42,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
 
     mockDB = {
       prepare: vi.fn().mockReturnValue(mockStmt),
-      batch: vi.fn(),
+      batch: vi.fn().mockResolvedValue([]),
       exec: vi.fn(),
     };
   });
@@ -885,5 +885,242 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(json.type).toBe(7); // UpdateMessage (UI refresh)
     expect(json.data.components).toEqual([]); // Should be empty to clear stale dropdown
     expect(json.data.embeds[0].description).toContain("🏆 **Game Finished!**");
+  });
+
+  it("should block duplicate match and return forwarding link", async () => {
+    const mockActiveGame = {
+      gameId: "active-game-456",
+      mode: "multi",
+      status: "Rolling",
+      initialMessageId: "msg-999",
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentDice: [1, 1, 1, 1, 1],
+      rollCount: 0,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    // Mock active game check query
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockActiveGame)
+    });
+
+    const body = JSON.stringify({
+      type: 2,
+      user: { id: "12345", username: "alice" },
+      guild_id: "guild-123",
+      channel_id: "channel-123",
+      data: {
+        name: "challenge",
+        options: [
+          { name: "opponent", value: "67890" }
+        ],
+        resolved: {
+          users: {
+            "67890": { id: "67890", username: "bob" }
+          }
+        }
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4); // ChannelMessageWithSource
+    expect(json.data.flags).toBe(64); // Ephemeral
+    expect(json.data.content).toContain("이미 상대와 진행 중인 대전이 있습니다.");
+    expect(json.data.content).toContain("https://discord.com/channels/guild-123/channel-123/msg-999");
+  });
+
+  it("should return ephemeral confirmation on surrender button click", async () => {
+    const mockActiveGame = {
+      gameId: "game-123",
+      mode: "single",
+      status: "Rolling",
+      currentPlayerIndex: 0,
+      players: [{ playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 }],
+      currentDice: [1, 1, 1, 1, 1],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockActiveGame)
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      data: {
+        custom_id: "surrender"
+      },
+      message: {
+        id: "msg-111",
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4); // ChannelMessageWithSource
+    expect(json.data.flags).toBe(64); // Ephemeral
+    expect(json.data.content).toContain("정말 기권하시겠습니까?");
+    expect(json.data.components[0].components[0].custom_id).toBe("confirm_surrender_msg-111");
+  });
+
+  it("should execute surrender and clean up active game on confirm_surrender click", async () => {
+    const mockActiveGame = {
+      gameId: "game-123",
+      mode: "single",
+      status: "Rolling",
+      currentPlayerIndex: 0,
+      players: [{ playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 }],
+      currentDice: [1, 1, 1, 1, 1],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockActiveGame)
+    });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      data: {
+        custom_id: "confirm_surrender_msg-111"
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(7); // UpdateMessage (resolves the ephemeral confirmation)
+    expect(json.data.content).toContain("기권 처리가 완료되었습니다.");
+
+    // Verify D1 deletes active game
+    expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("DELETE FROM active_games"));
+  });
+
+  it("should send celebration message on successful Yacht category selection", async () => {
+    const mockActiveGame = {
+      gameId: "game-123",
+      mode: "single",
+      status: "Scoring",
+      currentPlayerIndex: 0,
+      players: [{ playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 }],
+      currentDice: [6, 6, 6, 6, 6],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: [[6, 6, 6, 6, 6]]
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockActiveGame)
+    });
+
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "msg-celebrate-123" })
+    });
+    global.fetch = fetchSpy;
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      channel_id: "channel-celebrate",
+      data: {
+        custom_id: "select_category",
+        values: ["Yacht"]
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex, DISCORD_BOT_TOKEN: "mock-token" }, { waitUntil: () => {} } as any);
+    expect(res.status).toBe(200);
+
+    // Wait a brief moment since it's background task
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const celebrationCall = fetchSpy.mock.calls.find(call => 
+      call[0].includes("/channels/channel-celebrate/messages") && 
+      call[1]?.method === "POST" &&
+      (call[1]?.body?.includes("야추 확정") || call[1]?.body?.includes("확률 뚫음") || call[1]?.body?.includes("야추 완성") || call[1]?.body?.includes("야추 갓 등판"))
+    );
+    expect(celebrationCall).toBeDefined();
+
+    global.fetch = originalFetch;
+  });
+
+  it("should send teasing message when Yacht is filled but rolls identical dice and scores elsewhere", async () => {
+    const mockActiveGame = {
+      gameId: "game-123",
+      mode: "single",
+      status: "Scoring",
+      currentPlayerIndex: 0,
+      players: [{ playerId: "12345", playerName: "Alice", scoreBoard: { Yacht: 0 }, bonusScore: 0, totalScore: 0 }],
+      currentDice: [6, 6, 6, 6, 6],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: [[6, 6, 6, 6, 6]]
+    };
+
+    mockFirst.mockResolvedValue({
+      state: JSON.stringify(mockActiveGame)
+    });
+
+    const originalFetch = global.fetch;
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "msg-tease-123" })
+    });
+    global.fetch = fetchSpy;
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      channel_id: "channel-tease",
+      data: {
+        custom_id: "select_category",
+        values: ["Aces"]
+      },
+      message: {
+        embeds: [{ title: "🎲 Yacht Dice Game", footer: { text: "Game ID: game-123" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex, DISCORD_BOT_TOKEN: "mock-token" }, { waitUntil: () => {} } as any);
+    expect(res.status).toBe(200);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const teasingCall = fetchSpy.mock.calls.find(call => 
+      call[0].includes("/channels/channel-tease/messages") && 
+      call[1]?.method === "POST" &&
+      (call[1]?.body?.includes("칸 이미 죽어있음") || call[1]?.body?.includes("50점 그냥 버림") || call[1]?.body?.includes("소진") || call[1]?.body?.includes("다른 데 박음"))
+    );
+    expect(teasingCall).toBeDefined();
+
+    global.fetch = originalFetch;
   });
 });

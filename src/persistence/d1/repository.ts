@@ -367,6 +367,38 @@ export const D1GameRepositoryLive = Layer.effect(
                 })
               : Effect.succeed(Option.none())
           )
+        ),
+
+      delete: (gameId: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("DELETE FROM active_games WHERE id = ?").bind(gameId).run(),
+          catch: (error) => new RepositoryError(`delete game failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      findActiveGameByPlayers: (player1Id: string, player2Id: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              SELECT state FROM active_games
+              WHERE json_extract(state, '$.mode') = 'multi'
+                AND json_extract(state, '$.status') != 'Finished'
+                AND (
+                  (json_extract(state, '$.players[0].playerId') = ? AND json_extract(state, '$.players[1].playerId') = ?)
+                  OR
+                  (json_extract(state, '$.players[0].playerId') = ? AND json_extract(state, '$.players[1].playerId') = ?)
+                )
+            `).bind(player1Id, player2Id, player2Id, player1Id).first<{ state: string }>(),
+          catch: (error) => new RepositoryError(`findActiveGameByPlayers failed: ${error}`, error)
+        }).pipe(
+          Effect.flatMap((row) =>
+            row
+              ? Effect.try({
+                  try: () => Option.some(JSON.parse(row.state) as GameState),
+                  catch: (error) => new RepositoryError(`failed to parse game state JSON: ${error}`, error)
+                })
+              : Effect.succeed(Option.none())
+          )
         )
     };
   })

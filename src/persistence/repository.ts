@@ -58,6 +58,8 @@ export const MatchRepository = Context.GenericTag<MatchRepository>("@services/Ma
 export interface GameRepository {
   readonly save: (state: GameState) => Effect.Effect<void, RepositoryError>;
   readonly findById: (gameId: string) => Effect.Effect<Option.Option<GameState>, RepositoryError>;
+  readonly delete: (gameId: string) => Effect.Effect<void, RepositoryError>;
+  readonly findActiveGameByPlayers: (player1Id: string, player2Id: string) => Effect.Effect<Option.Option<GameState>, RepositoryError>;
 }
 
 export const GameRepository = Context.GenericTag<GameRepository>("@services/GameRepository");
