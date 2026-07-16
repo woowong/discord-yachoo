@@ -324,6 +324,27 @@ export const GameWorkflowServiceLive = Layer.succeed(
               }
             }
 
+            let player1EloAfter: number | null = null;
+            let player2EloAfter: number | null = null;
+            let eloResult: { newRatingA: number; newRatingB: number; deltaA: number; deltaB: number } | null = null;
+
+            if (mode === "multi" && p2) {
+              const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, guildId);
+              const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, guildId);
+              const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
+              const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
+
+              let outcome: 0 | 0.5 | 1;
+              if (endedState.surrenderedPlayerId) {
+                outcome = endedState.surrenderedPlayerId === p1.playerId ? 0 : 1;
+              } else {
+                outcome = p1.totalScore > p2.totalScore ? 1 : (p2.totalScore > p1.totalScore ? 0 : 0.5);
+              }
+              eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
+              player1EloAfter = eloResult.newRatingA;
+              player2EloAfter = eloResult.newRatingB;
+            }
+
             const matchRecord = {
               id: matchId,
               mode,
@@ -335,7 +356,9 @@ export const GameWorkflowServiceLive = Layer.succeed(
               winnerId,
               surrenderedId: endedState.surrenderedPlayerId || null,
               playedAt: new Date(),
-              historyJson: JSON.stringify(endedState.turnHistory)
+              historyJson: JSON.stringify(endedState.turnHistory),
+              player1EloAfter,
+              player2EloAfter
             };
 
             yield* matchRepo.saveMatch(matchRecord);
@@ -352,20 +375,7 @@ export const GameWorkflowServiceLive = Layer.succeed(
               } else {
                 endMsgContent = KoreanMessages.gameEnd.singleFinished(p1.playerId, p1.totalScore);
               }
-            } else if (p2) {
-              const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, guildId);
-              const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, guildId);
-              const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
-              const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
-
-              let outcome: 0 | 0.5 | 1;
-              if (endedState.surrenderedPlayerId) {
-                outcome = endedState.surrenderedPlayerId === p1.playerId ? 0 : 1;
-              } else {
-                outcome = p1.totalScore > p2.totalScore ? 1 : (p2.totalScore > p1.totalScore ? 0 : 0.5);
-              }
-              const eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
-
+            } else if (p2 && eloResult) {
               yield* playerRepo.updateElo(p1.playerId, guildId, eloResult.newRatingA);
               yield* playerRepo.updateElo(p2.playerId, guildId, eloResult.newRatingB);
               yield* Effect.logInfo(`Updated Elo ratings. P1: ${eloResult.newRatingA}, P2: ${eloResult.newRatingB}`);
@@ -519,6 +529,22 @@ export const GameWorkflowServiceLive = Layer.succeed(
               winnerId = endedState.surrenderedPlayerId === p1.playerId ? p2.playerId : p1.playerId;
             }
 
+            let player1EloAfter: number | null = null;
+            let player2EloAfter: number | null = null;
+            let eloResult: { newRatingA: number; newRatingB: number; deltaA: number; deltaB: number } | null = null;
+
+            if (mode === "multi" && p2) {
+              const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, guildId);
+              const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, guildId);
+              const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
+              const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
+
+              const outcome = endedState.surrenderedPlayerId === p1.playerId ? 0 : 1;
+              eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
+              player1EloAfter = eloResult.newRatingA;
+              player2EloAfter = eloResult.newRatingB;
+            }
+
             const matchRecord = {
               id: matchId,
               mode,
@@ -530,7 +556,9 @@ export const GameWorkflowServiceLive = Layer.succeed(
               winnerId,
               surrenderedId: endedState.surrenderedPlayerId || null,
               playedAt: new Date(),
-              historyJson: JSON.stringify(endedState.turnHistory)
+              historyJson: JSON.stringify(endedState.turnHistory),
+              player1EloAfter,
+              player2EloAfter
             };
 
             yield* matchRepo.saveMatch(matchRecord);
@@ -541,15 +569,7 @@ export const GameWorkflowServiceLive = Layer.succeed(
             if (mode === "single") {
               yield* playerRepo.updateStats(p1.playerId, guildId, "single", "win", p1.totalScore);
               endMsgContent = KoreanMessages.gameEnd.singleSurrendered(p1.playerId, p1.totalScore);
-            } else if (p2) {
-              const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, guildId);
-              const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, guildId);
-              const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
-              const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
-
-              const outcome = endedState.surrenderedPlayerId === p1.playerId ? 0 : 1;
-              const eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
-
+            } else if (p2 && eloResult) {
               yield* playerRepo.updateElo(p1.playerId, guildId, eloResult.newRatingA);
               yield* playerRepo.updateElo(p2.playerId, guildId, eloResult.newRatingB);
 

@@ -8,6 +8,8 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-color: #0b0c15;
@@ -628,8 +630,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
               <th style="width: 80px;">턴</th>
               <th>플레이어</th>
               <th>기록 카테고리</th>
-              <th>획득 점수</th>
               <th>주사위 기록</th>
+              <th>획득 점수</th>
+              <th>누적 점수</th>
             </tr>
           </thead>
           <tbody id="modal-turns-tbody">
@@ -776,11 +779,29 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
               ? \`\${m.player1Score}점\` 
               : \`\${m.player1Score} : \${m.player2Score || 0}\`;
 
+            let opponentHtml = '-';
+            if (m.mode === 'multi') {
+              const oppId = m.player1Id === idInput ? m.player2Id : m.player1Id;
+              if (oppId) {
+                let oppName = oppId.slice(-6);
+                if (m.historyJson) {
+                  try {
+                    const turns = JSON.parse(m.historyJson);
+                    const oppIndex = m.player1Id === idInput ? 1 : 0;
+                    const oppTurn = turns.find(t => t.playerIndex === oppIndex);
+                    if (oppTurn && oppTurn.playerName) oppName = oppTurn.playerName;
+                  } catch(e) {}
+                }
+                opponentHtml = \`<span class="link-nickname" onclick="switchTab('profile-tab'); document.getElementById('player-id-input').value='\${oppId}'; searchProfile('\${oppId}')" style="font-size:0.85rem;">\${oppName}</span>\`;
+              }
+            }
+
             return \`
               <tr>
                 <td>\${dateStr}</td>
                 <td>\${modeLabel}</td>
                 <td style="font-weight: 700; color: \${resultColor}">\${resultLabel}</td>
+                <td>\${opponentHtml}</td>
                 <td>\${scoreText}</td>
                 <td>
                   \${m.historyJson ? \`<button onclick="openReplay('\${m.id}')" style="background: rgba(88,101,242,0.15); border: 1px solid rgba(88,101,242,0.3); color: #a5b4fc; padding: 0.3rem 0.6rem; border-radius: 5px; cursor:pointer;">턴 복기</button>\` : '-'}
@@ -789,7 +810,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             \`;
           }).join('');
         } else {
-          matchesTableHtml = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">경기 기록이 없습니다.</td></tr>';
+          matchesTableHtml = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">경기 기록이 없습니다.</td></tr>';
         }
 
         resultDiv.innerHTML = \`
@@ -824,32 +845,118 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
               </div>
             </div>
 
-            <div class="stats-card" style="display: flex; flex-direction: column;">
-              <div class="stats-title">최근 경기 이력</div>
-              <div class="table-container" style="flex: 1;">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>일시</th>
-                      <th>모드</th>
-                      <th>결과</th>
-                      <th>스코어</th>
-                      <th>보기</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    \${matchesTableHtml}
-                  </tbody>
-                </table>
+            <div style="display: flex; flex-direction: column; gap: 1rem; flex: 1;">
+              <div class="stats-card" id="elo-chart-card" style="display: none;">
+                <div class="stats-title">📈 ELO 변동 추이</div>
+                <div style="position: relative; height: 220px; width: 100%;">
+                  <canvas id="elo-chart"></canvas>
+                </div>
+              </div>
+
+              <div class="stats-card" style="display: flex; flex-direction: column; flex: 1;">
+                <div class="stats-title">최근 경기 이력</div>
+                <div class="table-container" style="flex: 1;">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>일시</th>
+                        <th>모드</th>
+                        <th>결과</th>
+                        <th>상대</th>
+                        <th>스코어</th>
+                        <th>보기</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      \${matchesTableHtml}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         \`;
+
+        // Render ELO history chart if multi matches with ELO exist
+        const eloHistory = [];
+        const chronoMatches = [...recent].reverse();
+        chronoMatches.forEach(m => {
+          if (m.mode === 'multi') {
+            const eloVal = m.player1Id === idInput ? m.player1EloAfter : m.player2EloAfter;
+            if (eloVal !== null && eloVal !== undefined) {
+              eloHistory.push({
+                date: new Date(m.playedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+                elo: eloVal
+              });
+            }
+          }
+        });
+
+        if (eloHistory.length > 0) {
+          document.getElementById('elo-chart-card').style.display = 'block';
+          setTimeout(() => {
+            renderEloChart(eloHistory);
+          }, 0);
+        } else {
+          document.getElementById('elo-chart-card').style.display = 'none';
+        }
+
       } catch (e) {
         loaderDiv.style.display = 'none';
         placeholderDiv.innerHTML = '전적 데이터를 가져오는 데 실패했습니다.';
         placeholderDiv.style.display = 'block';
       }
+    }
+
+    let eloChartInstance = null;
+    function renderEloChart(history) {
+      const ctx = document.getElementById('elo-chart').getContext('2d');
+      if (eloChartInstance) {
+        eloChartInstance.destroy();
+      }
+      
+      eloChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: history.map(h => h.date),
+          datasets: [{
+            label: 'ELO',
+            data: history.map(h => h.elo),
+            borderColor: '#60a5fa',
+            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#60a5fa',
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#12131e',
+              titleColor: '#94a3b8',
+              bodyColor: '#f1f3f9',
+              borderColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1,
+              displayColors: false
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { family: 'Inter' } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { family: 'Inter' } }
+            }
+          }
+        }
+      });
     }
 
     // Replay Game Log Modal
@@ -859,7 +966,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       const title = document.getElementById('modal-match-title');
       const meta = document.getElementById('modal-match-meta');
 
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><div class="spinner" style="margin: 2rem auto;"></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><div class="spinner" style="margin: 2rem auto;"></div></td></tr>';
       modal.style.display = 'flex';
 
       try {
@@ -874,28 +981,62 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         const turns = JSON.parse(match.historyJson);
         turns.sort((a,b) => a.turnNumber - b.turnNumber || a.playerIndex - b.playerIndex);
 
+        const playerScores = {};
         tbody.innerHTML = turns.map(t => {
           const rolls = t.rolls || [];
           const lastRoll = rolls[rolls.length - 1] || [];
           const diceStr = lastRoll.length > 0 ? \`[ \${lastRoll.join(', ')} ]\` : '-';
 
           const pId = t.playerIndex === 0 ? match.player1Id : match.player2Id;
+
+          // Track cumulative score
+          if (playerScores[t.playerIndex] === undefined) {
+            playerScores[t.playerIndex] = 0;
+          }
+          playerScores[t.playerIndex] += t.score;
+          const cumulativeScore = playerScores[t.playerIndex];
+
           const linkHtml = pId 
-            ? \`<span class="link-nickname" onclick="closeReplayModal(); document.getElementById('player-id-input').value='\${pId}'; searchProfile('\${pId}')">\${t.playerName}</span>\`
+            ? \`<span class="link-nickname" onclick="closeReplayModal(); switchTab('profile-tab'); document.getElementById('player-id-input').value='\${pId}'; searchProfile('\${pId}')">\${t.playerName}</span>\`
             : \`<span>\${t.playerName}</span>\`;
 
+          // Score conditional formatting
+          let scoreStyle = 'color: var(--accent-success); font-weight: 700;';
+          if (t.score === 0) {
+            scoreStyle = 'color: var(--accent-danger); font-weight: 800; text-shadow: 0 0 8px rgba(244, 63, 94, 0.3);';
+          } else if (t.score < 15) {
+            scoreStyle = 'color: #a7f3d0; font-weight: 500;';
+          } else if (t.score < 30) {
+            scoreStyle = 'color: #34d399; font-weight: 700;';
+          } else if (t.score < 50) {
+            scoreStyle = 'color: #059669; font-weight: 800; text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);';
+          } else {
+            // Yacht or extremely high score (50+)
+            scoreStyle = 'color: var(--accent-warning); font-weight: 900; text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);';
+          }
+
+          const dotColor = t.playerIndex === 0 ? 'var(--accent-primary)' : 'var(--accent-success)';
+          const dotHtml = match.mode === 'multi' 
+            ? \`<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:\${dotColor}; margin-right:6px; flex-shrink:0;"></span>\`
+            : '';
+
+          const rowBg = match.mode === 'multi'
+            ? (t.playerIndex === 0 ? 'background: rgba(88, 101, 242, 0.04);' : 'background: rgba(16, 185, 129, 0.03);')
+            : '';
+
           return \`
-            <tr>
+            <tr style="\${rowBg}">
               <td>\${t.turnNumber} R</td>
-              <td style="font-weight:600;">\${linkHtml}</td>
+              <td style="font-weight:600; display:flex; align-items:center;">\${dotHtml}\${linkHtml}</td>
               <td><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.4rem; border-radius: 4px;">\${t.category}</code></td>
-              <td style="font-weight:700; color: var(--accent-success);">+\${t.score}점</td>
               <td style="font-family: monospace; letter-spacing: 0.05em; color: var(--text-muted);">\${diceStr}</td>
+              <td style="\${scoreStyle}">+\${t.score}점</td>
+              <td style="font-weight:700; color: var(--text-main);">\${cumulativeScore}점</td>
             </tr>
           \`;
         }).join('');
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--accent-danger);">경기 로그 로드 실패</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--accent-danger);">경기 로그 로드 실패</td></tr>';
       }
     }
 

@@ -34,6 +34,8 @@ interface DBMatchRow {
   readonly surrendered_id: string | null;
   readonly played_at: string;
   readonly history_json: string | null;
+  readonly player1_elo_after: number | null;
+  readonly player2_elo_after: number | null;
 }
 
 const mapRowToPlayerStats = (row: DBPlayerRow): PlayerStats => ({
@@ -66,6 +68,8 @@ const mapRowToMatchRecord = (row: DBMatchRow): MatchRecord => ({
   surrenderedId: row.surrendered_id || null,
   playedAt: new Date(row.played_at),
   historyJson: row.history_json || null,
+  player1EloAfter: row.player1_elo_after || null,
+  player2EloAfter: row.player2_elo_after || null,
 });
 
 export const D1PlayerRepositoryLive = Layer.effect(
@@ -313,8 +317,8 @@ export const D1MatchRepositoryLive = Layer.effect(
         Effect.tryPromise({
           try: () =>
             db.prepare(`
-              INSERT INTO matches (id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, surrendered_id, played_at, history_json)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO matches (id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, surrendered_id, played_at, history_json, player1_elo_after, player2_elo_after)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
               match.id,
               match.mode,
@@ -326,7 +330,9 @@ export const D1MatchRepositoryLive = Layer.effect(
               match.winnerId,
               match.surrenderedId || null,
               match.playedAt ? match.playedAt.toISOString() : new Date().toISOString(),
-              match.historyJson || null
+              match.historyJson || null,
+              match.player1EloAfter || null,
+              match.player2EloAfter || null
             ).run(),
           catch: (error) => new RepositoryError(`saveMatch failed: ${error}`, error)
         }).pipe(Effect.asVoid),
@@ -344,7 +350,7 @@ export const D1MatchRepositoryLive = Layer.effect(
             } else {
               return db.prepare(`
                 SELECT * FROM matches
-                WHERE (player1_id = ? OR player2_id = ?) AND guild_id IS NULL
+                WHERE (player1_id = ? OR player2_id = ?)
                 ORDER BY played_at DESC
                 LIMIT ?
               `).bind(playerId, playerId, limit).all<DBMatchRow>();
@@ -370,7 +376,7 @@ export const D1MatchRepositoryLive = Layer.effect(
             if (mode === "single") {
               const query = guildId
                 ? "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id = ? AND (surrendered_id IS NULL OR surrendered_id = '')"
-                : "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id IS NULL AND (surrendered_id IS NULL OR surrendered_id = '')";
+                : "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND (surrendered_id IS NULL OR surrendered_id = '')";
               const bindParams = guildId ? [playerId, guildId] : [playerId];
               return db.prepare(query).bind(...bindParams).first<{ avgScore: number | null }>();
             } else {
@@ -380,7 +386,7 @@ export const D1MatchRepositoryLive = Layer.effect(
                    WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id = ? AND (surrendered_id IS NULL OR surrendered_id = '')`
                 : `SELECT AVG(CASE WHEN player1_id = ? THEN player1_score ELSE player2_score END) as avgScore
                    FROM matches
-                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id IS NULL AND (surrendered_id IS NULL OR surrendered_id = '')`;
+                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND (surrendered_id IS NULL OR surrendered_id = '')`;
               const bindParams = guildId ? [playerId, playerId, playerId, guildId] : [playerId, playerId, playerId];
               return db.prepare(query).bind(...bindParams).first<{ avgScore: number | null }>();
             }

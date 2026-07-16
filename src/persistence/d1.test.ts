@@ -306,7 +306,9 @@ describe("D1 Persistence Repositories", () => {
         null,
         null, // surrenderedId
         "2026-07-10T12:00:00.000Z",
-        JSON.stringify([{ round: 1 }])
+        JSON.stringify([{ round: 1 }]),
+        null,
+        null
       );
       expect(mockRun).toHaveBeenCalled();
     });
@@ -345,6 +347,80 @@ describe("D1 Persistence Repositories", () => {
       expect(history[0].id).toBe("match-123");
       expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("guild_id = ?"));
       expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", "guild-456", 10);
+    });
+
+    it("getRecentMatches with null guildId should query matches globally without guild filter", async () => {
+      const { mockDB, mockBind, mockAll } = createMockDb();
+      mockAll.mockResolvedValue({
+        success: true,
+        results: [
+          {
+            id: "match-123",
+            mode: "single",
+            guild_id: "guild-456",
+            player1_id: "user-123",
+            player2_id: null,
+            player1_score: 150,
+            player2_score: null,
+            winner_id: null,
+            played_at: "2026-07-10T12:00:00.000Z",
+            history_json: null
+          },
+        ],
+        meta: {},
+      });
+
+      const program = Effect.flatMap(MatchRepository, (repo) =>
+        repo.getRecentMatches("user-123", null, 10)
+      ).pipe(
+        Effect.provide(D1MatchRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const history = await Effect.runPromise(program);
+
+      expect(history).toHaveLength(1);
+      expect(history[0].id).toBe("match-123");
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.not.stringContaining("guild_id = ?"));
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.not.stringContaining("guild_id IS NULL"));
+      expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", 10);
+    });
+
+    it("getPlayerAverageScore should calculate average score with guildId", async () => {
+      const { mockDB, mockBind, mockFirst } = createMockDb();
+      mockFirst.mockResolvedValue({ avgScore: 185.5 });
+
+      const program = Effect.flatMap(MatchRepository, (repo) =>
+        repo.getPlayerAverageScore("user-123", "guild-456", "multi")
+      ).pipe(
+        Effect.provide(D1MatchRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const avg = await Effect.runPromise(program);
+
+      expect(avg).toBe(185.5);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("guild_id = ?"));
+      expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", "user-123", "guild-456");
+    });
+
+    it("getPlayerAverageScore with null guildId should calculate average score globally", async () => {
+      const { mockDB, mockBind, mockFirst } = createMockDb();
+      mockFirst.mockResolvedValue({ avgScore: 185.5 });
+
+      const program = Effect.flatMap(MatchRepository, (repo) =>
+        repo.getPlayerAverageScore("user-123", null, "multi")
+      ).pipe(
+        Effect.provide(D1MatchRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const avg = await Effect.runPromise(program);
+
+      expect(avg).toBe(185.5);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.not.stringContaining("guild_id = ?"));
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.not.stringContaining("guild_id IS NULL"));
+      expect(mockBind).toHaveBeenCalledWith("user-123", "user-123", "user-123");
     });
 
     it("getMatchById should retrieve match record by ID", async () => {

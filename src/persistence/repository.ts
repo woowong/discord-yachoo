@@ -36,6 +36,8 @@ export interface MatchRecord {
   readonly surrenderedId: string | null;
   readonly playedAt: Date;
   readonly historyJson?: string | null;
+  readonly player1EloAfter?: number | null;
+  readonly player2EloAfter?: number | null;
 }
 
 export interface PlayerRepository {

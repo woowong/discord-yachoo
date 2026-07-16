@@ -1,12 +1,8 @@
-# web-dashboard Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change fix-bugs-and-profile-dashboard. Update Purpose after archive.
-## Requirements
 ### Requirement: Serve Web Dashboard Assets
 The system SHALL serve the static HTML/CSS/JS dashboard assets directly from the Cloudflare Worker when accessed via browser GET requests at `/` or `/web/` without verifying Discord signature headers. The UI assets MUST utilize a compact design system (reduced paddings, margins, and row heights), render player nickname links connected to profile cards, display a player directory list, and provide interactive tag filter controls on the Legend Matches tab.
 Additionally, the player nickname links inside the replay modal SHALL switch the view to the profile tab, close the modal, and load the player's stats. The replay table MUST display a '누적 점수' column, show distinct visual background colors and nickname dots per player, and apply distinct color highlights based on score thresholds. The profile tab SHALL render a line chart using Chart.js displaying the ELO rating history of the player.
-The profile match history table SHALL include a '상대' (opponent) column that displays the opponent's nickname (extracted from the match historyJson turn data) as a clickable link. Clicking the opponent link SHALL navigate to that player's profile page.
 
 #### Scenario: Access web dashboard home
 - **WHEN** a GET request is received at `/` or `/web/`
@@ -36,4 +32,3 @@ If the `guildId` query parameter is not provided (or is null), the endpoints (pr
 #### Scenario: Fetch user profile data via API without guildId
 - **WHEN** a GET request is received at `/web/api/profile/:playerId` without a `guildId` query parameter (or `guildId` is null)
 - **THEN** the system SHALL return a 200 OK Response containing player statistics and recent matches retrieved globally across all guilds.
-
