@@ -21,6 +21,10 @@ A serverless Discord bot for playing the **Yacht Dice** (Yacht / Yahtzee) game, 
 - **Mobile-Optimized Presentation:** Renders the ASCII scoreboard within 27 characters to prevent line wrapping on mobile clients, with player name truncation and a bonus progress tracker (`current/63`).
 - **Pure Game Engine:** All core business logic (dice rolling, score calculations, game turns) is written in pure functions, making it 100% testable.
 - **Local CLI Simulator:** Test and play the game directly in your local terminal without deploying to Discord or Cloudflare.
+- **Web Dashboard & Analytics:** Access a browser-based analytics dashboard at the Worker's root URL, featuring player profiles with ELO rating history charts (Chart.js), turn-by-turn match replays with color-coded score highlights, a Legend Matches catalog for remarkable game moments, and a searchable player directory.
+- **Legend Matches System:** Automatically identifies and tags memorable game moments — Comeback Wins (25+ point deficit reversals), Hot Streaks (5+ consecutive high-scoring turns), Yacht Achievements, and Epic Fails (3+ consecutive zero-point turns).
+- **Profile Analytics:** Tracks per-player statistics including separate average scores for solo and multiplayer modes, recent 10-match W/L/D outcome history, and ELO rating progression.
+- **Duplicate Game Prevention:** Detects active games in progress and blocks new game creation, providing a direct link to the ongoing match.
 
 ---
 
@@ -41,24 +45,32 @@ This project strictly isolates the domain business logic from infrastructural si
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                 Presentation Layer                      │
-│   (Discord Webhook Handler / Local Console Simulator)   │
+│ (Discord Webhook / Console Simulator / Web Dashboard)   │
+└────────────────────────────┬────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────┐
+│                 Application Layer                       │
+│  (Game Workflow Orchestration & Legend Match Analysis)   │
 └────────────────────────────┬────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────┐
 │                  Core Game Engine                       │
-│    (Pure Domain Logic: score calculation & state machine)│
+│   (Pure Domain Logic: score calculation & state machine)│
 └────────────────────────────┬────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────┐
 │                  Persistence Layer                      │
-│          (D1 Database / In-Memory Store)               │
+│          (D1 Database / In-Memory Store)                │
 └─────────────────────────────────────────────────────────┘
 ```
 
 - **Core Game Engine (`src/domain/`)**: Pure functions for game flow. Completely independent of Discord, HTTP, or Databases.
+- **Application Layer (`src/application/`)**: Orchestrates complex game workflows (challenge, roll, score, surrender) and analyzes match history for Legend Match tagging. Coordinates domain logic with persistence and presentation layers.
 - **Presentation Layer (`src/presentation/`)**:
   - `discord/`: Translates game states into Discord embeds, action rows, and button payloads. Handles webhook signature verification and parsing.
   - `console/`: A readline-based console UI for terminal simulation.
+  - `web/`: Browser-based analytics dashboard with player profiles, ELO charts, match replays, and Legend Matches catalog.
+  - `messages/`: Localized Korean message templates for Discord bot responses.
 - **Persistence Layer (`src/persistence/`)**: Manages player profiles, historical records, and active sessions. Abstracted behind repository tags.
 
 ---

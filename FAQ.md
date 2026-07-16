@@ -8,7 +8,8 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 1. [Yacht Score Rules & State Machine](#1-yacht-score-rules--state-machine)
 2. [Discord Integration & Commands](#2-discord-integration--commands)
 3. [Persistence & D1 DB Schema](#3-persistence--d1-db-schema)
-4. [Architecture & Dev Simulator](#4-architecture--dev-simulator)
+4. [Web Dashboard & Analytics](#4-web-dashboard--analytics)
+5. [Architecture & Dev Simulator](#5-architecture--dev-simulator)
 
 ---
 
@@ -95,7 +96,30 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 
 ---
 
-## 4. Architecture & Dev Simulator
+## 4. Web Dashboard & Analytics
+
+### Q. Is there a web-based dashboard to view stats outside of Discord?
+**A.** Yes. The Worker serves a browser-based single-page analytics dashboard at the root URL (`/` or `/web/`). It includes player profiles with ELO history charts, match replay with turn-by-turn breakdown tables, a Legend Matches catalog, and a player directory. [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L6-L8)
+
+### Q. What are Legend Matches?
+**A.** Legend Matches are automatically identified remarkable game moments from match history:
+* **Comeback Win (극적인 역전승)**: The trailing player reverses a 25+ point deficit after round 10 to win.
+* **Hot Streak (연속 고득점)**: A player scores ≥ 15 points in 5 consecutive turns.
+* **Yacht Achieved (야추 달성)**: A player successfully scores a Yacht (50 points).
+* **Epic Fail (연속 뇌절)**: A player scores 0 points in 3 or more consecutive turns. [profile-stats/spec.md](./openspec/specs/profile-stats/spec.md#L20-L26)
+
+### Q. How are player average scores calculated?
+**A.** Average scores are calculated separately for Solo (single-player) and Multi (VS) modes by scanning all match records. The profile also tracks the last 10 multiplayer match outcomes displayed as W/L/D indicators. [profile-stats/spec.md](./openspec/specs/profile-stats/spec.md#L6-L18)
+
+### Q. What API endpoints does the web dashboard use?
+**A.** The dashboard uses JSON API endpoints:
+* `/web/api/profile/:playerId` — Player statistics and recent matches (supports optional `guildId` filter; omitting it returns global stats)
+* `/web/api/legend` — Legend match datasets
+* `/web/api/players` — Registered players list [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L28-L38)
+
+---
+
+## 5. Architecture & Dev Simulator
 
 ### Q. Is there a way to test the game locally without Discord API integration?
 **A.** Yes. The project includes a CLI game runner ([cli-game-runner](./openspec/specs/cli-game-runner)) which provides an interactive terminal simulator with ASCII scoreboards, roll/hold inputs, and final results announcement.
@@ -105,14 +129,15 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 - **Stack**: **Effect.ts** ecosystem (`effect`, `@effect/platform`, `@effect/schema`), Cloudflare Workers & D1 (`wrangler`), **Vitest** (testing), **TypeScript** [project-infra-setup/spec.md](./openspec/specs/project-infra-setup/spec.md#L6-L33)
 - **Folder Structure (AGENTS.md rules)**:
   - `src/domain/`: Pure domain logic containing calculations and state machine flow (free from external side effects).
+  - `src/application/`: Game workflow orchestration and Legend Match analysis, coordinating domain with persistence and presentation.
   - `src/persistence/`: Data repositories wrapping Cloudflare D1 database operations.
-  - `src/presentation/`: Discord webhook entry points, signature verifier, and CLI interactive game loop.
+  - `src/presentation/`: Discord webhook entry points, signature verifier, web analytics dashboard, and CLI interactive game loop.
 > [!TIP]
 > Refer to [AGENTS.md](./AGENTS.md) in the project root for strict architecture rules.
 
 ### Q. What should we do if a game gets stuck due to network drops or unhandled errors?
 **A.** Operators can run the admin script to force-finish any stale games:
 ```bash
-npm run patch-finished-game -- <game-id>
+npm run patch-game -- <game-id>
 ```
 This updates the database entry to a finished state and clears active buttons, preventing the Discord channel from being locked with unresponsive components.

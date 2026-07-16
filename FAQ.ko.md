@@ -8,7 +8,8 @@
 1. [야추 게임 규칙 및 상태 머신 (Yacht Score Rules & State Machine)](#1-야추-게임-규칙-및-상태-머신-yacht-score-rules--state-machine)
 2. [디스코드 봇 연동 및 명령어 (Discord Integration & Commands)](#2-디스코드-봇-연동-및-명령어-discord-integration--commands)
 3. [영속성 및 데이터베이스 구조 (Persistence & D1 DB Schema)](#3-영속성-및-데이터베이스-구조-persistence--d1-db-schema)
-4. [아키텍처 및 로컬 테스트 (Architecture & Dev Simulator)](#4-아키텍처-및-로컬-테스트-architecture--dev-simulator)
+4. [웹 대시보드 및 분석 (Web Dashboard & Analytics)](#4-웹-대시보드-및-분석-web-dashboard--analytics)
+5. [아키텍처 및 로컬 테스트 (Architecture & Dev Simulator)](#5-아키텍처-및-로컬-테스트-architecture--dev-simulator)
 
 ---
 
@@ -95,7 +96,30 @@
 
 ---
 
-## 4. 아키텍처 및 로컬 테스트 (Architecture & Dev Simulator)
+## 4. 웹 대시보드 및 분석 (Web Dashboard & Analytics)
+
+### Q. 디스코드 외에 웹 브라우저에서도 통계를 확인할 수 있나요?
+**A.** 네. Worker의 루트 URL(`/` 또는 `/web/`)에서 브라우저 기반 싱글 페이지 분석 대시보드를 제공합니다. ELO 레이팅 히스토리 차트가 포함된 플레이어 프로필, 턴별 상세 리플레이가 포함된 매치 리플레이, 전설의 경기(Legend Matches) 카탈로그, 그리고 플레이어 디렉토리를 지원합니다. [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L6-L8)
+
+### Q. 전설의 경기(Legend Matches)란 무엇인가요?
+**A.** 전설의 경기는 매치 히스토리에서 자동으로 식별되는 주목할 만한 게임 순간들입니다:
+* **극적인 역전승 (Comeback Win)**: 10라운드 이후 25점 이상 뒤처지다 역전하여 승리한 경기
+* **연속 고득점 (Hot Streak)**: 5턴 연속 15점 이상을 기록한 경기
+* **야추 달성 (Yacht Achieved)**: 야추(Yacht, 50점)를 성공시킨 경기
+* **연속 뇌절 (Epic Fail)**: 3턴 이상 연속으로 0점을 기록한 경기 [profile-stats/spec.md](./openspec/specs/profile-stats/spec.md#L20-L26)
+
+### Q. 플레이어 평균 점수는 어떻게 계산되나요?
+**A.** 평균 점수는 솔로(1인용)와 멀티(대전) 모드별로 별도 계산됩니다. 프로필에는 최근 10경기의 멀티 대전 결과가 W(승)/L(패)/D(무) 인디케이터로 표시됩니다. [profile-stats/spec.md](./openspec/specs/profile-stats/spec.md#L6-L18)
+
+### Q. 웹 대시보드는 어떤 API 엔드포인트를 사용하나요?
+**A.** 대시보드는 JSON API 엔드포인트를 사용합니다:
+* `/web/api/profile/:playerId` — 플레이어 통계 및 최근 매치 (선택적 `guildId` 필터 지원; 생략 시 전체 길드의 글로벌 통계 반환)
+* `/web/api/legend` — 전설의 경기 데이터셋
+* `/web/api/players` — 등록된 플레이어 목록 [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L28-L38)
+
+---
+
+## 5. 아키텍처 및 로컬 테스트 (Architecture & Dev Simulator)
 
 ### Q. 디스코드 API 연동 없이 로컬에서 바로 테스트할 수 있는 방법이 있나요?
 **A.** 네. CLI 게임 러너([cli-game-runner](./openspec/specs/cli-game-runner))가 포함되어 있어 터미널 환경에서 아스키 스코어보드를 보며 싱글/멀티플레이 시뮬레이션을 수행할 수 있습니다. 
@@ -105,14 +129,15 @@
 - **핵심 기술**: **Effect.ts** 에코시스템(`effect`, `@effect/platform`, `@effect/schema`), Cloudflare Workers & D1 (`wrangler`), **Vitest** (테스트 러너), **TypeScript** [project-infra-setup/spec.md](./openspec/specs/project-infra-setup/spec.md#L6-L33)
 - **아키텍처 구조 (AGENTS.md 규칙)**:
   - `src/domain/`: 주사위 계산, 상태 머신 흐름 등 순수 도메인 로직 (외부 의존성 없음, Pure Functions).
+  - `src/application/`: 게임 워크플로우 오케스트레이션 및 전설 경기 분석, 도메인과 영속성·프레젠테이션 계층 연결.
   - `src/persistence/`: Cloudflare D1 바인딩 및 전적 데이터 저장소 계층 (Repository 패턴).
-  - `src/presentation/`: 디스코드 인터랙션 웹훅 처리, 서명 검증(Ed25519) 및 CLI 게임 시뮬레이터.
+  - `src/presentation/`: 디스코드 인터랙션 웹훅 처리, 서명 검증(Ed25519), 웹 분석 대시보드 및 CLI 게임 시뮬레이터.
 > [!TIP]
 > 아키텍처 원칙에 관한 세부 원칙은 프로젝트 루트의 [AGENTS.md](./AGENTS.md)를 참조하십시오.
 
 ### Q. 오류나 네트워크 끊김 등으로 멈춰버린 게임이 있으면 어떻게 조치하나요?
 **A.** 운영자는 아래 패치 스크립트를 실행하여 멈춘 특정 게임 ID를 강제 종료 상태로 마이그레이션할 수 있습니다:
 ```bash
-npm run patch-finished-game -- <game-id>
+npm run patch-game -- <game-id>
 ```
 이 스크립트는 해당 매치를 강제 완료 상태로 갱신하고 디스코드 메시지의 상호작용 컴포넌트를 모두 정리합니다.

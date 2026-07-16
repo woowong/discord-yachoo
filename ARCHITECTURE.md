@@ -14,6 +14,12 @@ graph TD
     subgraph Presentation Layer
         DiscordView["Discord View (Interactions Webhook)"]
         ConsoleView["Console View (Local CLI Simulator)"]
+        WebView["Web Dashboard (Browser Analytics)"]
+    end
+
+    subgraph Application Layer
+        Workflow["Game Workflow Service"]
+        Legend["Legend Match Analyzer"]
     end
 
     subgraph Domain Layer
@@ -26,10 +32,12 @@ graph TD
         MemRepo["In-Memory Repository"]
     end
 
-    DiscordView --> Engine
+    DiscordView --> Workflow
     ConsoleView --> Engine
-    DiscordView --> Repository
-    ConsoleView --> Repository
+    WebView --> Repository
+    Workflow --> Engine
+    Workflow --> Repository
+    Legend --> Repository
     Repository --> D1Repo
     Repository --> MemRepo
 ```
@@ -41,12 +49,18 @@ graph TD
 
 ### 2. Presentation Layer
 - Renders the `GameState` to user-facing formats.
-- Supports two primary delivery mechanisms:
+- Supports three primary delivery mechanisms:
   - **Console View**: Used for local CLI-based simulation.
   - **Discord View**: Used for rendering interactive Discord messages and buttons.
+  - **Web Dashboard**: Browser-based analytics dashboard served from the Worker, providing player profiles, ELO history charts, match replays, and Legend Matches catalog.
 - Interfaces are abstracted so that local and production presentations are interchangeable.
 
-### 3. Persistence Layer
+### 3. Application Layer
+- Orchestrates complex game workflows (challenge creation, dice rolling, score selection, surrender) by coordinating domain logic with persistence and presentation concerns.
+- `GameWorkflowService`: The central workflow orchestrator that handles all game interactions, manages game state transitions, updates player statistics, calculates ELO ratings, and coordinates Discord API calls (mention notifications, message updates).
+- `LegendMatches`: Analyzes completed match histories to identify and tag remarkable game moments (Comeback Wins, Hot Streaks, Yacht Achievements, Epic Fails).
+
+### 4. Persistence Layer
 - Abstracts storage operations (player history, session records) behind repository interfaces.
 - Implements:
   - **In-Memory Repository**: For fast, dependency-free local simulations and testing.
@@ -63,3 +77,5 @@ graph TD
 - **Cloudflare Workers**: Powering serverless, event-driven Discord interactions via Webhook POST requests.
 - **Cloudflare D1**: Provides serverless SQLite database capabilities for persistent game configurations and match history.
 - **Vitest**: Runs fast unit tests against pure game engine domains.
+- **Web Dashboard**: Served directly from Workers, featuring player profiles, ELO rating charts (Chart.js), turn-by-turn match replays, and a Legend Matches catalog for remarkable game moments.
+- **Legend Matches Analysis**: Pure functions that scan match histories to identify noteworthy events — Comeback Wins (25+ point deficit reversal after round 10), Hot Streaks (5+ consecutive 15+ point turns), Yacht Achievements, and Epic Fails (3+ consecutive 0-point turns).
