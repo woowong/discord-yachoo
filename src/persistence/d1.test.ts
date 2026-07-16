@@ -280,6 +280,7 @@ describe("D1 Persistence Repositories", () => {
         player1Score: 150,
         player2Score: null,
         winnerId: null,
+        surrenderedId: null,
         playedAt: new Date("2026-07-10T12:00:00.000Z"),
         historyJson: JSON.stringify([{ round: 1 }])
       };
@@ -303,6 +304,7 @@ describe("D1 Persistence Repositories", () => {
         150,
         null,
         null,
+        null, // surrenderedId
         "2026-07-10T12:00:00.000Z",
         JSON.stringify([{ round: 1 }])
       );

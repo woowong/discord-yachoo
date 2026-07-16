@@ -79,6 +79,15 @@ export const handleWebRequest = (request: Request) =>
       });
     }
 
+    // 5. API: Registered players directory
+    if (pathname === "/web/api/players" || pathname === "/web/api/players/") {
+      const guildId = url.searchParams.get("guildId") || null;
+      const players = yield* playerRepo.getAllPlayers(guildId, 50);
+      return new Response(JSON.stringify(players), {
+        headers: { "content-type": "application/json" }
+      });
+    }
+
     // Fallback 404
     return new Response(JSON.stringify({ error: "Not found" }), {
       status: 404,

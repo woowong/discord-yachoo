@@ -333,6 +333,7 @@ export const GameWorkflowServiceLive = Layer.succeed(
               player1Score: p1.totalScore,
               player2Score: p2 ? p2.totalScore : null,
               winnerId,
+              surrenderedId: endedState.surrenderedPlayerId || null,
               playedAt: new Date(),
               historyJson: JSON.stringify(endedState.turnHistory)
             };
@@ -527,6 +528,7 @@ export const GameWorkflowServiceLive = Layer.succeed(
               player1Score: p1.totalScore,
               player2Score: p2 ? p2.totalScore : null,
               winnerId,
+              surrenderedId: endedState.surrenderedPlayerId || null,
               playedAt: new Date(),
               historyJson: JSON.stringify(endedState.turnHistory)
             };

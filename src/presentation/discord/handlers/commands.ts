@@ -121,7 +121,8 @@ export const handleProfile = (
         `• Wins: **${statsOption.value.multiWins}** | Losses: **${statsOption.value.multiLosses}** | Draws: **${statsOption.value.multiDraws}**\n` +
         `• Avg Score: **${avgMultiScore}**점\n` +
         `• Highest Score: **${statsOption.value.multiHighestScore}**점\n` +
-        `• Recent 10 Matches: ${recentStr}`;
+        `• Recent 10 Matches: ${recentStr}\n\n` +
+        `🔗 **상세 전적 및 리플레이**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${interaction.user.id})`;
     } else {
       content = `👤 **Player Profile: ${interaction.user.globalName || interaction.user.username}**\n\n` +
         `No games played yet. Use \`/challenge\` to start your first game!`;

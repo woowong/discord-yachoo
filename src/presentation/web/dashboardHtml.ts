@@ -135,12 +135,12 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     .glass-card {
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
-      border-radius: 16px;
+      border-radius: 12px;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      padding: 2rem;
+      padding: 1.2rem;
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
-      margin-bottom: 2rem;
+      margin-bottom: 1.2rem;
     }
 
     h2 {
@@ -286,11 +286,11 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
     }
 
     th, td {
-      padding: 1rem 1.2rem;
+      padding: 0.5rem 0.8rem;
     }
 
     th {
@@ -468,6 +468,79 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       padding: 3rem 0;
       font-size: 1rem;
     }
+
+    /* Player Directory Chips */
+    .player-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .player-chip:hover {
+      background: rgba(88, 101, 242, 0.15);
+      border-color: var(--accent-primary);
+      transform: translateY(-1px);
+    }
+
+    .player-chip .elo-badge {
+      background: rgba(96, 165, 250, 0.15);
+      color: #60a5fa;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Tag Filters in Legend Matches */
+    .filter-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .filter-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--panel-border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-primary);
+      color: #fff;
+      border-color: var(--accent-primary);
+    }
+
+    .link-nickname {
+      color: #60a5fa;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color 0.2s ease;
+    }
+
+    .link-nickname:hover {
+      color: #93c5fd;
+    }
   </style>
 </head>
 <body>
@@ -492,6 +565,13 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           <button class="search-btn" onclick="searchProfile()">조회</button>
         </div>
 
+        <div id="player-directory-container" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--text-muted);">👥 등록된 플레이어 목록 (클릭하여 조회)</h4>
+          <div id="player-directory-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="color: var(--text-muted); font-size: 0.8rem;">불러오는 중...</span>
+          </div>
+        </div>
+
         <div id="profile-result" style="display: none;">
           <!-- JS will populate player data here -->
         </div>
@@ -510,9 +590,17 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <div id="legend-tab" class="tab-content">
       <div class="glass-card">
         <h2>🎬 명예의 전당 - 레전드 경기 모음</h2>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+        <p style="color: var(--text-muted); margin-bottom: 1.2rem;">
           막판 대역전승, 야추(Yacht) 완성, 기가막힌 연속 0점 뇌절 등 유별난 기록을 남긴 소중한 명경기 리스트입니다.
         </p>
+
+        <div class="filter-container">
+          <button id="filter-btn-all" class="filter-btn active" onclick="filterLegend('all')">전체</button>
+          <button id="filter-btn-yacht" class="filter-btn" onclick="filterLegend('yacht')">🎲 야추 완성</button>
+          <button id="filter-btn-comeback" class="filter-btn" onclick="filterLegend('comeback')">⚡ 극적 역전승</button>
+          <button id="filter-btn-streak" class="filter-btn" onclick="filterLegend('streak')">🔥 연속 고득점</button>
+          <button id="filter-btn-fail" class="filter-btn" onclick="filterLegend('fail')">🧠 연속 뇌절</button>
+        </div>
 
         <div id="legend-loading" class="loader">
           <div class="spinner"></div>
@@ -553,6 +641,27 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
   </div>
 
   <script>
+    // Load player directory
+    async function loadPlayerDirectory() {
+      const container = document.getElementById('player-directory-list');
+      try {
+        const response = await fetch('/web/api/players');
+        if (!response.ok) throw new Error();
+        const players = await response.json();
+        if (players.length === 0) {
+          container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">등록된 플레이어가 없습니다.</span>';
+          return;
+        }
+        container.innerHTML = players.map(p => \`
+          <button class="player-chip" onclick="document.getElementById('player-id-input').value='\${p.id}'; searchProfile('\${p.id}')">
+            👤 \${p.name} <span class="elo-badge">\${p.elo}</span>
+          </button>
+        \`).join('');
+      } catch (err) {
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">플레이어 목록을 불러오지 못했습니다.</span>';
+      }
+    }
+
     // Tab switching
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -571,6 +680,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
     // Load URL params (e.g., ?player=123)
     window.addEventListener('DOMContentLoaded', () => {
+      loadPlayerDirectory();
       const urlParams = new URLSearchParams(window.location.search);
       const playerParam = urlParams.get('player');
       if (playerParam) {
@@ -648,17 +758,18 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
             let resultColor = 'var(--text-main)';
             if (m.mode === 'multi') {
               if (m.winnerId === idInput) {
-                resultLabel = '승리';
+                resultLabel = m.surrenderedId ? '승리 (KO)' : '승리';
                 resultColor = 'var(--accent-success)';
               } else if (m.winnerId === null) {
                 resultLabel = '무승부';
                 resultColor = 'var(--accent-warning)';
               } else {
-                resultLabel = '패배';
+                resultLabel = m.surrenderedId ? '기권패 (KO)' : '패배';
                 resultColor = 'var(--accent-danger)';
               }
             } else {
-              resultLabel = '완료';
+              resultLabel = m.surrenderedId ? '기권패 (KO)' : '완료';
+              if (m.surrenderedId) resultColor = 'var(--accent-danger)';
             }
 
             const scoreText = m.mode === 'single' 
@@ -752,13 +863,6 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
       modal.style.display = 'flex';
 
       try {
-        const response = await fetch(\`/web/api/legend\`);
-        const matches = await response.json();
-        
-        // Find match inside matches or fetch by ID if needed (for simplicity, we get details from '/web/api/profile' lists historyJson)
-        // Let's call details endpoint or load from our active state.
-        // Wait, for this demo we can fetch details from the profile page list where we already loaded data.
-        // Let's fetch details dynamically! We'll query specific match API.
         const detailResp = await fetch(\`/web/api/profile/match/\${matchId}\`);
         if (!detailResp.ok) throw new Error();
         const matchData = await detailResp.json();
@@ -768,19 +872,22 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         meta.innerText = \`일시: \${new Date(match.playedAt).toLocaleString('ko-KR')} | 모드: \${match.mode === 'single' ? '🕹️ 싱글' : '⚔️ 매치'} | 최종 결과: \${match.player1Score} 대 \${match.player2Score || 0}\`;
 
         const turns = JSON.parse(match.historyJson);
-        // Sort turns by turnNumber and playerIndex
         turns.sort((a,b) => a.turnNumber - b.turnNumber || a.playerIndex - b.playerIndex);
 
         tbody.innerHTML = turns.map(t => {
-          // format dice
           const rolls = t.rolls || [];
           const lastRoll = rolls[rolls.length - 1] || [];
           const diceStr = lastRoll.length > 0 ? \`[ \${lastRoll.join(', ')} ]\` : '-';
 
+          const pId = t.playerIndex === 0 ? match.player1Id : match.player2Id;
+          const linkHtml = pId 
+            ? \`<span class="link-nickname" onclick="closeReplayModal(); document.getElementById('player-id-input').value='\${pId}'; searchProfile('\${pId}')">\${t.playerName}</span>\`
+            : \`<span>\${t.playerName}</span>\`;
+
           return \`
             <tr>
               <td>\${t.turnNumber} R</td>
-              <td style="font-weight:600;">\${t.playerName}</td>
+              <td style="font-weight:600;">\${linkHtml}</td>
               <td><code style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.4rem; border-radius: 4px;">\${t.category}</code></td>
               <td style="font-weight:700; color: var(--accent-success);">+\${t.score}점</td>
               <td style="font-family: monospace; letter-spacing: 0.05em; color: var(--text-muted);">\${diceStr}</td>
@@ -834,7 +941,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           });
 
           return \`
-            <div class="legend-card" onclick="openReplay('\${match.id}')">
+            <div class="legend-card" data-tags="\${tags.map(t => t.type).join(',')}" onclick="openReplay('\${match.id}')">
               <div>
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                   <div>\${badgeHtml}</div>
@@ -859,6 +966,23 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         listDiv.innerHTML = '<div class="empty-message" style="grid-column: 1/-1; color: var(--accent-danger);">레전드 경기를 가져오는 데 실패했습니다.</div>';
         listDiv.style.display = 'grid';
       }
+    }
+
+    function filterLegend(tagType) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(\`filter-btn-\${tagType}\`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const cards = document.querySelectorAll('.legend-card');
+      cards.forEach(card => {
+        const cardTagsStr = card.getAttribute('data-tags') || '';
+        const cardTags = cardTagsStr.split(',');
+        if (tagType === 'all' || cardTags.includes(tagType)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
     }
   </script>
 </body>

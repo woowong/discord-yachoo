@@ -31,6 +31,7 @@ interface DBMatchRow {
   readonly player1_score: number;
   readonly player2_score: number | null;
   readonly winner_id: string | null;
+  readonly surrendered_id: string | null;
   readonly played_at: string;
   readonly history_json: string | null;
 }
@@ -62,6 +63,7 @@ const mapRowToMatchRecord = (row: DBMatchRow): MatchRecord => ({
   player1Score: row.player1_score,
   player2Score: row.player2_score,
   winnerId: row.winner_id,
+  surrenderedId: row.surrendered_id || null,
   playedAt: new Date(row.played_at),
   historyJson: row.history_json || null,
 });
@@ -268,6 +270,34 @@ export const D1PlayerRepositoryLive = Layer.effect(
           catch: (error) => new RepositoryError(`getLeaderboard failed: ${error}`, error)
         }).pipe(
           Effect.map((res) => res.results.map(mapRowToPlayerStats))
+        ),
+
+      getAllPlayers: (guildId: string | null, limit: number) =>
+        Effect.tryPromise({
+          try: () => {
+            if (guildId) {
+              const query = `
+                SELECT 
+                  p.id, p.name, p.created_at, g.updated_at,
+                  g.wins, g.losses, g.draws, g.highest_score,
+                  g.solo_play_count, g.solo_highest_score,
+                  g.multi_wins, g.multi_losses, g.multi_draws, g.multi_highest_score,
+                  COALESCE(g.elo, 1000) as elo
+                FROM guild_player_stats g
+                JOIN players p ON g.player_id = p.id
+                WHERE g.guild_id = ?
+                ORDER BY COALESCE(g.elo, 1000) DESC, p.name ASC
+                LIMIT ?
+              `;
+              return db.prepare(query).bind(guildId, limit).all<DBPlayerRow>();
+            } else {
+              const query = "SELECT *, COALESCE(elo, 1000) as elo FROM players ORDER BY elo DESC, name ASC LIMIT ?";
+              return db.prepare(query).bind(limit).all<DBPlayerRow>();
+            }
+          },
+          catch: (error) => new RepositoryError(`getAllPlayers failed: ${error}`, error)
+        }).pipe(
+          Effect.map((res) => res.results.map(mapRowToPlayerStats))
         )
     };
   })
@@ -283,8 +313,8 @@ export const D1MatchRepositoryLive = Layer.effect(
         Effect.tryPromise({
           try: () =>
             db.prepare(`
-              INSERT INTO matches (id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, played_at, history_json)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO matches (id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, surrendered_id, played_at, history_json)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).bind(
               match.id,
               match.mode,
@@ -294,6 +324,7 @@ export const D1MatchRepositoryLive = Layer.effect(
               match.player1Score,
               match.player2Score,
               match.winnerId,
+              match.surrenderedId || null,
               match.playedAt ? match.playedAt.toISOString() : new Date().toISOString(),
               match.historyJson || null
             ).run(),
@@ -338,18 +369,18 @@ export const D1MatchRepositoryLive = Layer.effect(
           try: () => {
             if (mode === "single") {
               const query = guildId
-                ? "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id = ?"
-                : "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id IS NULL";
+                ? "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id = ? AND (surrendered_id IS NULL OR surrendered_id = '')"
+                : "SELECT AVG(player1_score) as avgScore FROM matches WHERE player1_id = ? AND mode = 'single' AND guild_id IS NULL AND (surrendered_id IS NULL OR surrendered_id = '')";
               const bindParams = guildId ? [playerId, guildId] : [playerId];
               return db.prepare(query).bind(...bindParams).first<{ avgScore: number | null }>();
             } else {
               const query = guildId
                 ? `SELECT AVG(CASE WHEN player1_id = ? THEN player1_score ELSE player2_score END) as avgScore
                    FROM matches
-                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id = ?`
+                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id = ? AND (surrendered_id IS NULL OR surrendered_id = '')`
                 : `SELECT AVG(CASE WHEN player1_id = ? THEN player1_score ELSE player2_score END) as avgScore
                    FROM matches
-                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id IS NULL`;
+                   WHERE (player1_id = ? OR player2_id = ?) AND mode = 'multi' AND guild_id IS NULL AND (surrendered_id IS NULL OR surrendered_id = '')`;
               const bindParams = guildId ? [playerId, playerId, playerId, guildId] : [playerId, playerId, playerId];
               return db.prepare(query).bind(...bindParams).first<{ avgScore: number | null }>();
             }

@@ -17,6 +17,7 @@ The repository MUST support the following operations:
   - Retrieves top players for the specified `guildId` from the `guild_player_stats` table.
   - If `mode` is 'single': Retrieves top players sorted by `solo_highest_score` descending.
   - If `mode` is 'multi': Retrieves top players sorted by `multi_wins` descending.
+* `getAllPlayers(guildId: string | null, limit: number)`: Retrieves all registered players (ordered by ELO descending, name ascending) to be listed in the player directory.
 
 #### Scenario: Updating player solo stats
 - **WHEN** `updateStats` is called for player 'user1' with guild 'guild1', mode 'single', outcome 'win' and score 150 (current solo highest is 120)
@@ -34,11 +35,18 @@ The repository MUST support the following operations:
 - **WHEN** `getLeaderboard` is called with mode 'multi', guild 'guild1' and limit 5
 - **THEN** it returns the top 5 players for 'guild1' ordered by `multi_wins` descending.
 
+#### Scenario: Listing all registered players
+- **WHEN** `getAllPlayers` is called with guild 'guild1' and limit 50
+- **THEN** it returns a list of registered players in 'guild1' sorted by ELO rating descending.
+
 ### Requirement: MatchRepository Interface and D1 Implementation
 The system SHALL define a `MatchRepository` interface using Effect's `Context.Tag` and provide a Cloudflare D1 implementation.
 The repository MUST support:
-* `saveMatch(match: MatchRecord)`: Saves a match record (including its `guildId`) to the database.
+* `saveMatch(match: MatchRecord)`: Saves a match record (including its `guildId` and optional `surrenderedId`) to the database.
 * `getRecentMatches(playerId: string, guildId: string | null, limit: number)`: Retrieves the list of recent matches for a specific player in the given guild.
+* `getMatchById(matchId: string)`: Retrieves a specific match record by its ID.
+* `getGlobalRecentMatches(guildId: string | null, limit: number)`: Retrieves the global recent matches.
+* `getPlayerAverageScore(playerId: string, guildId: string | null, mode: 'single' | 'multi')`: Computes the player's average score, EXCLUDING matches that were surrendered (i.e. where `surrendered_id` is populated).
 
 #### Scenario: Saving a completed match record
 - **WHEN** `saveMatch` is invoked with a match object containing the scores, winner, and `guildId`
@@ -47,6 +55,10 @@ The repository MUST support:
 #### Scenario: Querying recent matches filtered by guild
 - **WHEN** `getRecentMatches` is called for player 'user1' with guild 'guild1'
 - **THEN** it returns only the matches involving 'user1' that were played in 'guild1'.
+
+#### Scenario: Querying player average score excluding surrenders
+- **WHEN** `getPlayerAverageScore` is called for player 'user1' with mode 'multi'
+- **THEN** it calculates the average of 'user1''s scores from matches where they played, but only includes rows where `surrendered_id` is NULL or empty.
 
 ### Requirement: D1Database Dependency Injection
 The repository implementations MUST receive the `D1Database` binding dynamically from the Effect environment (via Context Tag) instead of depending on a global variable.

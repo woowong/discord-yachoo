@@ -1013,8 +1013,9 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(json.type).toBe(7); // UpdateMessage (resolves the ephemeral confirmation)
     expect(json.data.content).toContain("기권 처리가 완료되었습니다.");
 
-    // Verify D1 deletes active game
+    // Verify D1 deletes active game and inserts matches record with surrendered_id
     expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("DELETE FROM active_games"));
+    expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO matches"));
   });
 
   it("should send celebration message on successful Yacht category selection", async () => {
@@ -1229,6 +1230,24 @@ describe("Discord Yacht Bot Integration Tests", () => {
       const req = new Request("http://localhost/web/api/profile/unknown-id", { method: "GET" });
       const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
       expect(res.status).toBe(404);
+    });
+
+    it("should return registered players at GET /web/api/players", async () => {
+      const mockPlayers = [
+        { id: "123", name: "Alice", elo: 1200, multi_wins: 5, multi_losses: 2, solo_play_count: 0, solo_highest_score: 0, multi_draws: 0, multi_highest_score: 0, wins: 5, losses: 2, draws: 0, highest_score: 0, created_at: "2026-07-16T12:00:00Z", updated_at: "2026-07-16T12:00:00Z" }
+      ];
+      mockAll.mockResolvedValueOnce({
+        results: mockPlayers
+      });
+
+      const req = new Request("http://localhost/web/api/players", { method: "GET" });
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toContain("application/json");
+      const json = await res.json() as any;
+      expect(json).toHaveLength(1);
+      expect(json[0].name).toBe("Alice");
+      expect(json[0].elo).toBe(1200);
     });
   });
 });

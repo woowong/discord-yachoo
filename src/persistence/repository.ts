@@ -33,6 +33,7 @@ export interface MatchRecord {
   readonly player1Score: number;
   readonly player2Score: number | null;
   readonly winnerId: string | null;
+  readonly surrenderedId: string | null;
   readonly playedAt: Date;
   readonly historyJson?: string | null;
 }
@@ -43,6 +44,7 @@ export interface PlayerRepository {
   readonly updateStats: (id: string, guildId: string | null, mode: "single" | "multi", outcome: "win" | "loss" | "draw", score: number) => Effect.Effect<void, RepositoryError>;
   readonly updateElo: (id: string, guildId: string | null, newElo: number) => Effect.Effect<void, RepositoryError>;
   readonly getLeaderboard: (mode: "single" | "multi", guildId: string | null, limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
+  readonly getAllPlayers: (guildId: string | null, limit: number) => Effect.Effect<readonly PlayerStats[], RepositoryError>;
 }
 
 export const PlayerRepository = Context.GenericTag<PlayerRepository>("@services/PlayerRepository");

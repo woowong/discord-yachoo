@@ -51,12 +51,12 @@ export const KoreanMessages = {
     alreadyFinished: "✅ 이미 종료된 게임입니다."
   },
   gameEnd: {
-    singleFinished: (playerId: string, score: number) => `🏁 게임 완료! <@${playerId}> 님의 최종 스코어: **${score}**점`,
-    singleSurrendered: (playerId: string, score: number) => `🏳️ 항복! <@${playerId}> 님이 게임을 기권하였습니다. 최종 스코어: **${score}**점`,
+    singleFinished: (playerId: string, score: number) => `🏁 게임 완료! <@${playerId}> 님의 최종 스코어: **${score}**점\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${playerId})`,
+    singleSurrendered: (playerId: string, score: number) => `🏳️ 항복! <@${playerId}> 님이 게임을 기권하였습니다. 최종 스코어: **${score}**점\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${playerId})`,
     multiSurrendered: (winnerId: string, loserId: string, eloA: number, eloB: number, deltaA: string, deltaB: string) =>
       `🏳️ <@${loserId}> 님이 항복하여 <@${winnerId}> 님이 승리했습니다!\n` +
-      `• <@12345>: Elo **${eloA}** (${deltaA})\n` + // Note: Discord ID placeholder templates mapping format below
-      `• <@67890>: Elo **${eloB}** (${deltaB})`, // Note: We will use actual player IDs instead of static mock strings.
+      `• <@12345>: Elo **${eloA}** (${deltaA})\n` + 
+      `• <@67890>: Elo **${eloB}** (${deltaB})`, 
     multiFinished: (winnerId: string, loserId: string, scoreWin: number, scoreLoss: number, eloA: number, eloB: number, deltaA: string, deltaB: string) =>
       `🎉🏆 <@${winnerId}> 님이 승리했습니다! **${scoreWin}**점 대 **${scoreLoss}**점! GG! 🎲\n` +
       `• <@12345>: Elo **${eloA}** (${deltaA})\n` +
@@ -71,19 +71,20 @@ export const KoreanMessages = {
 export const getMultiSurrenderMessage = (p1Id: string, p2Id: string, surrenderedId: string, eloA: number, eloB: number, deltaA: string, deltaB: string) => {
   const surrenderedPlayerId = surrenderedId;
   const winningPlayerId = p1Id === surrenderedPlayerId ? p2Id : p1Id;
-  return `🏳️ <@${surrenderedPlayerId}> 님이 항복하여 <@${winningPlayerId}> 님이 승리했습니다!\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})`;
+  return `🏳️ <@${surrenderedPlayerId}> 님이 항복하여 <@${winningPlayerId}> 님이 승리했습니다!\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${winningPlayerId})`;
 };
 
 export const getMultiFinishedMessage = (p1Id: string, p2Id: string, p1Score: number, p2Score: number, eloA: number, eloB: number, deltaA: string, deltaB: string) => {
+  const winnerId = p1Score > p2Score ? p1Id : p2Id;
   if (p1Score > p2Score) {
-    return `🎉🏆 <@${p1Id}> 님이 승리했습니다! **${p1Score}**점 대 **${p2Score}**점! GG! 🎲\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})`;
+    return `🎉🏆 <@${p1Id}> 님이 승리했습니다! **${p1Score}**점 대 **${p2Score}**점! GG! 🎲\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${winnerId})`;
   } else {
-    return `🎉🏆 <@${p2Id}> 님이 승리했습니다! **${p2Score}**점 대 **${p1Score}**점! GG! 🎲\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})`;
+    return `🎉🏆 <@${p2Id}> 님이 승리했습니다! **${p2Score}**점 대 **${p1Score}**점! GG! 🎲\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${winnerId})`;
   }
 };
 
 export const getMultiDrawMessage = (p1Id: string, p2Id: string, score: number, eloA: number, eloB: number, deltaA: string, deltaB: string) => {
-  return `🤝 무승부! <@${p1Id}> vs <@${p2Id}> - **${score}**점으로 동점!\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})`;
+  return `🤝 무승부! <@${p1Id}> vs <@${p2Id}> - **${score}**점으로 동점!\n• <@${p1Id}>: Elo **${eloA}** (${deltaA})\n• <@${p2Id}>: Elo **${eloB}** (${deltaB})\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${p1Id})`;
 };
 
 export const determineTeasingNotification = (

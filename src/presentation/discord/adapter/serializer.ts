@@ -365,7 +365,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
 
       const embed: DiscordEmbed = {
         title,
-        description: topPlayers.length === 0 ? "No records found yet. Be the first to play!" : undefined,
+        description: (topPlayers.length === 0 ? "No records found yet. Be the first to play!" : "") +
+          "\n\n🔗 **전체 ELO 순위 및 플레이어 대시보드**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web)",
         color: 0xFEE75C,
         fields: fields.length > 0 ? fields : undefined
       };
@@ -410,14 +411,23 @@ export const DiscordResponseSerializerLive = Layer.succeed(
               const opponentId = isP1 ? m.player2Id : m.player1Id;
               const myScore = isP1 ? m.player1Score : (m.player2Score ?? 0);
               const oppScore = isP1 ? (m.player2Score ?? 0) : m.player1Score;
-              const outcome = m.winnerId === userId ? "Won 🏆" : (m.winnerId === null ? "Draw 🤝" : "Lost ❌");
+              
+              let outcome = m.winnerId === userId ? "Won 🏆" : (m.winnerId === null ? "Draw 🤝" : "Lost ❌");
+              if (m.surrenderedId) {
+                if (m.winnerId === userId) {
+                  outcome = "Won (KO) 🏆";
+                } else if (m.winnerId !== null) {
+                  outcome = "Lost (KO) 🏳️";
+                }
+              }
+              
               return `${idx + 1}️⃣ vs <@${opponentId}>: **${myScore}** vs **${oppScore}** (${outcome}) • *${playedDate}*\n\`ID: ${m.id}\``;
             }
           }).join("\n\n");
 
       const embed: DiscordEmbed = {
         title: "🏆 Recent Yacht Dice Matches",
-        description,
+        description: description + "\n\n🔗 **웹 대시보드에서 전체 보기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=" + userId + ")",
         color: 0x5865F2
       };
 
@@ -500,7 +510,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
 
       const embed: DiscordEmbed = {
         title: `📜 Match Details: ${match.id} (Rounds ${page === 1 ? "1-6" : "7-12"})`,
-        description: `${matchHeader}\n\n${pageDesc}`,
+        description: `${matchHeader}\n\n${pageDesc}\n\n🔗 **웹에서 전체 턴 자세히 복기하기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${match.player1Id})`,
         color: 0x5865F2,
         footer: { text: `Played on ${new Date(match.playedAt).toLocaleDateString()}` }
       };

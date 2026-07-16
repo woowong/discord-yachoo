@@ -1,8 +1,5 @@
-# web-dashboard Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change fix-bugs-and-profile-dashboard. Update Purpose after archive.
-## Requirements
 ### Requirement: Serve Web Dashboard Assets
 The system SHALL serve the static HTML/CSS/JS dashboard assets directly from the Cloudflare Worker when accessed via browser GET requests at `/` or `/web/` without verifying Discord signature headers. The UI assets MUST utilize a compact design system (reduced paddings, margins, and row heights), render player nickname links connected to profile cards, display a player directory list, and provide interactive tag filter controls on the Legend Matches tab.
 
@@ -16,4 +13,3 @@ The system SHALL expose JSON API endpoints under `/web/api/profile/:playerId`, `
 #### Scenario: Fetch user profile data via API
 - **WHEN** a GET request is received at `/web/api/profile/:playerId` with a optional `guildId` query parameter
 - **THEN** the system SHALL return a 200 OK Response containing player statistics (ELO, wins, losses, average score, and recent match details) in JSON format.
-
