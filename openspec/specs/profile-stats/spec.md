@@ -1,7 +1,7 @@
 # profile-stats Specification
 
 ## Purpose
-TBD - created by archiving change fix-bugs-and-profile-dashboard. Update Purpose after archive.
+솔로 및 멀티플레이 모드별 평균 점수, 최근 10경기 승패(W/L/D) 기록, 그리고 레전드 경기 업적 뱃지(역전승, 연승, 야추 달성 등) 통계를 산출 및 제공한다.
 ## Requirements
 ### Requirement: Calculate Overall Average Score
 The system SHALL calculate the overall average score for a player by scanning their matches history. Single (solo) mode and Multi (VS) mode average scores SHALL be calculated separately.

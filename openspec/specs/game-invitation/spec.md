@@ -1,7 +1,7 @@
 # game-invitation Specification
 
 ## Purpose
-TBD - created by archiving change matchmaking-and-invitations. Update Purpose after archive.
+`/challenge @지목상대` 명령어를 통해 특정 상대를 지정하여 5분 만료시간을 가진 1:1 게임 초대 카드를 생성하고 수락/거절 인터랙션을 처리한다.
 ## Requirements
 ### Requirement: Challenge Invitation Creation
 When a player challenges a specific opponent, the system SHALL create a pending invitation with a 5-minute (300 seconds) expiration instead of immediately starting an active game.

@@ -1,7 +1,7 @@
 # matchmaking-queue Specification
 
 ## Purpose
-TBD - created by archiving change matchmaking-and-invitations. Update Purpose after archive.
+채널 내 누구나 참여할 수 있는 오픈 매치메이킹 대기열(5분 만료)을 생성하고, 다른 플레이어의 즉시 매칭 및 생성자의 취소 요청을 관리한다.
 ## Requirements
 ### Requirement: Open Matchmaking Queue Creation
 The system SHALL allow players to create an open game lobby with a 5-minute expiration in the channel.

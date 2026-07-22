@@ -1,7 +1,7 @@
 # finished-game Specification
 
 ## Purpose
-TBD - created by archiving change fix-finished-game-buttons-and-error-format. Update Purpose after archive.
+게임 종료(Finished) 상태로 전환 시 디스코드 버튼 컴포넌트를 완전히 제거하고, 이미 완료된 게임에 대한 요청 처리 및 가독성 높은 도메인 에러 메시지를 제공한다.
 ## Requirements
 ### Requirement: Discord components removal on game finish
 The system SHALL ensure that when a game transitions to the `Finished` status, all Discord interaction components (buttons and dropdown menus) are completely removed from the message.

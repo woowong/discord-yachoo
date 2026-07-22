@@ -1,7 +1,7 @@
 # discord-slash-command-registrar Specification
 
 ## Purpose
-TBD - created by archiving change game-orchestration-bot. Update Purpose after archive.
+Discord Application Commands API를 통해 `/challenge`, `/match`, `/profile`, `/leaderboard`, `/history` 슬래시 명령어를 디스코드 서비스에 원격 등록하고 관리한다.
 ## Requirements
 ### Requirement: Discord Command Registration
 The system SHALL support remote registration of `/challenge`, `/match`, `/profile`, `/leaderboard`, and `/history` slash commands via the Discord Application Commands API.

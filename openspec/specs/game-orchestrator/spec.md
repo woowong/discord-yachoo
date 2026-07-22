@@ -1,7 +1,7 @@
 # game-orchestrator Specification
 
 ## Purpose
-TBD - created by archiving change game-orchestration-bot. Update Purpose after archive.
+디스코드 웹훅 서명 검증, PING/PONG 응답, 슬래시 명령어 핸들링 및 진행 중인 게임 상태 파이프라인을 총괄하는 중앙 오케스트레이션을 담당한다.
 ## Requirements
 ### Requirement: Discord Webhook Verification
 The system MUST verify Ed25519 signature of incoming requests from Discord.

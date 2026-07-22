@@ -1,7 +1,7 @@
 # patch-announcer Specification
 
 ## Purpose
-TBD - created by archiving change update-docs-and-announcement-script. Update Purpose after archive.
+새로운 게임 패치 노트를 디스코드 채널로 브로드캐스트 전송하는 CLI 아나운서 스크립트를 제공한다.
 ## Requirements
 ### Requirement: Discord Patch Announcement Script
 The system SHALL provide a CLI script (`scripts/send-announcement.ts`) that broadcasts formatted game patch notes to a specified Discord channel using the bot token.

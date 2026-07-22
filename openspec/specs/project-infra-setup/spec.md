@@ -1,7 +1,7 @@
 # project-infra-setup Specification
 
 ## Purpose
-TBD - created by archiving change init-project-setup. Update Purpose after archive.
+Effect.ts, Cloudflare Workers, D1 데이터베이스, Vitest 등 프로젝트의 기반 의존성 및 인프라 설정을 정의하고 검증한다.
 ## Requirements
 ### Requirement: Project Dependencies Setup
 프로젝트는 `package.json` 파일에 최신 버전의 Effect.ts 에코시스템(`effect`, `@effect/platform`, `@effect/schema`), Cloudflare Workers 환경(`wrangler`), 개발 및 테스트 환경(`typescript` 7.0.x 이상, `vitest`)을 의존성으로 정의하고 성공적으로 로드해야 한다. (SHALL)

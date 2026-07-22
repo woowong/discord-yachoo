@@ -1,7 +1,7 @@
 # turn-mention-notification Specification
 
 ## Purpose
-TBD - created by archiving change turn-mention-notification. Update Purpose after archive.
+멀티플레이어 대전 시 턴이 넘어가면 다음 순서 플레이어를 디스코드 멘션으로 알리고, 플레이어가 주사위를 굴리거나 홀드 조작 시 멘션 메시지를 자동 삭제(ACK)하여 쾌적한 턴 알림 경험을 제공한다.
 ## Requirements
 ### Requirement: Send Mention on Turn Transition
 The system SHALL send a notification mention message to the next player's Discord channel when a turn transitions to another player in a multi-player matchmaking game as a reply to the game interaction message, and store the sent message ID and channel ID in the `GameState`.

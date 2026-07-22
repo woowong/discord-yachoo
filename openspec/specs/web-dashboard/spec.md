@@ -1,7 +1,7 @@
 # web-dashboard Specification
 
 ## Purpose
-TBD - created by archiving change fix-bugs-and-profile-dashboard. Update Purpose after archive.
+Cloudflare Worker를 통해 웹 기반 대시보드(SPA) 자산을 서빙하고, 턴별 리플레이, Elo 레이팅 차트, 전적 및 프로필 조회를 지원하는 단일 웹 인터페이스를 제공한다.
 ## Requirements
 ### Requirement: Serve Web Dashboard Assets
 The system SHALL serve the static HTML/CSS/JS dashboard assets directly from the Cloudflare Worker when accessed via browser GET requests at `/` or `/web/` without verifying Discord signature headers. The UI assets MUST utilize a compact design system (reduced paddings, margins, and row heights), render player nickname links connected to profile cards, display a player directory list, and provide interactive tag filter controls on the Legend Matches tab.

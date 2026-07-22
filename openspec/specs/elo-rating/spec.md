@@ -1,7 +1,7 @@
 # elo-rating Specification
 
 ## Purpose
-TBD - created by archiving change user-feedback-batch-v1. Update Purpose after archive.
+멀티플레이어 게임 결과에 따라 플레이어 간 Elo 레이팅 변경액을 계산하고, 서버(Guild) 단위 전적 및 리더보드 반영 및 프로필 상에 레이팅 수치를 제공한다.
 ## Requirements
 ### Requirement: Elo rating calculation
 The system SHALL calculate Elo rating changes for both players at the end of a multiplayer match using the standard Elo formula: expected score `E_A = 1 / (1 + 10^((R_B - R_A) / 400))` and rating update `R'_A = R_A + K * (S_A - E_A)` where K-factor is 32.
