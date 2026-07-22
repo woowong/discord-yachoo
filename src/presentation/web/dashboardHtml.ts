@@ -621,7 +621,17 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     <div class="modal-content">
       <button class="close-btn" onclick="closeReplayModal()">&times;</button>
       <div class="modal-header-title" id="modal-match-title">경기 정보 복기</div>
-      <p id="modal-match-meta" style="color: var(--text-muted); margin-bottom: 1.5rem;"></p>
+      <p id="modal-match-meta" style="color: var(--text-muted); margin-bottom: 1rem;"></p>
+      
+      <div id="replay-chart-wrapper" style="display:none; margin-bottom: 1.5rem; background: rgba(18, 19, 30, 0.6); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem;">
+        <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+          <span>📈 라운드별 점수 격차 흐름 (Delta Graph)</span>
+          <span style="font-size:0.75rem; font-weight:normal; color:#94a3b8;">위: P1 우세 (+) | 아래: P2 우세 (-)</span>
+        </div>
+        <div style="position: relative; height: 160px; width: 100%;">
+          <canvas id="replay-delta-chart"></canvas>
+        </div>
+      </div>
       
       <div class="table-container">
         <table>
@@ -961,13 +971,14 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     // Replay Game Log Modal
+    let replayChartInstance = null;
     async function openReplay(matchId) {
       const modal = document.getElementById('replay-modal');
       const tbody = document.getElementById('modal-turns-tbody');
       const title = document.getElementById('modal-match-title');
       const meta = document.getElementById('modal-match-meta');
 
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><div class="spinner" style="margin: 2rem auto;"></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;"><div class="spinner" style="margin: 2rem auto;"></div></td></tr>';
       modal.style.display = 'flex';
 
       try {
@@ -981,6 +992,93 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
         const turns = JSON.parse(match.historyJson);
         turns.sort((a,b) => a.turnNumber - b.turnNumber || a.playerIndex - b.playerIndex);
+
+        // Render Delta Line Chart for Multi Mode
+        const chartWrapper = document.getElementById('replay-chart-wrapper');
+        if (match.mode === 'multi') {
+          chartWrapper.style.display = 'block';
+
+          const p1Scores = {};
+          const p2Scores = {};
+          turns.forEach(t => {
+            const r = t.turnNumber;
+            if (t.playerIndex === 0) p1Scores[r] = t.score;
+            if (t.playerIndex === 1) p2Scores[r] = t.score;
+          });
+
+          const rounds = Array.from({ length: 12 }, (_, i) => i + 1);
+          let cum1 = 0, cum2 = 0;
+          const diffData = rounds.map(r => {
+            cum1 += p1Scores[r] || 0;
+            cum2 += p2Scores[r] || 0;
+            return cum1 - cum2;
+          });
+
+          if (replayChartInstance) {
+            replayChartInstance.destroy();
+          }
+
+          const ctx = document.getElementById('replay-delta-chart').getContext('2d');
+          const p1Name = match.player1Name || 'Player 1';
+          const p2Name = match.player2Name || 'Player 2';
+
+          replayChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: rounds.map(r => \`\${r}R\`),
+              datasets: [{
+                label: \`점수 격차 (\${p1Name} - \${p2Name})\`,
+                data: diffData,
+                borderColor: '#60a5fa',
+                borderWidth: 2,
+                tension: 0.35,
+                pointBackgroundColor: '#60a5fa',
+                pointHoverRadius: 6,
+                fill: {
+                  target: 'origin',
+                  above: 'rgba(96, 165, 250, 0.15)',
+                  below: 'rgba(248, 113, 113, 0.15)'
+                }
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: '#12131e',
+                  titleColor: '#94a3b8',
+                  bodyColor: '#f1f3f9',
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1,
+                  callbacks: {
+                    label: function(context) {
+                      const val = context.parsed.y;
+                      if (val > 0) return \`\${p1Name} +\${val}점 우세\`;
+                      if (val < 0) return \`\${p2Name} +\${Math.abs(val)}점 우세\`;
+                      return '동점 (0점)';
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                  ticks: { color: '#94a3b8', font: { family: 'Inter' } }
+                },
+                y: {
+                  grid: { color: function(context) {
+                    return context.tick.value === 0 ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.05)';
+                  }},
+                  ticks: { color: '#94a3b8', font: { family: 'Inter' } }
+                }
+              }
+            }
+          });
+        } else {
+          chartWrapper.style.display = 'none';
+        }
 
         const playerScores = {};
         tbody.innerHTML = turns.map(t => {
@@ -1047,16 +1145,21 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
               <td style="font-family: monospace; letter-spacing: 0.05em; color: var(--text-muted);">\${diceStr}</td>
               <td style="\${scoreStyle}">+\${t.score}점</td>
               <td style="font-weight:700; color: var(--text-main);">\${cumulativeScore}점</td>
+              <td>\${diffHtml}</td>
             </tr>
           \`;
         }).join('');
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--accent-danger);">경기 로그 로드 실패</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--accent-danger);">경기 로그 로드 실패</td></tr>';
       }
     }
 
     function closeReplayModal() {
       document.getElementById('replay-modal').style.display = 'none';
+      if (replayChartInstance) {
+        replayChartInstance.destroy();
+        replayChartInstance = null;
+      }
     }
 
     // Load legend matches tab

@@ -38,9 +38,18 @@ If the `guildId` query parameter is not provided (or is null), the endpoints (pr
 - **THEN** the system SHALL return a 200 OK Response containing player statistics and recent matches retrieved globally across all guilds.
 
 ### Requirement: Score Differential Column in Replay Modal
-The web dashboard replay modal SHALL display a score differential (Δ Diff) column in the turn-by-turn replay table, indicating cumulative score differences relative to the opponent.
+The web dashboard replay modal SHALL display a score differential (Δ Diff) column in the turn-by-turn replay table, rendering cell content with cumulative score differences relative to the opponent.
 
 #### Scenario: Display score differential in replay table
 - **WHEN** a user opens the turn replay modal for a multiplayer game match
-- **THEN** each turn row MUST display the cumulative score along with the relative score differential against the opponent (e.g. `+12점 (Lead)` or `-5점 (Lag)`)
+- **THEN** each turn row MUST render a `<td>` element containing the relative score differential against the opponent (e.g. `+12점 (우세)` or `-5점 (열세)`) matching the 7-column table header.
+
+### Requirement: Replay Score Advantage Delta Line Chart
+The web dashboard replay modal SHALL display an interactive line chart illustrating the score differential trend between players from Round 1 through Round 12 in multiplayer matches.
+
+#### Scenario: Render round-by-round score differential chart
+- **WHEN** a user opens the replay modal for a multiplayer match
+- **THEN** a Chart.js line chart MUST be rendered above the turn table, mapping Round 1 through Round 12 on the X-axis and relative cumulative score difference on the Y-axis against a zero-level baseline.
+- **AND WHEN** the match is a single player match
+- **THEN** the score differential chart container MUST be hidden.
 
