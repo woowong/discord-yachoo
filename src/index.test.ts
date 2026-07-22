@@ -396,7 +396,7 @@ describe("Discord Yacht Bot Integration Tests", () => {
 
     const json = (await res.json()) as any;
     expect(json.type).toBe(7); // UpdateMessage
-    expect(json.data.embeds[0].description).toContain("Dice 3: **:three:** [HELD]");
+    expect(json.data.embeds[0].description).toContain("▫️ ▫️ 🔒 ▫️ ▫️");
   });
 
   it("should handle /history slash command (no options) and list recent matches", async () => {

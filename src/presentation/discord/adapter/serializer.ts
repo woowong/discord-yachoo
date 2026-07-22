@@ -109,12 +109,9 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         description += `\n**Rolls:** ${state.rollCount}/3`;
 
         if (state.rollCount > 0) {
-          const diceFaces = state.currentDice.map((val, idx) => {
-            const face = DICE_EMOJIS[val] || val.toString();
-            const heldLabel = holds[idx] === "1" ? " [HELD]" : "";
-            return `Dice ${idx + 1}: **${face}**${heldLabel}`;
-          });
-          description += `\n**Current Dice:**\n` + diceFaces.join("\n");
+          const topRow = state.currentDice.map((val) => DICE_EMOJIS[val] || val.toString()).join(" ");
+          const bottomRow = state.currentDice.map((_, idx) => holds[idx] === "1" ? "🔒" : "▫️").join(" ");
+          description += `\n**Current Dice:**\n${topRow}\n${bottomRow}`;
         } else {
           description += `\n**Current Dice:** (First roll pending)`;
         }
@@ -304,7 +301,6 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       const surrenderButton = {
         type: 2 as const,
         style: 4 as const,
-        label: "기권 (Surrender)",
         emoji: { name: "🏳️" },
         custom_id: `disabled_surrender`,
         disabled: true

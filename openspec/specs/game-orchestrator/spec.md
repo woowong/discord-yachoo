@@ -106,11 +106,11 @@ All existing scenarios MUST be fully verified by this test suite, and the tests 
 - **THEN** it SHALL simulate Discord webhook requests and verify that all database updates, Discord API calls, and final responses match the original behavior.
 
 ### Requirement: Consistent Dice Hold Button Labels during Rolling Animation
-The Discord presentation layer SHALL render dice hold buttons during the rolling animation (`serializeRollingMessage`) using the exact same label format (`isHeld ? "🔒" : [idx + 1]`) as standard turn rendering (`serializeGameState`), preventing layout shifts or text length changes when buttons are disabled.
+The Discord presentation layer SHALL render dice hold buttons and action buttons (roll, surrender) during the rolling animation (`serializeRolling`) using exact button structures, labels, and icons identical to standard turn rendering (`serializeGame`), preventing layout shifts or text length changes when buttons are disabled. Specifically, the surrender button MUST be rendered as icon-only (`emoji: { name: "🏳️" }`) without a text label in both active and rolling animation states.
 
-#### Scenario: Rolling animation dice button label consistency
-- **WHEN** the game UI renders the rolling animation message with disabled dice buttons
-- **THEN** held dice buttons MUST display label `"🔒"` and unheld dice buttons MUST display label `[idx + 1]`, matching active turn rendering exactly
+#### Scenario: Rolling animation surrender button uniformity
+- **WHEN** serializing game state during rolling animation disabled state
+- **THEN** the surrender button MUST be disabled, style 4 (Danger), with emoji `🏳️` and NO text label, matching active turn rendering and maintaining identical button widths.
 
 ### Requirement: Discord Handlers for Surrender Proposal and Acceptance
 The Discord interaction parser and game orchestrator SHALL process surrender proposals, acceptances, and declines via dedicated component custom IDs (`offer_surrender`, `accept_surrender`, `decline_surrender`), providing appropriate Ephemeral feedback to unauthorized users.
@@ -122,4 +122,15 @@ The Discord interaction parser and game orchestrator SHALL process surrender pro
 #### Scenario: Unauthorized user clicks accept or decline button
 - **WHEN** a user who is not the designated opponent attempts to click the accept or decline button
 - **THEN** the system MUST respond with an Ephemeral warning message denying the action
+
+### Requirement: Horizontal Single-Line Dice Rendering
+The Discord presentation layer SHALL render the current dice state in a 2-line layout in the embed description when roll count is greater than 0:
+- Line 1 displays space-separated dice face emojis (e.g. `:six: :three: :four: :one: :four:`).
+- Line 2 displays corresponding status indicators directly under each die: held dice display lock icon (`🔒`), and unheld dice display small white square placeholder emoji (`▫️`).
+
+#### Scenario: Rendering current dice with 2-line layout and dot placeholder status indicators
+- **WHEN** serializing active game state with roll count > 0 (e.g. dice `[6, 3, 4, 1, 4]` and holds `01010`)
+- **THEN** the embed description MUST format `Current Dice` across 2 lines:
+  Line 1: `:six: :three: :four: :one: :four:`
+  Line 2: `▫️ 🔒 ▫️ 🔒 ▫️`
 
