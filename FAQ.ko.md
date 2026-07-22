@@ -45,7 +45,7 @@
 **A.** 무의미한 롤링 액션을 방지하기 위해 디스코드 UI 상에서 "주사위 굴리기" 버튼이 비활성화(`disabled: true`) 처리됩니다. 상태 머신 내부적으로도 5개 모두 홀드된 상태로의 롤링 요청은 `AllDiceHeldError`로 차단됩니다. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L82-L96)
 
 ### Q. 게임 도중에 기권(항복)할 수 있나요?
-**A.** 네, 게임이 진행 중일 때 자신의 차례가 아니더라도 "기권(Surrender)" 버튼을 클릭하여 즉시 게임을 포기할 수 있습니다. 항복하면 게임 상태가 즉시 'Finished'로 전환되며, 상대방이 승리하고 항복한 플레이어는 ELO 레이팅이 삭감됩니다. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L119-L133)
+**A.** 네, 게임이 진행 중일 때 자신의 차례가 아니더라도 "기권(Surrender)" 버튼을 클릭하여 항복을 제안할 수 있습니다. 항복 버튼 클릭 시 상대방에게 항복 제안(`[수락]`, `[거절]`) 메시지가 전송되며, 상대방이 **수락**하면 게임이 즉시 Surrender KO로 종료되고 승패 및 ELO 레이팅이 정산됩니다. 상대방이 **거절**하면 항복 신청이 취소되고 경기가 정상 진행됩니다. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md)
 
 ---
 
@@ -53,10 +53,17 @@
 
 ### Q. 지원하는 디스코드 슬래시(/) 명령어는 무엇이 있나요?
 **A.**
-* `/challenge`: 새로운 야추 게임을 시작합니다. 상대방 지정 옵션이 없으면 1인용 게임을, 상대방을 지정하면 해당 사용자와의 2인용 게임을 생성합니다. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L24-L34)
+* `/challenge` (또는 `/yachoo challenge`): 새로운 야추 게임을 시작합니다. 상대방 지정 옵션이 없으면 1인용 게임을 즉시 시작하고, `@상대방`을 지정하면 해당 사용자에게 5분 제한 초대전 메시지를 전송합니다. [game-invitation/spec.md](./openspec/specs/game-invitation/spec.md)
+* `/match` (또는 `/yachoo match`): 오픈 매치메이킹 큐(대기열)에 진입합니다. 이미 대기열에서 기다리는 다른 유저가 있다면 즉시 1v1 대전이 매칭됩니다. [matchmaking-queue/spec.md](./openspec/specs/matchmaking-queue/spec.md)
 * `/profile`: 현재 디스코드 서버(Guild)에서의 플레이어 통계를 보여줍니다. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L35-L41)
 * `/leaderboard`: 현재 디스코드 서버 내의 플레이어 순위(리더보드)를 출력합니다. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L42-L48)
 * `/history`: 사용자의 최근 경기 내역(최대 5개) 및 각 경기의 턴별 상세 진행 로그(페이지 이동 가능)를 보여줍니다. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L64-L74)
+
+### Q. 5분 초대전(Challenge)의 수락 제한 시간 및 만료 조건은 어떻게 되나요?
+**A.** 상대방을 지목하여 대전을 신청하면 대상 플레이어에게 `[수락]`, `[거절]` 버튼이 포함된 초대전이 전송되며, **5분(300초)** 간 유효합니다. 상대방이 5분 이내에 수락하지 않거나 거절하면 초대는 자동 만료(`EXPIRED` 또는 `DECLINED`)되며 대전이 시작되지 않습니다. [game-invitation/spec.md](./openspec/specs/game-invitation/spec.md)
+
+### Q. 오픈 매치메이킹(`/match`)은 어떻게 작동하나요?
+**A.** `/match` 명령어를 실행하면 플레이어는 오픈 매치메이킹 큐에 등록됩니다. 이미 대기 중인 플레이어가 있는 경우 두 유저가 즉시 1v1 매치로 연결되어 경기가 생성됩니다. 대기 중인 유저가 없으면 대기 상태로 머물며 언제든지 매칭 취소가 가능합니다. [matchmaking-queue/spec.md](./openspec/specs/matchmaking-queue/spec.md)
 
 ### Q. 멀티플레이어 게임에서 내 차례가 되었을 때 알림을 받을 수 있나요?
 **A.** 네. 턴이 상대방에게로 넘어갈 때 다음 차례 플레이어의 디스코드 채널로 멘션 메시지가 전송됩니다. 이때 멘션의 메시지 ID와 채널 ID는 게임 상태(`GameState`)에 기록됩니다. [turn-mention-notification/spec.md](./openspec/specs/turn-mention-notification/spec.md#L6-L12)
@@ -99,7 +106,7 @@
 ## 4. 웹 대시보드 및 분석 (Web Dashboard & Analytics)
 
 ### Q. 디스코드 외에 웹 브라우저에서도 통계를 확인할 수 있나요?
-**A.** 네. Worker의 루트 URL(`/` 또는 `/web/`)에서 브라우저 기반 싱글 페이지 분석 대시보드를 제공합니다. ELO 레이팅 히스토리 차트가 포함된 플레이어 프로필, 턴별 상세 리플레이가 포함된 매치 리플레이, 전설의 경기(Legend Matches) 카탈로그, 그리고 플레이어 디렉토리를 지원합니다. [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L6-L8)
+**A.** 네. Worker의 루트 URL(`/` 또는 `/web/`)에서 브라우저 기반 싱글 페이지 분석 대시보드를 제공합니다. ELO 레이팅 히스토리 차트가 포함된 플레이어 프로필, 색상 코딩 및 실시간 점수 차이(Score Diff) 열이 포함된 턴별 매치 리플레이, 전설의 경기(Legend Matches) 카탈로그, 그리고 플레이어 디렉토리를 지원합니다. [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L6-L8)
 
 ### Q. 전설의 경기(Legend Matches)란 무엇인가요?
 **A.** 전설의 경기는 매치 히스토리에서 자동으로 식별되는 주목할 만한 게임 순간들입니다:

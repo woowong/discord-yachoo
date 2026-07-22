@@ -10,7 +10,8 @@
     "test": "vitest run",
     "simulate": "tsx src/presentation/console/index.ts",
     "register-commands": "tsx scripts/register-commands.ts",
-    "patch-game": "tsx scripts/patch-finished-game.ts"
+    "patch-game": "tsx scripts/patch-finished-game.ts",
+    "announce": "tsx scripts/send-announcement.ts"
   },
   "dependencies": {
     "@effect/platform": "^0.96.2",

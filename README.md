@@ -15,13 +15,13 @@ A serverless Discord bot for playing the **Yacht Dice** (Yacht / Yahtzee) game, 
 
 - **Serverless & Webhook-based:** Runs entirely on Cloudflare Workers using Discord's Webhook Interactions. No persistent websocket connections needed, keeping execution costs at zero (under the free tier).
 - **Interactive UI Components:** Play the game directly inside Discord chat threads using rich embeds, select menus, and buttons.
-- **Dual-mode Gameplay:** Supports both Single-player (solo score attack) and Multi-player (1v1 duel) match options.
+- **Single-player, Multi-player & Matchmaking:** Supports solo score attack, **5-minute timed challenge invitations (`/yachoo challenge @user`)**, and an **open matchmaking queue (`/yachoo match`)** to find opponents quickly.
 - **ELO Rating & Leaderboard:** Tracks competitive player ratings (ELO) for multiplayer games, displaying ratings in profiles and sorting the guild leaderboard by ELO.
-- **Surrender & Safety Controls:** Allows players to forfeit an active game at any point. Prevents self-challenging and blocks redundant rolls when all 5 dice are held.
+- **2-Step Surrender Offer & Safety Controls:** Features a **Surrender Offer flow** where clicking surrender sends an interactive offer (`[Accept]` / `[Decline]`) to the opponent before ending the match with a K.O. outcome. Prevents self-challenging and blocks redundant rolls when all 5 dice are held.
 - **Mobile-Optimized Presentation:** Renders the ASCII scoreboard within 27 characters to prevent line wrapping on mobile clients, with player name truncation and a bonus progress tracker (`current/63`).
 - **Pure Game Engine:** All core business logic (dice rolling, score calculations, game turns) is written in pure functions, making it 100% testable.
 - **Local CLI Simulator:** Test and play the game directly in your local terminal without deploying to Discord or Cloudflare.
-- **Web Dashboard & Analytics:** Access a browser-based analytics dashboard at the Worker's root URL, featuring player profiles with ELO rating history charts (Chart.js), turn-by-turn match replays with color-coded score highlights, a Legend Matches catalog for remarkable game moments, and a searchable player directory.
+- **Web Dashboard & Analytics:** Access a browser-based analytics dashboard at the Worker's root URL, featuring player profiles with ELO rating history charts (Chart.js), turn-by-turn match replays with color-coded score highlights and a real-time **Score Diff** column, a Legend Matches catalog for remarkable game moments, and a searchable player directory.
 - **Legend Matches System:** Automatically identifies and tags memorable game moments — Comeback Wins (25+ point deficit reversals), Hot Streaks (5+ consecutive high-scoring turns), Yacht Achievements, and Epic Fails (3+ consecutive zero-point turns).
 - **Profile Analytics:** Tracks per-player statistics including separate average scores for solo and multiplayer modes, recent 10-match W/L/D outcome history, and ELO rating progression.
 - **Duplicate Game Prevention:** Detects active games in progress and blocks new game creation, providing a direct link to the ongoing match.

@@ -45,7 +45,7 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 **A.** The system prevents redundant actions. The Discord presentation layer will render the "Roll Dice" button with `disabled: true` when all 5 dice are held, and the game state machine enforces this via an `AllDiceHeldError` if bypassed. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L82-L96)
 
 ### Q. Can I surrender or forfeit an ongoing match?
-**A.** Yes. Any active player can click the "Surrender" button to forfeit the match at any point, regardless of whose turn it is. The game immediately transitions to a 'Finished' state, declaring the other player the winner and calculating ELO rating changes accordingly. [yacht-state-machine/spec.md](./openspec/specs/yacht-state-machine/spec.md#L119-L133)
+**A.** Yes. Any active player can click the "Surrender" button to send a **Surrender Offer** (`[Accept]` / `[Decline]`) to the opponent at any point. If the opponent accepts, the game immediately ends as a Surrender K.O. with ELO rating updates. If the opponent declines, the surrender request is canceled and the game continues. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md)
 
 ---
 
@@ -53,10 +53,17 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 
 ### Q. What Discord slash (/) commands are supported?
 **A.**
-* `/challenge`: Initializes a new Yacht game. If run without options, it starts a single-player game. If an opponent option is provided, it starts a multiplayer matchmaking game. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L24-L34)
+* `/challenge` (or `/yachoo challenge`): Starts a new Yacht game. If run without parameters, it starts a single-player game instantly. If an `@opponent` is targeted, it sends a 5-minute timed challenge invitation to that user. [game-invitation/spec.md](./openspec/specs/game-invitation/spec.md)
+* `/match` (or `/yachoo match`): Enters the open matchmaking queue to automatically pair up with any waiting player for a 1v1 match. [matchmaking-queue/spec.md](./openspec/specs/matchmaking-queue/spec.md)
 * `/profile`: Displays user statistics scoped to the current Discord server (guild). [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L35-L41)
 * `/leaderboard`: Displays top players for the current Discord server (guild). [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L42-L48)
 * `/history`: Displays a list of the user's 5 most recent matches played in the guild with interactive paging to view detailed turn-by-turn logs. [game-orchestrator/spec.md](./openspec/specs/game-orchestrator/spec.md#L64-L74)
+
+### Q. How do 5-minute challenge invitations work?
+**A.** When targeted with `/challenge @user`, the target player receives an invitation message with `[Accept]` and `[Decline]` buttons. The invitation remains valid for **5 minutes (300 seconds)**. If not accepted within 5 minutes or if explicitly declined, the invitation expires (`EXPIRED` or `DECLINED`) and no match is created. [game-invitation/spec.md](./openspec/specs/game-invitation/spec.md)
+
+### Q. How does Open Matchmaking (`/match`) work?
+**A.** Running `/match` places you into an open queue. If another player is already waiting in the queue, both players are instantly paired into a new 1v1 match. If no one is waiting, you remain in the queue until matched or canceled. [matchmaking-queue/spec.md](./openspec/specs/matchmaking-queue/spec.md)
 
 ### Q. Will I get notified when it is my turn in a multiplayer match?
 **A.** Yes. On turn transition, the system automatically sends a notification mention message reply targeting the next player in the Discord channel, storing the message ID and channel ID in the `GameState`. [turn-mention-notification/spec.md](./openspec/specs/turn-mention-notification/spec.md#L6-L12)
@@ -99,7 +106,7 @@ This document is a Frequently Asked Questions (FAQ) list compiled based on the p
 ## 4. Web Dashboard & Analytics
 
 ### Q. Is there a web-based dashboard to view stats outside of Discord?
-**A.** Yes. The Worker serves a browser-based single-page analytics dashboard at the root URL (`/` or `/web/`). It includes player profiles with ELO history charts, match replay with turn-by-turn breakdown tables, a Legend Matches catalog, and a player directory. [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L6-L8)
+**A.** Yes. The Worker serves a browser-based single-page analytics dashboard at the root URL (`/` or `/web/`). It includes player profiles with ELO history charts, match replay with color-coded turn-by-turn breakdown tables and a real-time **Score Diff** column, a Legend Matches catalog, and a player directory. [web-dashboard/spec.md](./openspec/specs/web-dashboard/spec.md#L6-L8)
 
 ### Q. What are Legend Matches?
 **A.** Legend Matches are automatically identified remarkable game moments from match history:
