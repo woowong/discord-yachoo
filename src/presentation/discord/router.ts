@@ -4,6 +4,7 @@ import { GameRepository } from "../../persistence/repository";
 import { DiscordResponseSerializer } from "./adapter/serializer";
 import { 
   handleChallenge, 
+  handleMatch,
   handleProfile, 
   handleLeaderboard, 
   handleHistory 
@@ -16,6 +17,10 @@ import {
   handleConfirmSurrender, 
   handleAcceptSurrender,
   handleDeclineSurrender,
+  handleAcceptInvitation,
+  handleDeclineInvitation,
+  handleJoinMatchQueue,
+  handleCancelMatchQueue,
   handleHold, 
   handleRoll, 
   handleSelectCategory 
@@ -39,6 +44,9 @@ export const routeInteraction = (
       if (interaction.commandName === "challenge") {
         return yield* handleChallenge(interaction, rawJson, safeCtx);
       }
+      if (interaction.commandName === "match") {
+        return yield* handleMatch(interaction);
+      }
       if (interaction.commandName === "profile") {
         return yield* handleProfile(interaction);
       }
@@ -57,6 +65,18 @@ export const routeInteraction = (
     if (interaction._tag === "Component") {
       const customId = interaction.customId;
 
+      if (customId.startsWith("invitation:accept:")) {
+        return yield* handleAcceptInvitation(interaction);
+      }
+      if (customId.startsWith("invitation:decline:")) {
+        return yield* handleDeclineInvitation(interaction);
+      }
+      if (customId.startsWith("queue:join:")) {
+        return yield* handleJoinMatchQueue(interaction);
+      }
+      if (customId.startsWith("queue:cancel:")) {
+        return yield* handleCancelMatchQueue(interaction);
+      }
       if (customId === "backtohistorylist") {
         return yield* handleBackToHistoryList(interaction);
       }
@@ -66,6 +86,7 @@ export const routeInteraction = (
       if (customId.startsWith("pagehistory_")) {
         return yield* handlePageHistory(interaction);
       }
+
 
       // Load active game for gameplay components
       let gameId: string | null = null;

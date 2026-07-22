@@ -456,3 +456,168 @@ export const handleSelectCategory = (
       headers: { "content-type": "application/json" }
     });
   });
+
+export const handleAcceptInvitation = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+
+    const parts = interaction.customId.split(":");
+    const invId = parts[2];
+
+    const userId = interaction.user.id;
+    const userName = interaction.user.globalName || interaction.user.username;
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+
+    const acceptResult = workflow.acceptInvitation(invId, userId, userName, guildId, channelId).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrState = yield* acceptResult;
+    if (resOrState instanceof Response) {
+      return resOrState;
+    }
+
+    const serialized = serializer.serializeGame(resOrState);
+    return new Response(JSON.stringify({ ...serialized, type: 7 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handleDeclineInvitation = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+
+    const parts = interaction.customId.split(":");
+    const invId = parts[2];
+    const userId = interaction.user.id;
+
+    const declineResult = workflow.declineInvitation(invId, userId).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrInv = yield* declineResult;
+    if (resOrInv instanceof Response) {
+      return resOrInv;
+    }
+
+    const serialized = serializer.serializeInvitationDeclined(resOrInv);
+    return new Response(JSON.stringify(serialized), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handleJoinMatchQueue = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+
+    const parts = interaction.customId.split(":");
+    const queueId = parts[2];
+
+    const guestId = interaction.user.id;
+    const guestName = interaction.user.globalName || interaction.user.username;
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+
+    const joinResult = workflow.joinMatchQueue(queueId, guestId, guestName, guildId, channelId).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrState = yield* joinResult;
+    if (resOrState instanceof Response) {
+      return resOrState;
+    }
+
+    const serialized = serializer.serializeGame(resOrState);
+    return new Response(JSON.stringify({ ...serialized, type: 7 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handleCancelMatchQueue = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+
+    const parts = interaction.customId.split(":");
+    const queueId = parts[2];
+    const userId = interaction.user.id;
+
+    const cancelResult = workflow.cancelMatchQueue(queueId, userId).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrQueue = yield* cancelResult;
+    if (resOrQueue instanceof Response) {
+      return resOrQueue;
+    }
+
+    const serialized = serializer.serializeMatchQueueCancelled(resOrQueue);
+    return new Response(JSON.stringify(serialized), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+

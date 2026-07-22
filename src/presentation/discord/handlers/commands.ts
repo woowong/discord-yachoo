@@ -41,11 +41,62 @@ export const handleChallenge = (
     const guildId = interaction.guildId || "@me";
     const channelId = interaction.channelId || "";
 
+    if (opponentId) {
+      // Direct challenge invitation
+      const invResult = workflow.createInvitation(
+        challengerId,
+        challengerName,
+        opponentId,
+        opponentName,
+        guildId,
+        channelId
+      ).pipe(
+        Effect.catchTag("ActiveGameExistsError", (err) =>
+          Effect.succeed(
+            new Response(
+              JSON.stringify({
+                type: 4,
+                data: {
+                  content: err.message,
+                  flags: 64
+                }
+              }),
+              { headers: { "content-type": "application/json" } }
+            )
+          )
+        ),
+        Effect.catchTag("ActiveInvitationExistsError", (err) =>
+          Effect.succeed(
+            new Response(
+              JSON.stringify({
+                type: 4,
+                data: {
+                  content: err.message,
+                  flags: 64
+                }
+              }),
+              { headers: { "content-type": "application/json" } }
+            )
+          )
+        )
+      );
+
+      const resOrInv = yield* invResult;
+      if (resOrInv instanceof Response) {
+        return resOrInv;
+      }
+
+      const serialized = serializer.serializeInvitation(resOrInv);
+      return new Response(JSON.stringify(serialized), {
+        headers: { "content-type": "application/json" }
+      });
+    }
+
     const challengeResult = workflow.challenge(
       challengerId,
       challengerName,
-      opponentId,
-      opponentId ? opponentName : undefined,
+      undefined,
+      undefined,
       guildId,
       channelId,
       interaction.applicationId,
@@ -83,6 +134,52 @@ export const handleChallenge = (
       headers: { "content-type": "application/json" }
     });
   });
+
+export const handleMatch = (
+  interaction: ParsedInteraction & { readonly _tag: "Command" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+
+    const hostId = interaction.user.id;
+    const hostName = interaction.user.globalName || interaction.user.username;
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+
+    const queueResult = workflow.createMatchQueue(
+      hostId,
+      hostName,
+      guildId,
+      channelId
+    ).pipe(
+      Effect.catchTag("ActiveMatchQueueExistsError", (err) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: err.message,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrQueue = yield* queueResult;
+    if (resOrQueue instanceof Response) {
+      return resOrQueue;
+    }
+
+    const serialized = serializer.serializeMatchQueue(resOrQueue);
+    return new Response(JSON.stringify(serialized), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
 
 export const handleProfile = (
   interaction: ParsedInteraction & { readonly _tag: "Command" }

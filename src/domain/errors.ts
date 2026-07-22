@@ -55,3 +55,76 @@ export type GameError =
   | InvalidStateActionError
   | NotYourTurnError
   | AllDiceHeldError;
+
+export class ActiveInvitationExistsError extends Error {
+  readonly _tag = "ActiveInvitationExistsError";
+  constructor() {
+    super("이미 진행 중인 초대가 있습니다.");
+    this.name = "ActiveInvitationExistsError";
+  }
+}
+
+export class InvitationNotFoundError extends Error {
+  readonly _tag = "InvitationNotFoundError";
+  constructor() {
+    super("초대를 찾을 수 없거나 이미 처리되었습니다.");
+    this.name = "InvitationNotFoundError";
+  }
+}
+
+export class InvitationExpiredError extends Error {
+  readonly _tag = "InvitationExpiredError";
+  constructor() {
+    super("초대 유효시간(5분)이 만료되었습니다.");
+    this.name = "InvitationExpiredError";
+  }
+}
+
+export class UnauthorizedInvitationError extends Error {
+  readonly _tag = "UnauthorizedInvitationError";
+  constructor() {
+    super("지정된 상대방만 초대를 수락/거절할 수 있습니다.");
+    this.name = "UnauthorizedInvitationError";
+  }
+}
+
+export class ActiveMatchQueueExistsError extends Error {
+  readonly _tag = "ActiveMatchQueueExistsError";
+  constructor() {
+    super("이미 생성한 대기열 방이 있습니다.");
+    this.name = "ActiveMatchQueueExistsError";
+  }
+}
+
+export class MatchQueueNotFoundError extends Error {
+  readonly _tag = "MatchQueueNotFoundError";
+  constructor() {
+    super("대기열 방을 찾을 수 없거나 이미 참가했습니다.");
+    this.name = "MatchQueueNotFoundError";
+  }
+}
+
+export class MatchQueueExpiredError extends Error {
+  readonly _tag = "MatchQueueExpiredError";
+  constructor() {
+    super("대기열 유효시간(5분)이 만료되었습니다.");
+    this.name = "MatchQueueExpiredError";
+  }
+}
+
+export class SelfJoinQueueError extends Error {
+  readonly _tag = "SelfJoinQueueError";
+  constructor() {
+    super("자신이 만든 대기열 방에는 참가할 수 없습니다.");
+    this.name = "SelfJoinQueueError";
+  }
+}
+
+export class UnauthorizedCancelQueueError extends Error {
+  readonly _tag = "UnauthorizedCancelQueueError";
+  constructor() {
+    super("방장만 대기열을 취소할 수 있습니다.");
+    this.name = "UnauthorizedCancelQueueError";
+  }
+}
+

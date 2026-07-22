@@ -1250,4 +1250,57 @@ describe("Discord Yacht Bot Integration Tests", () => {
       expect(json[0].elo).toBe(1200);
     });
   });
+
+  describe("Matchmaking & Invitation Integration Tests", () => {
+    it("should handle /challenge with opponent to create pending invitation", async () => {
+      const body = JSON.stringify({
+        type: 2,
+        application_id: "app123",
+        token: "token123",
+        data: {
+          name: "challenge",
+          options: [{ name: "opponent", value: "user456" }],
+          resolved: {
+            users: {
+              user456: { username: "Bob", global_name: "BobGlobal" }
+            }
+          }
+        },
+        user: { id: "user123", username: "Alice" },
+        guild_id: "guild1",
+        channel_id: "channel1"
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.type).toBe(4);
+      expect(json.data.embeds[0].title).toContain("야추 대결 초대장");
+      expect(json.data.components[0].components[0].custom_id).toContain("invitation:accept:");
+    });
+
+    it("should handle /match to create open match queue", async () => {
+      const body = JSON.stringify({
+        type: 2,
+        application_id: "app123",
+        token: "token123",
+        data: {
+          name: "match"
+        },
+        user: { id: "user123", username: "Alice" },
+        guild_id: "guild1",
+        channel_id: "channel1"
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.type).toBe(4);
+      expect(json.data.embeds[0].title).toContain("야추 대결 공개 대기열");
+      expect(json.data.components[0].components[0].custom_id).toContain("queue:join:");
+    });
+  });
 });
+

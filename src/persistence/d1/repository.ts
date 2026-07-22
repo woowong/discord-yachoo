@@ -1,7 +1,10 @@
 import { Effect, Layer, Option } from "effect";
-import { PlayerRepository, MatchRepository, GameRepository, PlayerStats, MatchRecord, RepositoryError } from "../repository";
+import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository, PlayerStats, MatchRecord, RepositoryError } from "../repository";
 import { D1Database } from "./database";
 import { GameState } from "../../domain/types";
+import { Invitation, isInvitationExpired } from "../../domain/invitation";
+import { MatchQueue, isMatchQueueExpired } from "../../domain/matchQueue";
+
 
 // DB Row interfaces
 interface DBPlayerRow {
@@ -480,3 +483,177 @@ export const D1GameRepositoryLive = Layer.effect(
     };
   })
 );
+
+interface DBInvitationRow {
+  readonly id: string;
+  readonly challenger_id: string;
+  readonly challenger_name: string;
+  readonly opponent_id: string;
+  readonly opponent_name: string;
+  readonly guild_id: string;
+  readonly channel_id: string;
+  readonly status: string;
+  readonly created_at: number;
+}
+
+const mapRowToInvitation = (row: DBInvitationRow): Invitation => ({
+  id: row.id,
+  challengerId: row.challenger_id,
+  challengerName: row.challenger_name,
+  opponentId: row.opponent_id,
+  opponentName: row.opponent_name,
+  guildId: row.guild_id,
+  channelId: row.channel_id,
+  status: row.status as Invitation["status"],
+  createdAt: row.created_at
+});
+
+export const D1InvitationRepositoryLive = Layer.effect(
+  InvitationRepository,
+  Effect.gen(function* () {
+    const db = yield* D1Database;
+
+    return {
+      save: (invitation: Invitation) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              INSERT INTO invitations (id, challenger_id, challenger_name, opponent_id, opponent_name, guild_id, channel_id, status, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(id) DO UPDATE SET status = excluded.status
+            `).bind(
+              invitation.id,
+              invitation.challengerId,
+              invitation.challengerName,
+              invitation.opponentId,
+              invitation.opponentName,
+              invitation.guildId,
+              invitation.channelId,
+              invitation.status,
+              invitation.createdAt
+            ).run(),
+          catch: (error) => new RepositoryError(`save invitation failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      findById: (id: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM invitations WHERE id = ?").bind(id).first<DBInvitationRow>(),
+          catch: (error) => new RepositoryError(`findById invitation failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => (row ? Option.some(mapRowToInvitation(row)) : Option.none()))
+        ),
+
+      findActiveBetweenPlayers: (p1Id: string, p2Id: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              SELECT * FROM invitations
+              WHERE status = 'PENDING'
+                AND (
+                  (challenger_id = ? AND opponent_id = ?)
+                  OR
+                  (challenger_id = ? AND opponent_id = ?)
+                )
+              ORDER BY created_at DESC LIMIT 1
+            `).bind(p1Id, p2Id, p2Id, p1Id).first<DBInvitationRow>(),
+          catch: (error) => new RepositoryError(`findActiveBetweenPlayers failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => {
+            if (!row) return Option.none();
+            const inv = mapRowToInvitation(row);
+            return isInvitationExpired(inv) ? Option.none() : Option.some(inv);
+          })
+        ),
+
+      updateStatus: (id: string, status: Invitation["status"]) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("UPDATE invitations SET status = ? WHERE id = ?").bind(status, id).run(),
+          catch: (error) => new RepositoryError(`updateStatus invitation failed: ${error}`, error)
+        }).pipe(Effect.asVoid)
+    };
+  })
+);
+
+interface DBMatchQueueRow {
+  readonly id: string;
+  readonly host_id: string;
+  readonly host_name: string;
+  readonly guild_id: string;
+  readonly channel_id: string;
+  readonly status: string;
+  readonly created_at: number;
+}
+
+const mapRowToMatchQueue = (row: DBMatchQueueRow): MatchQueue => ({
+  id: row.id,
+  hostId: row.host_id,
+  hostName: row.host_name,
+  guildId: row.guild_id,
+  channelId: row.channel_id,
+  status: row.status as MatchQueue["status"],
+  createdAt: row.created_at
+});
+
+export const D1MatchQueueRepositoryLive = Layer.effect(
+  MatchQueueRepository,
+  Effect.gen(function* () {
+    const db = yield* D1Database;
+
+    return {
+      save: (queue: MatchQueue) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              INSERT INTO match_queues (id, host_id, host_name, guild_id, channel_id, status, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+              ON CONFLICT(id) DO UPDATE SET status = excluded.status
+            `).bind(
+              queue.id,
+              queue.hostId,
+              queue.hostName,
+              queue.guildId,
+              queue.channelId,
+              queue.status,
+              queue.createdAt
+            ).run(),
+          catch: (error) => new RepositoryError(`save matchQueue failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      findById: (id: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM match_queues WHERE id = ?").bind(id).first<DBMatchQueueRow>(),
+          catch: (error) => new RepositoryError(`findById matchQueue failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => (row ? Option.some(mapRowToMatchQueue(row)) : Option.none()))
+        ),
+
+      findActiveByHost: (hostId: string, guildId: string, channelId: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              SELECT * FROM match_queues
+              WHERE host_id = ? AND guild_id = ? AND channel_id = ? AND status = 'WAITING'
+              ORDER BY created_at DESC LIMIT 1
+            `).bind(hostId, guildId, channelId).first<DBMatchQueueRow>(),
+          catch: (error) => new RepositoryError(`findActiveByHost failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => {
+            if (!row) return Option.none();
+            const queue = mapRowToMatchQueue(row);
+            return isMatchQueueExpired(queue) ? Option.none() : Option.some(queue);
+          })
+        ),
+
+      updateStatus: (id: string, status: MatchQueue["status"]) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("UPDATE match_queues SET status = ? WHERE id = ?").bind(status, id).run(),
+          catch: (error) => new RepositoryError(`updateStatus matchQueue failed: ${error}`, error)
+        }).pipe(Effect.asVoid)
+    };
+  })
+);
+

@@ -22,23 +22,23 @@ The system SHALL handle PING (Type 1) interactions by returning a PONG response.
 - **THEN** the system SHALL return a JSON response with type 1.
 
 ### Requirement: Discord Challenge Slash Command
-The system SHALL handle the `/challenge` slash command to start a new Yacht game. The system MUST prevent a user from challenging themselves in multiplayer mode. In addition, the system MUST check if there is an active (InProgress) game already existing between the same player combination. If an active game exists, the system MUST block the new game creation and return an ephemeral message containing a direct link to the existing game message.
+The system SHALL handle the `/challenge` slash command to start a new Yacht game. Single-player games SHALL start immediately. Multiplayer games with a specified opponent SHALL create a pending 5-minute invitation with Accept/Decline options. The system MUST prevent a user from challenging themselves in multiplayer mode. In addition, the system MUST check if there is an active (InProgress) game or pending invitation already existing between the same player combination. If an active game or pending invitation exists, the system MUST block the new challenge creation and return an ephemeral error message.
 
 #### Scenario: Start Single Player Game
 - **WHEN** user executes `/challenge` command without options
 - **THEN** the system SHALL initialize a new single-player game, save it, and return the serialized game embed.
 
-#### Scenario: Start Multiplayer Game
-- **WHEN** user executes `/challenge` command with opponent option where the opponent is NOT the user and there is no active game between them
-- **THEN** the system SHALL initialize a new multiplayer game between the user and the opponent, save it, and return the serialized game embed.
+#### Scenario: Create Multiplayer Game Invitation
+- **WHEN** user executes `/challenge` command with opponent option where the opponent is NOT the user and there is no active game or pending invitation between them
+- **THEN** the system SHALL create a pending 5-minute invitation, save it, and return the serialized invitation card embed with `[Accept]` and `[Decline]` buttons.
 
 #### Scenario: Prevent Self Challenge in Multiplayer Game
 - **WHEN** user executes `/challenge` command with opponent option where the opponent IS the user
-- **THEN** the system MUST return an error message indicating that self-challenging is not allowed, and prevent game initialization.
+- **THEN** the system MUST return an error message indicating that self-challenging is not allowed, and prevent game/invitation initialization.
 
-#### Scenario: Block Duplicate Multiplayer Match
-- **WHEN** user A executes `/challenge` command with opponent B, but there is already an active game between A and B with `status = 'InProgress'`
-- **THEN** the system MUST block game creation and return an ephemeral message containing a direct link (`https://discord.com/channels/{guildId}/{channelId}/{messageId}`) to the existing game message using the stored message ID.
+#### Scenario: Block Duplicate Multiplayer Match or Pending Invitation
+- **WHEN** user A executes `/challenge` command with opponent B, but there is already an active game or pending invitation between A and B
+- **THEN** the system MUST block creation and return an ephemeral message indicating an active game or pending invitation already exists.
 
 ### Requirement: Discord Profile Slash Command
 The system SHALL handle the `/profile` slash command to display user statistics scoped to the current Discord server (guild), including the overall average score (excluding surrendered matches) and the outcome list (W/L/D) of their recent 10 multiplayer matches. At the end of the profile response, the system MUST append a hyperlink pointing directly to the player's web dashboard profile URL (e.g. `https://discord-yachoo.woowong.workers.dev/web?player={userId}`).

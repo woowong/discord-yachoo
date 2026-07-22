@@ -3,7 +3,9 @@ import { GameState, DiceHold, DiceRoll, ScoreCategory } from "../domain/types";
 import { initGame, rollDice, selectCategory, surrenderGame, offerSurrender as domainOfferSurrender, acceptSurrender as domainAcceptSurrender, declineSurrender as domainDeclineSurrender } from "../domain/game";
 import { calculateEloChange } from "../domain/elo";
 import { calculateScore } from "../domain/score";
-import { PlayerRepository, MatchRepository, GameRepository } from "../persistence/repository";
+import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository } from "../persistence/repository";
+import { Invitation, isInvitationExpired } from "../domain/invitation";
+import { MatchQueue, isMatchQueueExpired } from "../domain/matchQueue";
 import { DiscordApiService } from "../presentation/discord/adapter/api";
 import { DiscordResponseSerializer } from "../presentation/discord/adapter/serializer";
 import { 
@@ -19,8 +21,18 @@ import {
   CategoryAlreadyFilledError, 
   InvalidStateActionError, 
   NotYourTurnError, 
-  AllDiceHeldError 
+  AllDiceHeldError,
+  ActiveInvitationExistsError,
+  InvitationNotFoundError,
+  InvitationExpiredError,
+  UnauthorizedInvitationError,
+  ActiveMatchQueueExistsError,
+  MatchQueueNotFoundError,
+  MatchQueueExpiredError,
+  SelfJoinQueueError,
+  UnauthorizedCancelQueueError
 } from "../domain/errors";
+
 
 export class GameNotFoundError extends Error {
   readonly _tag = "GameNotFoundError";
@@ -133,6 +145,48 @@ export interface GameWorkflowService {
     gameId: string,
     playerId: string
   ) => Effect.Effect<GameState, any, GameRepository>;
+
+  readonly createInvitation: (
+    challengerId: string,
+    challengerName: string,
+    opponentId: string,
+    opponentName: string,
+    guildId: string,
+    channelId: string
+  ) => Effect.Effect<Invitation, any, InvitationRepository | GameRepository | PlayerRepository>;
+
+  readonly acceptInvitation: (
+    invitationId: string,
+    userId: string,
+    userName: string,
+    guildId: string,
+    channelId: string
+  ) => Effect.Effect<GameState, any, InvitationRepository | GameRepository | PlayerRepository>;
+
+  readonly declineInvitation: (
+    invitationId: string,
+    userId: string
+  ) => Effect.Effect<Invitation, any, InvitationRepository>;
+
+  readonly createMatchQueue: (
+    hostId: string,
+    hostName: string,
+    guildId: string,
+    channelId: string
+  ) => Effect.Effect<MatchQueue, any, MatchQueueRepository | PlayerRepository>;
+
+  readonly joinMatchQueue: (
+    queueId: string,
+    guestId: string,
+    guestName: string,
+    guildId: string,
+    channelId: string
+  ) => Effect.Effect<GameState, any, MatchQueueRepository | GameRepository | PlayerRepository>;
+
+  readonly cancelMatchQueue: (
+    queueId: string,
+    userId: string
+  ) => Effect.Effect<MatchQueue, any, MatchQueueRepository>;
 }
 
 export const GameWorkflowService = Context.GenericTag<GameWorkflowService>("@services/GameWorkflowService");
@@ -682,8 +736,199 @@ export const GameWorkflowServiceLive = Layer.succeed(
         const nextState = yield* domainDeclineSurrender(gameState, playerId);
         yield* gameRepo.save(nextState);
         return nextState;
+      }),
+
+    createInvitation: (challengerId, challengerName, opponentId, opponentName, guildId, channelId) =>
+      Effect.gen(function* () {
+        const invRepo = yield* InvitationRepository;
+        const gameRepo = yield* GameRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const activeGameOpt = yield* gameRepo.findActiveGameByPlayers(challengerId, opponentId);
+        if (Option.isSome(activeGameOpt)) {
+          const activeGame = activeGameOpt.value;
+          return yield* Effect.fail(new ActiveGameExistsError(activeGame.initialMessageId, guildId, channelId));
+        }
+
+        const activeInvOpt = yield* invRepo.findActiveBetweenPlayers(challengerId, opponentId);
+        if (Option.isSome(activeInvOpt)) {
+          return yield* Effect.fail(new ActiveInvitationExistsError());
+        }
+
+        yield* playerRepo.upsertPlayer(challengerId, challengerName);
+        yield* playerRepo.upsertPlayer(opponentId, opponentName);
+
+        const invitation: Invitation = {
+          id: `inv-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          challengerId,
+          challengerName,
+          opponentId,
+          opponentName,
+          guildId,
+          channelId,
+          status: "PENDING",
+          createdAt: Date.now()
+        };
+
+        yield* invRepo.save(invitation);
+        return invitation;
+      }),
+
+    acceptInvitation: (invitationId, userId, userName, guildId, channelId) =>
+      Effect.gen(function* () {
+        const invRepo = yield* InvitationRepository;
+        const gameRepo = yield* GameRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const invOpt = yield* invRepo.findById(invitationId);
+        if (Option.isNone(invOpt)) {
+          return yield* Effect.fail(new InvitationNotFoundError());
+        }
+
+        const inv = invOpt.value;
+        if (inv.opponentId !== userId) {
+          return yield* Effect.fail(new UnauthorizedInvitationError());
+        }
+
+        if (inv.status !== "PENDING") {
+          return yield* Effect.fail(new InvitationNotFoundError());
+        }
+
+        if (isInvitationExpired(inv)) {
+          yield* invRepo.updateStatus(inv.id, "EXPIRED");
+          return yield* Effect.fail(new InvitationExpiredError());
+        }
+
+        yield* invRepo.updateStatus(inv.id, "ACCEPTED");
+
+        yield* playerRepo.upsertPlayer(inv.challengerId, inv.challengerName);
+        yield* playerRepo.upsertPlayer(userId, userName);
+
+        const players = [
+          { playerId: inv.challengerId, playerName: inv.challengerName },
+          { playerId: userId, playerName: userName }
+        ];
+
+        const gameState = yield* initGame(players, "multi");
+        yield* gameRepo.save(gameState);
+        return gameState;
+      }),
+
+    declineInvitation: (invitationId, userId) =>
+      Effect.gen(function* () {
+        const invRepo = yield* InvitationRepository;
+        const invOpt = yield* invRepo.findById(invitationId);
+        if (Option.isNone(invOpt)) {
+          return yield* Effect.fail(new InvitationNotFoundError());
+        }
+
+        const inv = invOpt.value;
+        if (inv.opponentId !== userId) {
+          return yield* Effect.fail(new UnauthorizedInvitationError());
+        }
+
+        if (inv.status !== "PENDING") {
+          return yield* Effect.fail(new InvitationNotFoundError());
+        }
+
+        if (isInvitationExpired(inv)) {
+          yield* invRepo.updateStatus(inv.id, "EXPIRED");
+          return yield* Effect.fail(new InvitationExpiredError());
+        }
+
+        yield* invRepo.updateStatus(inv.id, "DECLINED");
+        return { ...inv, status: "DECLINED" as const };
+      }),
+
+    createMatchQueue: (hostId, hostName, guildId, channelId) =>
+      Effect.gen(function* () {
+        const queueRepo = yield* MatchQueueRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const activeOpt = yield* queueRepo.findActiveByHost(hostId, guildId, channelId);
+        if (Option.isSome(activeOpt)) {
+          return yield* Effect.fail(new ActiveMatchQueueExistsError());
+        }
+
+        yield* playerRepo.upsertPlayer(hostId, hostName);
+
+        const queue: MatchQueue = {
+          id: `queue-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          hostId,
+          hostName,
+          guildId,
+          channelId,
+          status: "WAITING",
+          createdAt: Date.now()
+        };
+
+        yield* queueRepo.save(queue);
+        return queue;
+      }),
+
+    joinMatchQueue: (queueId, guestId, guestName, guildId, channelId) =>
+      Effect.gen(function* () {
+        const queueRepo = yield* MatchQueueRepository;
+        const gameRepo = yield* GameRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const queueOpt = yield* queueRepo.findById(queueId);
+        if (Option.isNone(queueOpt)) {
+          return yield* Effect.fail(new MatchQueueNotFoundError());
+        }
+
+        const queue = queueOpt.value;
+        if (queue.hostId === guestId) {
+          return yield* Effect.fail(new SelfJoinQueueError());
+        }
+
+        if (queue.status !== "WAITING") {
+          return yield* Effect.fail(new MatchQueueNotFoundError());
+        }
+
+        if (isMatchQueueExpired(queue)) {
+          yield* queueRepo.updateStatus(queue.id, "EXPIRED");
+          return yield* Effect.fail(new MatchQueueExpiredError());
+        }
+
+        yield* queueRepo.updateStatus(queue.id, "MATCHED");
+
+        yield* playerRepo.upsertPlayer(queue.hostId, queue.hostName);
+        yield* playerRepo.upsertPlayer(guestId, guestName);
+
+        const players = [
+          { playerId: queue.hostId, playerName: queue.hostName },
+          { playerId: guestId, playerName: guestName }
+        ];
+
+        const gameState = yield* initGame(players, "multi");
+        yield* gameRepo.save(gameState);
+        return gameState;
+      }),
+
+    cancelMatchQueue: (queueId, userId) =>
+      Effect.gen(function* () {
+        const queueRepo = yield* MatchQueueRepository;
+
+        const queueOpt = yield* queueRepo.findById(queueId);
+        if (Option.isNone(queueOpt)) {
+          return yield* Effect.fail(new MatchQueueNotFoundError());
+        }
+
+        const queue = queueOpt.value;
+        if (queue.hostId !== userId) {
+          return yield* Effect.fail(new UnauthorizedCancelQueueError());
+        }
+
+        if (queue.status !== "WAITING") {
+          return yield* Effect.fail(new MatchQueueNotFoundError());
+        }
+
+        yield* queueRepo.updateStatus(queue.id, "CANCELLED");
+        return { ...queue, status: "CANCELLED" as const };
       })
   }
 );
+
 
 

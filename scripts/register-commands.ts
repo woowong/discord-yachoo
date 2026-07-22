@@ -12,6 +12,11 @@ const commands = [
     ]
   },
   {
+    name: "match",
+    description: "Create an open match lobby for anyone to join"
+  },
+
+  {
     name: "profile",
     description: "View your Yacht Dice stats"
   },

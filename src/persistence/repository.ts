@@ -69,3 +69,22 @@ export interface GameRepository {
 }
 
 export const GameRepository = Context.GenericTag<GameRepository>("@services/GameRepository");
+
+export interface InvitationRepository {
+  readonly save: (invitation: import("../domain/invitation").Invitation) => Effect.Effect<void, RepositoryError>;
+  readonly findById: (id: string) => Effect.Effect<Option.Option<import("../domain/invitation").Invitation>, RepositoryError>;
+  readonly findActiveBetweenPlayers: (p1Id: string, p2Id: string) => Effect.Effect<Option.Option<import("../domain/invitation").Invitation>, RepositoryError>;
+  readonly updateStatus: (id: string, status: import("../domain/invitation").InvitationStatus) => Effect.Effect<void, RepositoryError>;
+}
+
+export const InvitationRepository = Context.GenericTag<InvitationRepository>("@services/InvitationRepository");
+
+export interface MatchQueueRepository {
+  readonly save: (queue: import("../domain/matchQueue").MatchQueue) => Effect.Effect<void, RepositoryError>;
+  readonly findById: (id: string) => Effect.Effect<Option.Option<import("../domain/matchQueue").MatchQueue>, RepositoryError>;
+  readonly findActiveByHost: (hostId: string, guildId: string, channelId: string) => Effect.Effect<Option.Option<import("../domain/matchQueue").MatchQueue>, RepositoryError>;
+  readonly updateStatus: (id: string, status: import("../domain/matchQueue").MatchQueueStatus) => Effect.Effect<void, RepositoryError>;
+}
+
+export const MatchQueueRepository = Context.GenericTag<MatchQueueRepository>("@services/MatchQueueRepository");
+

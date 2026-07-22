@@ -12,6 +12,10 @@ export interface DiscordResponseSerializer {
   readonly serializeMessage: (content: string) => DiscordInteractionResponse;
   readonly serializeHistoryList: (recentMatches: readonly MatchRecord[], userId: string) => DiscordInteractionResponse;
   readonly serializeHistoryDetails: (match: MatchRecord, page: number) => DiscordInteractionResponse;
+  readonly serializeInvitation: (invitation: import("../../../domain/invitation").Invitation) => DiscordInteractionResponse;
+  readonly serializeInvitationDeclined: (invitation: import("../../../domain/invitation").Invitation) => DiscordInteractionResponse;
+  readonly serializeMatchQueue: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
+  readonly serializeMatchQueueCancelled: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
 }
 
 export const DiscordResponseSerializer = Context.GenericTag<DiscordResponseSerializer>("@services/DiscordResponseSerializer");
@@ -550,6 +554,113 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           components
         }
       };
+    },
+
+    serializeInvitation: (invitation) => {
+      const embed: DiscordEmbed = {
+        title: "🎲 야추 대결 초대장",
+        description: `**${invitation.challengerName}**님이 <@${invitation.opponentId}>님에게 1v1 야추 대결을 신청하셨습니다!\n\n⏰ **유효시간**: 5분\n수락하시겠습니까?`,
+        color: 0x5865F2,
+        footer: { text: "만료 전 수락 버튼을 눌러 게임을 시작하세요!" }
+      };
+
+      const components: DiscordActionRow[] = [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2 as const,
+              style: 3 as const, // Success Green
+              label: "✅ 수락 (Accept)",
+              custom_id: `invitation:accept:${invitation.id}`
+            },
+            {
+              type: 2 as const,
+              style: 4 as const, // Danger Red
+              label: "❌ 거절 (Decline)",
+              custom_id: `invitation:decline:${invitation.id}`
+            }
+          ]
+        }
+      ];
+
+      return {
+        type: 4,
+        data: {
+          embeds: [embed],
+          components
+        }
+      };
+    },
+
+    serializeInvitationDeclined: (invitation) => {
+      const embed: DiscordEmbed = {
+        title: "🎲 야추 대결 초대 거절됨",
+        description: `<@${invitation.opponentId}>님이 **${invitation.challengerName}**님의 야추 대결 초대를 거절하였습니다.`,
+        color: 0xED4245
+      };
+
+      return {
+        type: 7,
+        data: {
+          embeds: [embed],
+          components: []
+        }
+      };
+    },
+
+    serializeMatchQueue: (queue) => {
+      const embed: DiscordEmbed = {
+        title: "🎲 야추 대결 공개 대기열",
+        description: `**${queue.hostName}**님이 야추 대결 대기열을 생성했습니다!\n\n누구나 아래 **[참가하기]** 버튼을 눌러 즉시 1v1 대결을 시작할 수 있습니다.\n\n⏰ **유효시간**: 5분`,
+        color: 0x57F287,
+        footer: { text: "방장은 [대기 취소] 버튼으로 대기열을 닫을 수 있습니다." }
+      };
+
+      const components: DiscordActionRow[] = [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2 as const,
+              style: 3 as const, // Success Green
+              label: "⚔️ 대결 참가하기",
+              custom_id: `queue:join:${queue.id}`
+            },
+            {
+              type: 2 as const,
+              style: 2 as const, // Secondary Gray
+              label: "❌ 대기 취소",
+              custom_id: `queue:cancel:${queue.id}`
+            }
+          ]
+        }
+      ];
+
+      return {
+        type: 4,
+        data: {
+          embeds: [embed],
+          components
+        }
+      };
+    },
+
+    serializeMatchQueueCancelled: (queue) => {
+      const embed: DiscordEmbed = {
+        title: "🎲 야추 대결 대기열 취소됨",
+        description: `**${queue.hostName}**님이 야추 대결 대기열을 취소했습니다.`,
+        color: 0x95A5A6
+      };
+
+      return {
+        type: 7,
+        data: {
+          embeds: [embed],
+          components: []
+        }
+      };
     }
   }
 );
+
