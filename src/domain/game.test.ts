@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { Effect, Exit, Cause } from "effect";
-import { initGame, rollDice, selectCategory, surrenderGame } from "./game";
+import { initGame, rollDice, selectCategory, surrenderGame, offerSurrender, acceptSurrender, declineSurrender } from "./game";
 import { DiceRoll } from "./types";
 
 describe("Yacht Dice Game State Machine", () => {
@@ -313,6 +313,66 @@ describe("Yacht Dice Game State Machine", () => {
         const failures = Array.from(Cause.failures(result.cause));
         expect(failures[0]._tag).toBe("InvalidStateActionError");
       }
+    });
+  });
+
+  describe("Surrender Offer & Accept / Decline Flow", () => {
+    it("should record pendingSurrenderOfferByPlayerId on offerSurrender", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        return yield* offerSurrender(initialState, "p1");
+      });
+
+      const result = Effect.runSync(program);
+      expect(result.pendingSurrenderOfferByPlayerId).toBe("p1");
+      expect(result.status).toBe("Rolling");
+    });
+
+    it("should finish the game when opponent accepts surrender offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        return yield* acceptSurrender(offeredState, "p2");
+      });
+
+      const result = Effect.runSync(program);
+      expect(result.status).toBe("Finished");
+      expect(result.surrenderedPlayerId).toBe("p1");
+      expect(result.pendingSurrenderOfferByPlayerId).toBeUndefined();
+    });
+
+    it("should fail if proposer attempts to accept their own surrender offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        yield* acceptSurrender(offeredState, "p1");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+    });
+
+    it("should clear pendingSurrenderOfferByPlayerId when opponent declines surrender offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        return yield* declineSurrender(offeredState, "p2");
+      });
+
+      const result = Effect.runSync(program);
+      expect(result.pendingSurrenderOfferByPlayerId).toBeUndefined();
+      expect(result.status).toBe("Rolling");
+    });
+
+    it("should auto-clear pendingSurrenderOfferByPlayerId when a dice roll occurs", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        return yield* rollDice(offeredState, [false, false, false, false, false], mockDiceProvider([1, 2, 3, 4, 5]));
+      });
+
+      const result = Effect.runSync(program);
+      expect(result.pendingSurrenderOfferByPlayerId).toBeUndefined();
     });
   });
 });

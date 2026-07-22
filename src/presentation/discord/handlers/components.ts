@@ -140,7 +140,94 @@ export const handleConfirmSurrender = (
     const guildId = interaction.guildId || "@me";
     const channelId = interaction.channelId || "";
 
-    const surrenderResult = workflow.surrender(
+    if (gameState.mode === "single") {
+      yield* workflow.surrender(
+        gameState.gameId,
+        interaction.user.id,
+        guildId,
+        channelId,
+        targetMessageId,
+        safeCtx
+      );
+
+      return new Response(
+        JSON.stringify({
+          type: 7, // UpdateMessage
+          data: {
+            content: KoreanMessages.surrender.completed,
+            components: []
+          }
+        }),
+        { headers: { "content-type": "application/json" } }
+      );
+    }
+
+    // Multi-player mode: offer surrender to opponent
+    yield* workflow.offerSurrender(gameState.gameId, interaction.user.id);
+    const p1 = gameState.players[0];
+    const p2 = gameState.players[1];
+    const opponent = p1.playerId === interaction.user.id ? p2 : p1;
+
+    // Send public offer prompt or update message
+    return new Response(
+      JSON.stringify({
+        type: 4, // ChannelMessageWithSource
+        data: {
+          content: KoreanMessages.surrender.offerAnnounce(interaction.user.id, opponent.playerId),
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 2,
+                  style: 3, // Success (Green)
+                  label: KoreanMessages.surrender.acceptButtonLabel,
+                  custom_id: `accept_surrender_${gameState.gameId}_${targetMessageId}`,
+                  emoji: { name: "🤝" }
+                },
+                {
+                  type: 2,
+                  style: 2, // Secondary (Gray)
+                  label: KoreanMessages.surrender.declineButtonLabel,
+                  custom_id: `decline_surrender_${gameState.gameId}_${targetMessageId}`,
+                  emoji: { name: "❌" }
+                }
+              ]
+            }
+          ]
+        }
+      }),
+      { headers: { "content-type": "application/json" } }
+    );
+  });
+
+export const handleAcceptSurrender = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  gameState: GameState,
+  safeCtx: any
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const parts = interaction.customId.split("_");
+    const targetMessageId = parts[3] || "";
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+
+    const proposerId = gameState.pendingSurrenderOfferByPlayerId;
+    if (proposerId && interaction.user.id === proposerId) {
+      return new Response(
+        JSON.stringify({
+          type: 4,
+          data: {
+            content: KoreanMessages.surrender.onlyOpponentCanRespond,
+            flags: 64 // Ephemeral
+          }
+        }),
+        { headers: { "content-type": "application/json" } }
+      );
+    }
+
+    yield* workflow.acceptSurrender(
       gameState.gameId,
       interaction.user.id,
       guildId,
@@ -149,13 +236,47 @@ export const handleConfirmSurrender = (
       safeCtx
     );
 
-    yield* surrenderResult;
-
     return new Response(
       JSON.stringify({
         type: 7, // UpdateMessage
         data: {
           content: KoreanMessages.surrender.completed,
+          components: []
+        }
+      }),
+      { headers: { "content-type": "application/json" } }
+    );
+  });
+
+export const handleDeclineSurrender = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  gameState: GameState,
+  safeCtx: any
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const proposerId = gameState.pendingSurrenderOfferByPlayerId;
+
+    if (proposerId && interaction.user.id === proposerId) {
+      return new Response(
+        JSON.stringify({
+          type: 4,
+          data: {
+            content: KoreanMessages.surrender.onlyOpponentCanRespond,
+            flags: 64 // Ephemeral
+          }
+        }),
+        { headers: { "content-type": "application/json" } }
+      );
+    }
+
+    yield* workflow.declineSurrender(gameState.gameId, interaction.user.id);
+
+    return new Response(
+      JSON.stringify({
+        type: 7, // UpdateMessage
+        data: {
+          content: KoreanMessages.surrender.declinedAnnounce(interaction.user.id),
           components: []
         }
       }),

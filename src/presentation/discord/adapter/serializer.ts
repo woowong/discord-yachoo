@@ -275,7 +275,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           return {
             type: 2 as const,
             style: isHeld ? (3 as const) : (2 as const),
-            label: `[${idx + 1}]${isHeld ? " Held" : ""}`,
+            label: isHeld ? "🔒" : `[${idx + 1}]`,
             emoji: { name: emojiName },
             custom_id: `disabled_hold_${idx}`,
             disabled: true

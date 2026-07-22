@@ -14,6 +14,8 @@ import {
   handlePageHistory, 
   handleSurrender, 
   handleConfirmSurrender, 
+  handleAcceptSurrender,
+  handleDeclineSurrender,
   handleHold, 
   handleRoll, 
   handleSelectCategory 
@@ -34,21 +36,22 @@ export const routeInteraction = (
     }
 
     if (interaction._tag === "Command") {
-      switch (interaction.commandName) {
-        case "challenge":
-          return yield* handleChallenge(interaction, rawJson, safeCtx);
-        case "profile":
-          return yield* handleProfile(interaction);
-        case "leaderboard":
-          return yield* handleLeaderboard(interaction);
-        case "history":
-          return yield* handleHistory(interaction);
-        default:
-          return new Response(
-            JSON.stringify(serializer.serializeError(`Unknown command: ${interaction.commandName}`)),
-            { headers: { "content-type": "application/json" } }
-          );
+      if (interaction.commandName === "challenge") {
+        return yield* handleChallenge(interaction, rawJson, safeCtx);
       }
+      if (interaction.commandName === "profile") {
+        return yield* handleProfile(interaction);
+      }
+      if (interaction.commandName === "leaderboard") {
+        return yield* handleLeaderboard(interaction);
+      }
+      if (interaction.commandName === "history") {
+        return yield* handleHistory(interaction);
+      }
+      return new Response(
+        JSON.stringify(serializer.serializeError(`Unknown command: ${interaction.commandName}`)),
+        { headers: { "content-type": "application/json" } }
+      );
     }
 
     if (interaction._tag === "Component") {
@@ -66,7 +69,7 @@ export const routeInteraction = (
 
       // Load active game for gameplay components
       let gameId: string | null = null;
-      if (customId.startsWith("confirm_surrender_")) {
+      if (customId.startsWith("confirm_surrender_") || customId.startsWith("accept_surrender_") || customId.startsWith("decline_surrender_")) {
         const parts = customId.split("_");
         gameId = parts[2] || null;
       } else {
@@ -98,6 +101,12 @@ export const routeInteraction = (
       }
       if (customId.startsWith("confirm_surrender_")) {
         return yield* handleConfirmSurrender(interaction, gameState, safeCtx);
+      }
+      if (customId.startsWith("accept_surrender_")) {
+        return yield* handleAcceptSurrender(interaction, gameState, safeCtx);
+      }
+      if (customId.startsWith("decline_surrender_")) {
+        return yield* handleDeclineSurrender(interaction, gameState, safeCtx);
       }
       if (customId.startsWith("hold_")) {
         return yield* handleHold(interaction, gameState, safeCtx);

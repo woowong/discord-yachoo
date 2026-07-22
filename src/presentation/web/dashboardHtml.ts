@@ -633,6 +633,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
               <th>주사위 기록</th>
               <th>획득 점수</th>
               <th>누적 점수</th>
+              <th style="width: 120px;">점수 격차 (Δ)</th>
             </tr>
           </thead>
           <tbody id="modal-turns-tbody">
@@ -1023,6 +1024,20 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           const rowBg = match.mode === 'multi'
             ? (t.playerIndex === 0 ? 'background: rgba(88, 101, 242, 0.04);' : 'background: rgba(16, 185, 129, 0.03);')
             : '';
+
+          const oppIndex = t.playerIndex === 0 ? 1 : 0;
+          const oppScore = playerScores[oppIndex] || 0;
+          const diff = cumulativeScore - oppScore;
+          let diffHtml = '-';
+          if (match.mode === 'multi') {
+            if (diff > 0) {
+              diffHtml = \`<span style="color: #60a5fa; font-weight:700;">+\${diff} (우세)</span>\`;
+            } else if (diff < 0) {
+              diffHtml = \`<span style="color: #f87171; font-weight:700;">\${diff} (열세)</span>\`;
+            } else {
+              diffHtml = \`<span style="color: var(--text-muted); font-weight:600;">동점</span>\`;
+            }
+          }
 
           return \`
             <tr style="\${rowBg}">

@@ -1,6 +1,6 @@
 import { Effect, Context, Layer, Option } from "effect";
 import { GameState, DiceHold, DiceRoll, ScoreCategory } from "../domain/types";
-import { initGame, rollDice, selectCategory, surrenderGame } from "../domain/game";
+import { initGame, rollDice, selectCategory, surrenderGame, offerSurrender as domainOfferSurrender, acceptSurrender as domainAcceptSurrender, declineSurrender as domainDeclineSurrender } from "../domain/game";
 import { calculateEloChange } from "../domain/elo";
 import { calculateScore } from "../domain/score";
 import { PlayerRepository, MatchRepository, GameRepository } from "../persistence/repository";
@@ -110,6 +110,29 @@ export interface GameWorkflowService {
     any, 
     GameRepository | MatchRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
   >;
+
+  readonly offerSurrender: (
+    gameId: string,
+    playerId: string
+  ) => Effect.Effect<GameState, any, GameRepository>;
+
+  readonly acceptSurrender: (
+    gameId: string,
+    playerId: string,
+    guildId: string,
+    channelId: string,
+    messageId: string | undefined,
+    ctx: ExecutionContext
+  ) => Effect.Effect<
+    GameState, 
+    any, 
+    GameRepository | MatchRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
+
+  readonly declineSurrender: (
+    gameId: string,
+    playerId: string
+  ) => Effect.Effect<GameState, any, GameRepository>;
 }
 
 export const GameWorkflowService = Context.GenericTag<GameWorkflowService>("@services/GameWorkflowService");
@@ -124,6 +147,142 @@ const rollProvider: Effect.Effect<DiceRoll, never> = Effect.sync(() => [
   randomDice(),
   randomDice()
 ]);
+
+const processSurrender = (
+  gameId: string,
+  playerId: string,
+  guildId: string,
+  channelId: string,
+  messageId: string | undefined,
+  ctx: any
+) =>
+  Effect.gen(function* () {
+    const gameRepo = yield* GameRepository;
+    const playerRepo = yield* PlayerRepository;
+    const matchRepo = yield* MatchRepository;
+    const apiService = yield* DiscordApiService;
+    const serializer = yield* DiscordResponseSerializer;
+
+    const gameStateOption = yield* gameRepo.findById(gameId);
+    if (Option.isNone(gameStateOption)) {
+      return yield* Effect.fail(new GameNotFoundError(gameId));
+    }
+    const gameState = gameStateOption.value;
+
+    if (gameState.status === "Finished") {
+      return yield* Effect.fail(new GameAlreadyOverError(gameId));
+    }
+
+    const isPlayerInGame = gameState.players.some((p) => p.playerId === playerId);
+    if (!isPlayerInGame) {
+      return yield* Effect.fail(new NotInGameError());
+    }
+
+    const nextState = yield* surrenderGame(gameState, playerId);
+    yield* gameRepo.delete(gameState.gameId);
+    yield* Effect.logInfo(`Player ${playerId} surrendered game ${gameId}. Active game deleted.`);
+
+    // Delete mention on action
+    if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+      const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+        Effect.catchAll(() => Effect.void)
+      );
+      ctx.waitUntil(Effect.runPromise(deleteMentionTask));
+    }
+
+    // Handle Game End stats, ELO, saving Match
+    const handleGameEnd = (endedState: GameState) =>
+      Effect.gen(function* () {
+        const matchId = endedState.gameId;
+        const mode = endedState.mode;
+        const p1 = endedState.players[0];
+        const p2 = endedState.mode === "multi" ? endedState.players[1] : null;
+
+        let winnerId: string | null = null;
+        if (mode === "multi" && p2) {
+          winnerId = endedState.surrenderedPlayerId === p1.playerId ? p2.playerId : p1.playerId;
+        }
+
+        let player1EloAfter: number | null = null;
+        let player2EloAfter: number | null = null;
+        let eloResult: { newRatingA: number; newRatingB: number; deltaA: number; deltaB: number } | null = null;
+
+        if (mode === "multi" && p2) {
+          const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, guildId);
+          const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, guildId);
+          const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
+          const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
+
+          const outcome = endedState.surrenderedPlayerId === p1.playerId ? 0 : 1;
+          eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
+          player1EloAfter = eloResult.newRatingA;
+          player2EloAfter = eloResult.newRatingB;
+        }
+
+        const matchRecord = {
+          id: matchId,
+          mode,
+          guildId: guildId,
+          player1Id: p1.playerId,
+          player2Id: p2 ? p2.playerId : null,
+          player1Score: p1.totalScore,
+          player2Score: p2 ? p2.totalScore : null,
+          winnerId,
+          surrenderedId: endedState.surrenderedPlayerId || null,
+          playedAt: new Date(),
+          historyJson: JSON.stringify(endedState.turnHistory),
+          player1EloAfter,
+          player2EloAfter
+        };
+
+        yield* matchRepo.saveMatch(matchRecord);
+        yield* Effect.logInfo(`Game surrendered. Match record saved to D1.`);
+
+        let endMsgContent = "";
+
+        if (mode === "single") {
+          yield* playerRepo.updateStats(p1.playerId, guildId, "single", "win", p1.totalScore);
+          endMsgContent = KoreanMessages.gameEnd.singleSurrendered(p1.playerId, p1.totalScore);
+        } else if (p2 && eloResult) {
+          yield* playerRepo.updateElo(p1.playerId, guildId, eloResult.newRatingA);
+          yield* playerRepo.updateElo(p2.playerId, guildId, eloResult.newRatingB);
+
+          if (endedState.surrenderedPlayerId === p1.playerId) {
+            yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "loss", p1.totalScore);
+            yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "win", p1.totalScore);
+          } else {
+            yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "win", p1.totalScore);
+            yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "loss", p2.totalScore);
+          }
+
+          const formatDelta = (d: number) => d >= 0 ? `▲+${d}` : `▼${d}`;
+          const deltaA = formatDelta(eloResult.deltaA);
+          const deltaB = formatDelta(eloResult.deltaB);
+
+          endMsgContent = getMultiSurrenderMessage(p1.playerId, p2.playerId, endedState.surrenderedPlayerId!, eloResult.newRatingA, eloResult.newRatingB, deltaA, deltaB);
+        }
+
+        if (channelId && endMsgContent) {
+          const endMessageTask = apiService.sendGameEndMessage(channelId, endMsgContent, messageId).pipe(
+            Effect.catchAll((err) => Effect.logError(`Error sending game end message: ${err}`))
+          );
+          ctx.waitUntil(Effect.runPromise(endMessageTask));
+        }
+      });
+
+    yield* handleGameEnd(nextState);
+
+    // Edit main board message to finished state
+    if (channelId && messageId) {
+      const finishedPayload = serializer.serializeGame(nextState);
+      const editMainBoardTask = apiService.editMessage(channelId, messageId, finishedPayload.data).pipe(
+        Effect.catchAll((err) => Effect.logError(`Failed to update main game board on surrender: ${err}`))
+      );
+      ctx.waitUntil(Effect.runPromise(editMainBoardTask));
+    }
+
+    return nextState;
+  });
 
 export const GameWorkflowServiceLive = Layer.succeed(
   GameWorkflowService,
@@ -482,132 +641,49 @@ export const GameWorkflowServiceLive = Layer.succeed(
       }),
 
     surrender: (gameId, playerId, guildId, channelId, messageId, ctx) =>
+      processSurrender(gameId, playerId, guildId, channelId, messageId, ctx),
+
+    offerSurrender: (gameId, playerId) =>
       Effect.gen(function* () {
         const gameRepo = yield* GameRepository;
-        const playerRepo = yield* PlayerRepository;
-        const matchRepo = yield* MatchRepository;
-        const apiService = yield* DiscordApiService;
-        const serializer = yield* DiscordResponseSerializer;
-
         const gameStateOption = yield* gameRepo.findById(gameId);
         if (Option.isNone(gameStateOption)) {
           return yield* Effect.fail(new GameNotFoundError(gameId));
         }
         const gameState = gameStateOption.value;
 
-        if (gameState.status === "Finished") {
-          return yield* Effect.fail(new GameAlreadyOverError(gameId));
+        const nextState = yield* domainOfferSurrender(gameState, playerId);
+        yield* gameRepo.save(nextState);
+        return nextState;
+      }),
+
+    acceptSurrender: (gameId, playerId, guildId, channelId, messageId, ctx) =>
+      Effect.gen(function* () {
+        const gameRepo = yield* GameRepository;
+        const gameStateOption = yield* gameRepo.findById(gameId);
+        if (Option.isNone(gameStateOption)) {
+          return yield* Effect.fail(new GameNotFoundError(gameId));
         }
+        const gameState = gameStateOption.value;
 
-        const isPlayerInGame = gameState.players.some((p) => p.playerId === playerId);
-        if (!isPlayerInGame) {
-          return yield* Effect.fail(new NotInGameError());
+        const surrenderPlayerId = gameState.pendingSurrenderOfferByPlayerId || playerId;
+        return yield* processSurrender(gameId, surrenderPlayerId, guildId, channelId, messageId, ctx);
+      }),
+
+    declineSurrender: (gameId, playerId) =>
+      Effect.gen(function* () {
+        const gameRepo = yield* GameRepository;
+        const gameStateOption = yield* gameRepo.findById(gameId);
+        if (Option.isNone(gameStateOption)) {
+          return yield* Effect.fail(new GameNotFoundError(gameId));
         }
+        const gameState = gameStateOption.value;
 
-        const nextState = yield* surrenderGame(gameState, playerId);
-        yield* gameRepo.delete(gameState.gameId);
-        yield* Effect.logInfo(`Player ${playerId} surrendered game ${gameId}. Active game deleted.`);
-
-        // Delete mention on action
-        if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
-          const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
-            Effect.catchAll(() => Effect.void)
-          );
-          ctx.waitUntil(Effect.runPromise(deleteMentionTask));
-        }
-
-        // Handle Game End stats, ELO, saving Match
-        const handleGameEnd = (endedState: GameState) =>
-          Effect.gen(function* () {
-            const matchId = endedState.gameId;
-            const mode = endedState.mode;
-            const p1 = endedState.players[0];
-            const p2 = endedState.mode === "multi" ? endedState.players[1] : null;
-
-            let winnerId: string | null = null;
-            if (mode === "multi" && p2) {
-              winnerId = endedState.surrenderedPlayerId === p1.playerId ? p2.playerId : p1.playerId;
-            }
-
-            let player1EloAfter: number | null = null;
-            let player2EloAfter: number | null = null;
-            let eloResult: { newRatingA: number; newRatingB: number; deltaA: number; deltaB: number } | null = null;
-
-            if (mode === "multi" && p2) {
-              const p1StatsOption = yield* playerRepo.getPlayer(p1.playerId, guildId);
-              const p2StatsOption = yield* playerRepo.getPlayer(p2.playerId, guildId);
-              const p1Elo = Option.isSome(p1StatsOption) ? p1StatsOption.value.elo : 1000;
-              const p2Elo = Option.isSome(p2StatsOption) ? p2StatsOption.value.elo : 1000;
-
-              const outcome = endedState.surrenderedPlayerId === p1.playerId ? 0 : 1;
-              eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
-              player1EloAfter = eloResult.newRatingA;
-              player2EloAfter = eloResult.newRatingB;
-            }
-
-            const matchRecord = {
-              id: matchId,
-              mode,
-              guildId: guildId,
-              player1Id: p1.playerId,
-              player2Id: p2 ? p2.playerId : null,
-              player1Score: p1.totalScore,
-              player2Score: p2 ? p2.totalScore : null,
-              winnerId,
-              surrenderedId: endedState.surrenderedPlayerId || null,
-              playedAt: new Date(),
-              historyJson: JSON.stringify(endedState.turnHistory),
-              player1EloAfter,
-              player2EloAfter
-            };
-
-            yield* matchRepo.saveMatch(matchRecord);
-            yield* Effect.logInfo(`Game surrendered. Match record saved to D1.`);
-
-            let endMsgContent = "";
-
-            if (mode === "single") {
-              yield* playerRepo.updateStats(p1.playerId, guildId, "single", "win", p1.totalScore);
-              endMsgContent = KoreanMessages.gameEnd.singleSurrendered(p1.playerId, p1.totalScore);
-            } else if (p2 && eloResult) {
-              yield* playerRepo.updateElo(p1.playerId, guildId, eloResult.newRatingA);
-              yield* playerRepo.updateElo(p2.playerId, guildId, eloResult.newRatingB);
-
-              if (endedState.surrenderedPlayerId === p1.playerId) {
-                yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "loss", p1.totalScore);
-                yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "win", p2.totalScore);
-              } else {
-                yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "win", p1.totalScore);
-                yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "loss", p2.totalScore);
-              }
-
-              const formatDelta = (d: number) => d >= 0 ? `▲+${d}` : `▼${d}`;
-              const deltaA = formatDelta(eloResult.deltaA);
-              const deltaB = formatDelta(eloResult.deltaB);
-
-              endMsgContent = getMultiSurrenderMessage(p1.playerId, p2.playerId, endedState.surrenderedPlayerId!, eloResult.newRatingA, eloResult.newRatingB, deltaA, deltaB);
-            }
-
-            if (channelId && endMsgContent) {
-              const endMessageTask = apiService.sendGameEndMessage(channelId, endMsgContent, messageId).pipe(
-                Effect.catchAll((err) => Effect.logError(`Error sending game end message: ${err}`))
-              );
-              ctx.waitUntil(Effect.runPromise(endMessageTask));
-            }
-          });
-
-        yield* handleGameEnd(nextState);
-
-        // Edit main board message to finished state
-        if (channelId && messageId) {
-          const finishedPayload = serializer.serializeGame(nextState);
-          const editMainBoardTask = apiService.editMessage(channelId, messageId, finishedPayload.data).pipe(
-            Effect.catchAll((err) => Effect.logError(`Failed to update main game board on surrender: ${err}`))
-          );
-          ctx.waitUntil(Effect.runPromise(editMainBoardTask));
-        }
-
+        const nextState = yield* domainDeclineSurrender(gameState, playerId);
+        yield* gameRepo.save(nextState);
         return nextState;
       })
   }
 );
+
+

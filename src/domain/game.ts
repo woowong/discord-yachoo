@@ -84,7 +84,8 @@ export const rollDice = (
       status: "Scoring",
       currentDice: finalDice,
       rollCount: state.rollCount + 1,
-      currentTurnRolls: [...state.currentTurnRolls, finalDice]
+      currentTurnRolls: [...state.currentTurnRolls, finalDice],
+      pendingSurrenderOfferByPlayerId: undefined
     };
   });
 };
@@ -172,7 +173,8 @@ export const selectCategory = (
         players: updatedPlayers,
         status: "Finished",
         turnHistory: [...state.turnHistory, turnRecord],
-        currentTurnRolls: []
+        currentTurnRolls: [],
+        pendingSurrenderOfferByPlayerId: undefined
       };
     }
 
@@ -190,7 +192,8 @@ export const selectCategory = (
       currentDice: [1, 1, 1, 1, 1], // Reset dice
       rollCount: 0, // Reset roll count
       turnHistory: [...state.turnHistory, turnRecord],
-      currentTurnRolls: []
+      currentTurnRolls: [],
+      pendingSurrenderOfferByPlayerId: undefined
     };
   });
 };
@@ -218,8 +221,92 @@ export const surrenderGame = (
     return {
       ...state,
       status: "Finished",
-      surrenderedPlayerId: surrenderingPlayerId
+      surrenderedPlayerId: surrenderingPlayerId,
+      pendingSurrenderOfferByPlayerId: undefined
     };
   });
 };
+
+/**
+ * Proposes a surrender on behalf of a player.
+ */
+export const offerSurrender = (
+  state: GameState,
+  proposingPlayerId: string
+): Effect.Effect<GameState, GameError> => {
+  return Effect.gen(function* () {
+    if (state.status === "Finished") {
+      yield* Effect.fail(new GameAlreadyOverError(state.gameId));
+    }
+
+    const isPlayerInGame = state.players.some((p) => p.playerId === proposingPlayerId);
+    if (!isPlayerInGame) {
+      yield* Effect.fail(new InvalidStateActionError(`Player ${proposingPlayerId} is not in this game.`));
+    }
+
+    return {
+      ...state,
+      pendingSurrenderOfferByPlayerId: proposingPlayerId
+    };
+  });
+};
+
+/**
+ * Accepts a pending surrender offer on behalf of the opponent player.
+ */
+export const acceptSurrender = (
+  state: GameState,
+  acceptingPlayerId: string
+): Effect.Effect<GameState, GameError> => {
+  return Effect.gen(function* () {
+    if (state.status === "Finished") {
+      yield* Effect.fail(new GameAlreadyOverError(state.gameId));
+    }
+
+    const offererId = state.pendingSurrenderOfferByPlayerId;
+    if (!offererId) {
+      return yield* Effect.fail(new InvalidStateActionError("No pending surrender offer to accept."));
+    }
+
+    if (acceptingPlayerId === offererId) {
+      return yield* Effect.fail(new InvalidStateActionError("Proposer cannot accept their own surrender offer."));
+    }
+
+    const isPlayerInGame = state.players.some((p) => p.playerId === acceptingPlayerId);
+    if (!isPlayerInGame) {
+      return yield* Effect.fail(new InvalidStateActionError(`Player ${acceptingPlayerId} is not in this game.`));
+    }
+
+    return yield* surrenderGame(state, offererId);
+  });
+};
+
+/**
+ * Declines a pending surrender offer.
+ */
+export const declineSurrender = (
+  state: GameState,
+  decliningPlayerId: string
+): Effect.Effect<GameState, GameError> => {
+  return Effect.gen(function* () {
+    if (state.status === "Finished") {
+      yield* Effect.fail(new GameAlreadyOverError(state.gameId));
+    }
+
+    if (!state.pendingSurrenderOfferByPlayerId) {
+      yield* Effect.fail(new InvalidStateActionError("No pending surrender offer to decline."));
+    }
+
+    const isPlayerInGame = state.players.some((p) => p.playerId === decliningPlayerId);
+    if (!isPlayerInGame) {
+      yield* Effect.fail(new InvalidStateActionError(`Player ${decliningPlayerId} is not in this game.`));
+    }
+
+    return {
+      ...state,
+      pendingSurrenderOfferByPlayerId: undefined
+    };
+  });
+};
+
 

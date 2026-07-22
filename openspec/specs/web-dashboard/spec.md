@@ -37,3 +37,10 @@ If the `guildId` query parameter is not provided (or is null), the endpoints (pr
 - **WHEN** a GET request is received at `/web/api/profile/:playerId` without a `guildId` query parameter (or `guildId` is null)
 - **THEN** the system SHALL return a 200 OK Response containing player statistics and recent matches retrieved globally across all guilds.
 
+### Requirement: Score Differential Column in Replay Modal
+The web dashboard replay modal SHALL display a score differential (Δ Diff) column in the turn-by-turn replay table, indicating cumulative score differences relative to the opponent.
+
+#### Scenario: Display score differential in replay table
+- **WHEN** a user opens the turn replay modal for a multiplayer game match
+- **THEN** each turn row MUST display the cumulative score along with the relative score differential against the opponent (e.g. `+12점 (Lead)` or `-5점 (Lag)`)
+

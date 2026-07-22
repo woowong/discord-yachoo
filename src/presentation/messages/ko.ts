@@ -45,10 +45,15 @@ export const KoreanMessages = {
     gameNotFound: (gameId: string) => `Game not found: ${gameId}`
   },
   surrender: {
-    confirmText: "⚠️ **정말 기권하시겠습니까?**\n기권하면 즉시 패배 처리되며 상대방이 승리합니다.",
-    confirmButtonLabel: "실제 기권하기",
+    confirmText: "⚠️ **정말 항복을 제안하시겠습니까?**\n상대방이 수락하면 게임이 즉시 종료되고 패배 처리됩니다.",
+    confirmButtonLabel: "항복 제안 전송",
     completed: "✅ 기권 처리가 완료되었습니다.",
-    alreadyFinished: "✅ 이미 종료된 게임입니다."
+    alreadyFinished: "✅ 이미 종료된 게임입니다.",
+    offerAnnounce: (proposerId: string, opponentId: string) => `🏳️ <@${proposerId}> 님이 항복을 제안했습니다! <@${opponentId}> 님, 수락하시겠습니까?`,
+    acceptButtonLabel: "🤝 항복 수락",
+    declineButtonLabel: "❌ 항복 거절",
+    onlyOpponentCanRespond: "❌ 상대방만 항복을 수락하거나 거절할 수 있습니다.",
+    declinedAnnounce: (declinerId: string) => `❌ <@${declinerId}> 님이 항복 제안을 거절하였습니다. 경기를 계속 진행합니다.`
   },
   gameEnd: {
     singleFinished: (playerId: string, score: number) => `🏁 게임 완료! <@${playerId}> 님의 최종 스코어: **${score}**점\n\n🎬 **웹 대시보드 복기**: [웹 대시보드 바로가기](https://discord-yachoo.woowong.workers.dev/web?player=${playerId})`,

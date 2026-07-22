@@ -99,7 +99,7 @@ export default {
           ? (rawJson.message?.embeds?.[0]?.footer?.text || "").match(/Game ID:\s*([a-zA-Z0-9]+)/)?.[1]
           : undefined;
 
-        if (!gameId && interaction._tag === "Component" && interaction.customId.startsWith("confirm_surrender_")) {
+        if (!gameId && interaction._tag === "Component" && (interaction.customId.startsWith("confirm_surrender_") || interaction.customId.startsWith("accept_surrender_") || interaction.customId.startsWith("decline_surrender_"))) {
           gameId = interaction.customId.split("_")[2];
         }
 
