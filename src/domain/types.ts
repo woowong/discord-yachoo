@@ -36,6 +36,8 @@ export interface TurnRecord {
   readonly rolls: readonly DiceRoll[];
   readonly category: ScoreCategory;
   readonly score: number;
+  /** Player total immediately after this turn, including any upper-section bonus. */
+  readonly cumulativeScore: number;
 }
 
 export interface GameState {
@@ -54,4 +56,3 @@ export interface GameState {
   readonly pendingSurrenderOfferByPlayerId?: string;
   readonly initialMessageId?: string;
 }
-

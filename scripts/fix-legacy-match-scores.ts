@@ -1,4 +1,6 @@
 import { execSync } from "child_process";
+import { HistoryTurnRecord } from "../src/domain/history";
+import { reconstructMatchScores } from "../src/application/matchHistoryRepair";
 
 interface DBMatchRow {
   id: string;
@@ -9,22 +11,16 @@ interface DBMatchRow {
   player1_score: number;
   player2_score: number | null;
   winner_id: string | null;
+  surrendered_id: string | null;
   history_json: string | null;
 }
 
-interface TurnRecord {
-  turnNumber: number;
-  playerIndex: number;
-  playerName: string;
-  category: string;
-  score: number;
-}
-
-function runMigration(isRemote: boolean) {
+function runMigration(isRemote: boolean, shouldApply: boolean) {
   const envFlag = isRemote ? "--remote" : "--local";
   console.log(`🔍 [Migration] Fetching matches from D1 (${isRemote ? "REMOTE / Production" : "LOCAL"})...`);
+  console.log(`🔎 Mode: ${shouldApply ? "APPLY changes" : "DRY-RUN only"}`);
 
-  const selectCmd = `npx wrangler d1 execute yacht_dice ${envFlag} --json --command "SELECT id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, history_json FROM matches WHERE history_json IS NOT NULL;"`;
+  const selectCmd = `npx wrangler d1 execute yacht_dice ${envFlag} --json --command "SELECT id, mode, guild_id, player1_id, player2_id, player1_score, player2_score, winner_id, surrendered_id, history_json FROM matches WHERE history_json IS NOT NULL;"`;
   
   try {
     const rawOutput = execSync(selectCmd, { encoding: "utf-8" });
@@ -45,14 +41,17 @@ function runMigration(isRemote: boolean) {
       if (!match.history_json) continue;
 
       try {
-        const turns: TurnRecord[] = JSON.parse(match.history_json);
-        let actualP1 = 0;
-        let actualP2 = 0;
-
-        turns.forEach((t) => {
-          if (t.playerIndex === 0) actualP1 += t.score;
-          if (t.playerIndex === 1) actualP2 += t.score;
+        const turns = JSON.parse(match.history_json) as HistoryTurnRecord[];
+        const reconstructed = reconstructMatchScores({
+          mode: match.mode as "single" | "multi",
+          player1Id: match.player1_id,
+          player2Id: match.player2_id,
+          surrenderedId: match.surrendered_id,
+          winnerId: match.winner_id,
+          history: turns
         });
+        const actualP1 = reconstructed.player1Score;
+        const actualP2 = reconstructed.player2Score ?? 0;
 
         const p2ScoreOrZero = match.player2_score ?? 0;
 
@@ -61,18 +60,14 @@ function runMigration(isRemote: boolean) {
         const isP2Mismatch = match.mode === "multi" && p2ScoreOrZero !== actualP2;
 
         if (isP1Mismatch || isP2Mismatch) {
-          let actualWinnerId: string | null = null;
-          if (match.mode === "multi" && match.player2_id) {
-            if (actualP1 > actualP2) actualWinnerId = match.player1_id;
-            else if (actualP2 > actualP1) actualWinnerId = match.player2_id;
-            else actualWinnerId = null;
-          } else {
-            actualWinnerId = match.player1_id;
+          const actualWinnerId = reconstructed.winnerId;
+          if (match.surrendered_id) {
+            console.log(`   Preserving surrender winner: ${actualWinnerId || "NULL"}`);
           }
 
           console.log(`⚠️ Mismatch found in match [${match.id}]:`);
           console.log(`   DB Score: P1=${match.player1_score}, P2=${match.player2_score}, Winner=${match.winner_id}`);
-          console.log(`   History Sum: P1=${actualP1}, P2=${actualP2}, Winner=${actualWinnerId}`);
+          console.log(`   History Final Cumulative: P1=${actualP1}, P2=${actualP2}, Winner=${actualWinnerId}`);
 
           const winnerSql = actualWinnerId ? `'${actualWinnerId}'` : "NULL";
           const p2Sql = match.mode === "multi" ? actualP2 : "NULL";
@@ -94,6 +89,12 @@ function runMigration(isRemote: boolean) {
 
     console.log(`\nFound ${patchCount} inconsistent match records to patch.`);
 
+    if (!shouldApply) {
+      console.log("\n🛑 Dry-run complete. No database updates were executed.");
+      console.log("Run again with --apply to execute the printed updates.");
+      return;
+    }
+
     for (const sql of updateStatements) {
       console.log(`Executing: ${sql}`);
       const updateCmd = `npx wrangler d1 execute yacht_dice ${envFlag} --command "${sql.replace(/"/g, '\\"')}"`;
@@ -108,4 +109,5 @@ function runMigration(isRemote: boolean) {
 }
 
 const isRemote = process.argv.includes("--remote");
-runMigration(isRemote);
+const shouldApply = process.argv.includes("--apply");
+runMigration(isRemote, shouldApply);

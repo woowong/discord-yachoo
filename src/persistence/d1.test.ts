@@ -282,7 +282,7 @@ describe("D1 Persistence Repositories", () => {
         winnerId: null,
         surrenderedId: null,
         playedAt: new Date("2026-07-10T12:00:00.000Z"),
-        historyJson: JSON.stringify([{ round: 1 }])
+        historyJson: JSON.stringify([{ round: 1, score: 30, cumulativeScore: 30 }])
       };
 
       const program = Effect.flatMap(MatchRepository, (repo) =>
@@ -306,7 +306,7 @@ describe("D1 Persistence Repositories", () => {
         null,
         null, // surrenderedId
         "2026-07-10T12:00:00.000Z",
-        JSON.stringify([{ round: 1 }]),
+        JSON.stringify([{ round: 1, score: 30, cumulativeScore: 30 }]),
         null,
         null
       );
@@ -434,7 +434,7 @@ describe("D1 Persistence Repositories", () => {
         player2_score: null,
         winner_id: null,
         played_at: "2026-07-10T12:00:00.000Z",
-        history_json: JSON.stringify([{ round: 1 }])
+        history_json: JSON.stringify([{ round: 1, score: 30, cumulativeScore: 30 }])
       });
 
       const program = Effect.flatMap(MatchRepository, (repo) =>
@@ -449,7 +449,7 @@ describe("D1 Persistence Repositories", () => {
       expect(Option.isSome(result)).toBe(true);
       const match = Option.getOrThrow(result);
       expect(match.id).toBe("match-123");
-      expect(match.historyJson).toBe(JSON.stringify([{ round: 1 }]));
+      expect(match.historyJson).toBe(JSON.stringify([{ round: 1, score: 30, cumulativeScore: 30 }]));
       expect(mockDB.prepare).toHaveBeenCalledWith("SELECT * FROM matches WHERE id = ?");
       expect(mockBind).toHaveBeenCalledWith("match-123");
       expect(mockFirst).toHaveBeenCalled();

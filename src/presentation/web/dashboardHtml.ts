@@ -971,6 +971,27 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     // Replay Game Log Modal
+    const replayUpperCategories = new Set(['Aces', 'Deuces', 'Treys', 'Fours', 'Fives', 'Sixes']);
+    function normalizeReplayTurns(rawTurns) {
+      const sortedTurns = [...rawTurns].sort((a, b) => a.turnNumber - b.turnNumber || a.playerIndex - b.playerIndex);
+      const progress = {};
+
+      return sortedTurns.map(turn => {
+        const playerProgress = progress[turn.playerIndex] || { rawScore: 0, upperSum: 0 };
+        playerProgress.rawScore += Number(turn.score) || 0;
+        if (replayUpperCategories.has(turn.category)) {
+          playerProgress.upperSum += Number(turn.score) || 0;
+        }
+        progress[turn.playerIndex] = playerProgress;
+
+        const derivedCumulative = playerProgress.rawScore + (playerProgress.upperSum >= 63 ? 35 : 0);
+        return {
+          ...turn,
+          cumulativeScore: typeof turn.cumulativeScore === 'number' ? turn.cumulativeScore : derivedCumulative
+        };
+      });
+    }
+
     let replayChartInstance = null;
     async function openReplay(matchId) {
       const modal = document.getElementById('replay-modal');
@@ -990,8 +1011,7 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
         title.innerText = \`경기 복기: [\${match.id}]\`;
         meta.innerText = \`일시: \${new Date(match.playedAt).toLocaleString('ko-KR')} | 모드: \${match.mode === 'single' ? '🕹️ 싱글' : '⚔️ 매치'} | 최종 결과: \${match.player1Score} 대 \${match.player2Score || 0}\`;
 
-        const turns = JSON.parse(match.historyJson);
-        turns.sort((a,b) => a.turnNumber - b.turnNumber || a.playerIndex - b.playerIndex);
+        const turns = normalizeReplayTurns(JSON.parse(match.historyJson));
 
         // Render Delta Line Chart for Multi Mode
         const chartWrapper = document.getElementById('replay-chart-wrapper');
@@ -1002,15 +1022,15 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
           const p2Scores = {};
           turns.forEach(t => {
             const r = t.turnNumber;
-            if (t.playerIndex === 0) p1Scores[r] = t.score;
-            if (t.playerIndex === 1) p2Scores[r] = t.score;
+            if (t.playerIndex === 0) p1Scores[r] = t.cumulativeScore;
+            if (t.playerIndex === 1) p2Scores[r] = t.cumulativeScore;
           });
 
           const rounds = Array.from({ length: 12 }, (_, i) => i + 1);
           let cum1 = 0, cum2 = 0;
           const diffData = rounds.map(r => {
-            cum1 += p1Scores[r] || 0;
-            cum2 += p2Scores[r] || 0;
+            if (p1Scores[r] !== undefined) cum1 = p1Scores[r];
+            if (p2Scores[r] !== undefined) cum2 = p2Scores[r];
             return cum1 - cum2;
           });
 
@@ -1088,12 +1108,9 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 
           const pId = t.playerIndex === 0 ? match.player1Id : match.player2Id;
 
-          // Track cumulative score
-          if (playerScores[t.playerIndex] === undefined) {
-            playerScores[t.playerIndex] = 0;
-          }
-          playerScores[t.playerIndex] += t.score;
-          const cumulativeScore = playerScores[t.playerIndex];
+          // The normalized score includes the upper section bonus when earned.
+          const cumulativeScore = t.cumulativeScore;
+          playerScores[t.playerIndex] = cumulativeScore;
 
           const linkHtml = pId 
             ? \`<span class="link-nickname" onclick="closeReplayModal(); switchTab('profile-tab'); document.getElementById('player-id-input').value='\${pId}'; searchProfile('\${pId}')">\${t.playerName}</span>\`

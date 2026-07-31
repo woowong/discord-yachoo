@@ -62,11 +62,20 @@ The system SHALL handle component interactions (hold buttons, roll buttons, cate
 - **THEN** the system SHALL extract the `gameId` from the custom ID, load the active game, proceed to surrender the game, transition the state to Finished, record the game end statistics, save the match record with the player's ID in `surrenderedId`, and patch the main game board message to show the finished status with a link to the Web Dashboard replay.
 
 ### Requirement: Discord History Slash Command
-The system SHALL support the `/history` slash command to allow players to view recent games and detailed turn-by-turn logs for the current Discord server (guild). History listings and detailed logs MUST display surrender outcomes as `Won (KO)` or `Lost (KO)` (or `기권패`), and provide direct web replay hyperlinks.
+The system SHALL support the `/history` slash command to allow players to view recent games and detailed turn-by-turn logs for the current Discord server (guild). History listings and detailed logs MUST display surrender outcomes as `Won (KO)` or `Lost (KO)` (or `기권패`), provide direct web replay hyperlinks, and show both each turn's gained score and the player's cumulative score after that turn. Cumulative scores MUST include the upper section bonus when earned.
 
 #### Scenario: Display recent matches list
 - **WHEN** a user runs the `/history` command without specifying a game ID in a specific server (guild)
 - **THEN** the system MUST display an embed containing a list of the user's 5 most recent matches played in that guild, displaying surrender games with a `KO` status, along with interactive buttons to view details for each match.
+
+#### Scenario: Display turn cumulative scores in match details
+- **WHEN** a user opens the detailed history of a completed match
+- **THEN** each displayed turn MUST include the points earned in that turn and the player's cumulative score after the turn
+- **AND** the cumulative score MUST include the 35-point upper section bonus from the turn where the threshold was reached onward
+
+#### Scenario: Display legacy match details
+- **WHEN** a completed match contains history records without cumulative score fields
+- **THEN** the detailed history view MUST derive and display cumulative scores using the recorded scores and upper section bonus rule
 
 ### Requirement: Active Game Round Number Display
 The system SHALL display the current round number on the active game Discord embed.
@@ -133,4 +142,3 @@ The Discord presentation layer SHALL render the current dice state in a 2-line l
 - **THEN** the embed description MUST format `Current Dice` across 2 lines:
   Line 1: `:six: :three: :four: :one: :four:`
   Line 2: `▫️ 🔒 ▫️ 🔒 ▫️`
-

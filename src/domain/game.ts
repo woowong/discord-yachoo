@@ -163,7 +163,8 @@ export const selectCategory = (
       turnNumber: Object.keys(currentPlayer.scoreBoard).length + 1,
       rolls: state.currentTurnRolls,
       category,
-      score: calculateScore(category, state.currentDice)
+      score: calculateScore(category, state.currentDice),
+      cumulativeScore: updatedPlayer.totalScore
     };
 
     // 5. Determine next game status
@@ -308,5 +309,4 @@ export const declineSurrender = (
     };
   });
 };
-
 

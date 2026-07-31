@@ -1,5 +1,6 @@
 import { MatchRecord } from "../persistence/repository";
 import { TurnRecord } from "../domain/types";
+import { HistoryTurnRecord, normalizeTurnHistory } from "../domain/history";
 
 export interface LegendMatchTag {
   readonly type: "comeback" | "streak" | "yacht" | "fail";
@@ -17,7 +18,9 @@ export const scanLegendMatch = (match: MatchRecord): readonly LegendMatchTag[] =
   if (!match.historyJson) return tags;
 
   try {
-    const turns: readonly TurnRecord[] = JSON.parse(match.historyJson);
+    const turns: readonly TurnRecord[] = normalizeTurnHistory(
+      JSON.parse(match.historyJson) as HistoryTurnRecord[]
+    );
     
     // 1. Yacht completed check (야추 달성)
     const hasYacht = turns.some(t => t.category === "Yacht" && t.score === 50);
@@ -82,15 +85,12 @@ export const scanLegendMatch = (match: MatchRecord): readonly LegendMatchTag[] =
     if (match.mode === "multi" && match.player2Id && match.winnerId) {
       // Reconstruct scores at each round
       const scoreAtRound = Array.from({ length: 13 }, () => [0, 0]); // round 0 to 12
-      const cumulative = [0, 0];
-      
       // Sort turns chronologically
       const sortedTurns = [...turns].sort((a, b) => a.turnNumber - b.turnNumber || a.playerIndex - b.playerIndex);
       
       for (const t of sortedTurns) {
         if (t.turnNumber >= 1 && t.turnNumber <= 12) {
-          cumulative[t.playerIndex] += t.score;
-          scoreAtRound[t.turnNumber][t.playerIndex] = cumulative[t.playerIndex];
+          scoreAtRound[t.turnNumber][t.playerIndex] = t.cumulativeScore;
         }
       }
 

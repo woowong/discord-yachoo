@@ -182,6 +182,7 @@ describe("Yacht Dice Game State Machine", () => {
       expect(p1.scoreBoard.Fours).toBe(20);
       expect(p1.bonusScore).toBe(35);
       expect(p1.totalScore).toBe(30 + 25 + 20 + 35); // 110 points
+      expect(result.turnHistory.map((turn) => turn.cumulativeScore)).toEqual([30, 55, 110]);
     });
 
     it("should fail when selecting an already filled category", () => {
@@ -262,6 +263,7 @@ describe("Yacht Dice Game State Machine", () => {
         ]);
         expect(record.category).toBe("Choice");
         expect(record.score).toBe(16);
+        expect(record.cumulativeScore).toBe(16);
 
         return state3;
       });
@@ -376,4 +378,3 @@ describe("Yacht Dice Game State Machine", () => {
     });
   });
 });
-

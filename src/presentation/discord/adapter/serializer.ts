@@ -1,5 +1,6 @@
 import { Context, Layer } from "effect";
 import { GameState, ScoreCategory, TurnRecord } from "../../../domain/types";
+import { HistoryTurnRecord, normalizeTurnHistory } from "../../../domain/history";
 import { PlayerStats, MatchRecord } from "../../../persistence/repository";
 import { calculateScore, calculateUpperSectionSum } from "../../../domain/score";
 import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./types";
@@ -465,9 +466,10 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         };
       }
 
-      let history: TurnRecord[];
+      let history: readonly TurnRecord[];
       try {
-        history = JSON.parse(match.historyJson);
+        const parsedHistory = JSON.parse(match.historyJson) as HistoryTurnRecord[];
+        history = normalizeTurnHistory(parsedHistory);
       } catch (e) {
         return {
           type: 4,
@@ -497,7 +499,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         lines.push(`**Round ${r}**`);
         for (const rec of turnRecs) {
           const rollsStr = rec.rolls.map(roll => `\`[${roll.join(" ")}]\``).join(" ➔ ");
-          lines.push(`• **${rec.playerName}**: ${rec.category} ➔ **${rec.score} pts**`);
+          lines.push(`• **${rec.playerName}**: ${rec.category} ➔ **${rec.score} pts** (누적 **${rec.cumulativeScore} pts**)`);
           lines.push(`  Rolls: ${rollsStr}`);
         }
         lines.push("");
@@ -659,4 +661,3 @@ export const DiscordResponseSerializerLive = Layer.succeed(
     }
   }
 );
-

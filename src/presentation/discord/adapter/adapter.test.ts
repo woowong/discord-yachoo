@@ -4,7 +4,7 @@ import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./signat
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./parser";
 import { DiscordResponseSerializer, DiscordResponseSerializerLive } from "./serializer";
 import { GameState } from "../../../domain/types";
-import { PlayerStats } from "../../../persistence/repository";
+import { MatchRecord, PlayerStats } from "../../../persistence/repository";
 
 describe("Discord Webhook Adapter Layer", () => {
   describe("DiscordSignatureVerifier", () => {
@@ -233,7 +233,8 @@ describe("Discord Webhook Adapter Layer", () => {
             turnNumber: 1,
             rolls: [[1, 1, 1, 4, 5]],
             category: "Aces",
-            score: 3
+            score: 3,
+            cumulativeScore: 3
           }
         ]
       };
@@ -247,6 +248,33 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].description).toContain("Alice");
       expect(response.data?.embeds?.[0].description).toContain("**3 pts** in **Aces**");
       expect(response.data?.embeds?.[0].description).toContain(":one: :one: :one: :four: :five:");
+    });
+
+    it("should display bonus-inclusive cumulative scores for legacy history", async () => {
+      const match: MatchRecord = {
+        id: "match-history",
+        mode: "single",
+        guildId: null,
+        player1Id: "12345",
+        player2Id: null,
+        player1Score: 110,
+        player2Score: null,
+        winnerId: null,
+        surrenderedId: null,
+        playedAt: new Date("2026-07-10T12:00:00.000Z"),
+        historyJson: JSON.stringify([
+          { playerIndex: 0, playerName: "Alice", turnNumber: 1, rolls: [[6, 6, 6, 6, 6]], category: "Sixes", score: 30 },
+          { playerIndex: 0, playerName: "Alice", turnNumber: 2, rolls: [[5, 5, 5, 5, 5]], category: "Fives", score: 25 },
+          { playerIndex: 0, playerName: "Alice", turnNumber: 3, rolls: [[4, 4, 4, 4, 4]], category: "Fours", score: 20 }
+        ])
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeHistoryDetails(match, 1))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      expect(response.data?.embeds?.[0].description).toContain("Fours ➔ **20 pts** (누적 **110 pts**)");
     });
 
     it("should serialize rolling state with a random Giphy URL from the pool", async () => {
