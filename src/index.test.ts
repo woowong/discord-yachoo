@@ -977,6 +977,219 @@ describe("Discord Yacht Bot Integration Tests", () => {
     expect(json.data.components[0].components[0].custom_id).toBe("confirm_surrender_game-123_msg-111");
   });
 
+  it("should create a surrender offer without changing the current opponent turn", async () => {
+    const mockActiveGame = {
+      gameId: "game-multi-surrender",
+      mode: "multi",
+      status: "Scoring",
+      currentPlayerIndex: 1,
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: [[1, 2, 3, 4, 5]]
+    };
+
+    mockFirst.mockResolvedValue({ state: JSON.stringify(mockActiveGame) });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      guild_id: "guild-123",
+      channel_id: "channel-123",
+      data: {
+        custom_id: "confirm_surrender_game-multi-surrender_msg-111"
+      },
+      message: {
+        id: "msg-111",
+        embeds: [{ footer: { text: "Game ID: game-multi-surrender" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4);
+    expect(json.data.content).toContain("<@12345>");
+    expect(json.data.content).toContain("<@67890>");
+
+    const saveCall = mockBind.mock.calls.find(
+      (call) => call[0] === "game-multi-surrender" && typeof call[1] === "string"
+    );
+    expect(saveCall).toBeDefined();
+    const savedState = JSON.parse(saveCall[1]);
+    expect(savedState.pendingSurrenderOfferByPlayerId).toBe("12345");
+    expect(savedState.currentPlayerIndex).toBe(1);
+    expect(savedState.status).toBe("Scoring");
+  });
+
+  it("should record the proposer as surrendered when the opponent accepts", async () => {
+    const offeredGame = {
+      gameId: "game-multi-surrender",
+      mode: "multi",
+      status: "Scoring",
+      currentPlayerIndex: 1,
+      pendingSurrenderOfferByPlayerId: "12345",
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentDice: [1, 2, 3, 4, 5],
+      rollCount: 1,
+      turnHistory: [],
+      currentTurnRolls: [[1, 2, 3, 4, 5]]
+    };
+    const playerRow = {
+      id: "12345",
+      name: "Alice",
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      highest_score: 0,
+      solo_play_count: 0,
+      solo_highest_score: 0,
+      multi_wins: 0,
+      multi_losses: 0,
+      multi_draws: 0,
+      multi_highest_score: 0,
+      elo: 1000,
+      created_at: "2026-08-01T00:00:00Z",
+      updated_at: "2026-08-01T00:00:00Z"
+    };
+    mockFirst
+      .mockResolvedValueOnce({ state: JSON.stringify(offeredGame) })
+      .mockResolvedValueOnce({ state: JSON.stringify(offeredGame) })
+      .mockResolvedValueOnce({ state: JSON.stringify(offeredGame) })
+      .mockResolvedValueOnce(playerRow)
+      .mockResolvedValueOnce({ ...playerRow, id: "67890", name: "Bob" });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "67890", username: "bob" },
+      guild_id: "guild-123",
+      channel_id: "channel-123",
+      data: {
+        custom_id: "accept_surrender_game-multi-surrender_msg-111"
+      },
+      message: {
+        id: "offer-msg-222",
+        embeds: [{ footer: { text: "Game ID: game-multi-surrender" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(7);
+    expect(json.data.content).toContain("기권 처리가 완료되었습니다.");
+    expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("DELETE FROM active_games"));
+    expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO matches"));
+
+    const matchBind = mockBind.mock.calls.find(
+      (call) => call[0] === "game-multi-surrender" && call[1] === "multi" && call[3] === "12345"
+    );
+    expect(matchBind).toBeDefined();
+    expect(matchBind[7]).toBe("67890");
+    expect(matchBind[8]).toBe("12345");
+  });
+
+  it("should reject stale surrender acceptance without surrendering the accepter", async () => {
+    const activeGameWithoutOffer = {
+      gameId: "game-multi-surrender",
+      mode: "multi",
+      status: "Rolling",
+      currentPlayerIndex: 1,
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentDice: [1, 1, 1, 1, 1],
+      rollCount: 0,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+    mockFirst.mockResolvedValue({ state: JSON.stringify(activeGameWithoutOffer) });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "67890", username: "bob" },
+      data: {
+        custom_id: "accept_surrender_game-multi-surrender_msg-111"
+      },
+      message: {
+        embeds: [{ footer: { text: "Game ID: game-multi-surrender" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4);
+    expect(json.data.flags).toBe(64);
+    expect(json.data.content).toContain("이미 취소되었거나 처리되었습니다");
+    expect(mockDB.prepare).not.toHaveBeenCalledWith(expect.stringContaining("DELETE FROM active_games"));
+    expect(mockDB.prepare).not.toHaveBeenCalledWith(expect.stringContaining("INSERT INTO matches"));
+  });
+
+  it("should reject unauthorized surrender responses without mutating the game", async () => {
+    const offeredGame = {
+      gameId: "game-multi-surrender",
+      mode: "multi",
+      status: "Rolling",
+      currentPlayerIndex: 1,
+      pendingSurrenderOfferByPlayerId: "12345",
+      players: [
+        { playerId: "12345", playerName: "Alice", scoreBoard: {}, bonusScore: 0, totalScore: 0 },
+        { playerId: "67890", playerName: "Bob", scoreBoard: {}, bonusScore: 0, totalScore: 0 }
+      ],
+      currentDice: [1, 1, 1, 1, 1],
+      rollCount: 0,
+      turnHistory: [],
+      currentTurnRolls: []
+    };
+    mockFirst.mockResolvedValue({ state: JSON.stringify(offeredGame) });
+
+    const body = JSON.stringify({
+      type: 3,
+      user: { id: "12345", username: "alice" },
+      data: {
+        custom_id: "accept_surrender_game-multi-surrender_msg-111"
+      },
+      message: {
+        embeds: [{ footer: { text: "Game ID: game-multi-surrender" } }]
+      }
+    });
+
+    const req = await createSignedRequest(body);
+    const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(res.status).toBe(200);
+
+    const json = (await res.json()) as any;
+    expect(json.type).toBe(4);
+    expect(json.data.flags).toBe(64);
+    expect(json.data.content).toContain("상대방만");
+    expect(mockDB.prepare).not.toHaveBeenCalledWith(expect.stringContaining("DELETE FROM active_games"));
+    expect(mockDB.prepare).not.toHaveBeenCalledWith(expect.stringContaining("INSERT INTO matches"));
+
+    const declineBody = body.replace("accept_surrender_", "decline_surrender_");
+    const declineReq = await createSignedRequest(declineBody);
+    const declineRes = await worker.fetch(declineReq, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, {} as any);
+    expect(declineRes.status).toBe(200);
+    const declineJson = (await declineRes.json()) as any;
+    expect(declineJson.type).toBe(4);
+    expect(declineJson.data.flags).toBe(64);
+    expect(declineJson.data.content).toContain("상대방만");
+  });
+
   it("should execute surrender and clean up active game on confirm_surrender click", async () => {
     const mockActiveGame = {
       gameId: "game-123",
@@ -1303,4 +1516,3 @@ describe("Discord Yacht Bot Integration Tests", () => {
     });
   });
 });
-

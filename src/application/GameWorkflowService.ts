@@ -208,7 +208,8 @@ const processSurrender = (
   guildId: string,
   channelId: string,
   messageId: string | undefined,
-  ctx: any
+  ctx: any,
+  expectedPendingProposerId?: string
 ) =>
   Effect.gen(function* () {
     const gameRepo = yield* GameRepository;
@@ -225,6 +226,15 @@ const processSurrender = (
 
     if (gameState.status === "Finished") {
       return yield* Effect.fail(new GameAlreadyOverError(gameId));
+    }
+
+    if (
+      expectedPendingProposerId !== undefined &&
+      gameState.pendingSurrenderOfferByPlayerId !== expectedPendingProposerId
+    ) {
+      return yield* Effect.fail(
+        new InvalidStateActionError("The surrender proposal is no longer active.")
+      );
     }
 
     const isPlayerInGame = gameState.players.some((p) => p.playerId === playerId);
@@ -720,8 +730,24 @@ export const GameWorkflowServiceLive = Layer.succeed(
         }
         const gameState = gameStateOption.value;
 
-        const surrenderPlayerId = gameState.pendingSurrenderOfferByPlayerId || playerId;
-        return yield* processSurrender(gameId, surrenderPlayerId, guildId, channelId, messageId, ctx);
+        const proposerId = gameState.pendingSurrenderOfferByPlayerId;
+        if (!proposerId) {
+          return yield* Effect.fail(
+            new InvalidStateActionError("No pending surrender offer to accept.")
+          );
+        }
+
+        yield* domainAcceptSurrender(gameState, playerId);
+
+        return yield* processSurrender(
+          gameId,
+          proposerId,
+          guildId,
+          channelId,
+          messageId,
+          ctx,
+          proposerId
+        );
       }),
 
     declineSurrender: (gameId, playerId) =>
@@ -929,6 +955,5 @@ export const GameWorkflowServiceLive = Layer.succeed(
       })
   }
 );
-
 
 

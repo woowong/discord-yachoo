@@ -273,8 +273,10 @@ export const acceptSurrender = (
       return yield* Effect.fail(new InvalidStateActionError("Proposer cannot accept their own surrender offer."));
     }
 
-    const isPlayerInGame = state.players.some((p) => p.playerId === acceptingPlayerId);
-    if (!isPlayerInGame) {
+    const isOpponent = state.mode === "multi" && state.players.some(
+      (p) => p.playerId === acceptingPlayerId && p.playerId !== offererId
+    );
+    if (!isOpponent) {
       return yield* Effect.fail(new InvalidStateActionError(`Player ${acceptingPlayerId} is not in this game.`));
     }
 
@@ -294,12 +296,15 @@ export const declineSurrender = (
       yield* Effect.fail(new GameAlreadyOverError(state.gameId));
     }
 
-    if (!state.pendingSurrenderOfferByPlayerId) {
+    const offererId = state.pendingSurrenderOfferByPlayerId;
+    if (!offererId) {
       yield* Effect.fail(new InvalidStateActionError("No pending surrender offer to decline."));
     }
 
-    const isPlayerInGame = state.players.some((p) => p.playerId === decliningPlayerId);
-    if (!isPlayerInGame) {
+    const isOpponent = state.mode === "multi" && state.players.some(
+      (p) => p.playerId === decliningPlayerId && p.playerId !== offererId
+    );
+    if (!isOpponent) {
       yield* Effect.fail(new InvalidStateActionError(`Player ${decliningPlayerId} is not in this game.`));
     }
 
@@ -309,4 +314,3 @@ export const declineSurrender = (
     };
   });
 };
-

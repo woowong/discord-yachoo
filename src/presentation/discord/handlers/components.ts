@@ -214,7 +214,23 @@ export const handleAcceptSurrender = (
     const channelId = interaction.channelId || "";
 
     const proposerId = gameState.pendingSurrenderOfferByPlayerId;
-    if (proposerId && interaction.user.id === proposerId) {
+    if (!proposerId) {
+      return new Response(
+        JSON.stringify({
+          type: 4,
+          data: {
+            content: KoreanMessages.surrender.offerExpired,
+            flags: 64 // Ephemeral
+          }
+        }),
+        { headers: { "content-type": "application/json" } }
+      );
+    }
+
+    const isOpponent = gameState.mode === "multi" && gameState.players.some(
+      (p) => p.playerId === interaction.user.id && p.playerId !== proposerId
+    );
+    if (!isOpponent) {
       return new Response(
         JSON.stringify({
           type: 4,
@@ -257,7 +273,23 @@ export const handleDeclineSurrender = (
     const workflow = yield* GameWorkflowService;
     const proposerId = gameState.pendingSurrenderOfferByPlayerId;
 
-    if (proposerId && interaction.user.id === proposerId) {
+    if (!proposerId) {
+      return new Response(
+        JSON.stringify({
+          type: 4,
+          data: {
+            content: KoreanMessages.surrender.offerExpired,
+            flags: 64 // Ephemeral
+          }
+        }),
+        { headers: { "content-type": "application/json" } }
+      );
+    }
+
+    const isOpponent = gameState.mode === "multi" && gameState.players.some(
+      (p) => p.playerId === interaction.user.id && p.playerId !== proposerId
+    );
+    if (!isOpponent) {
       return new Response(
         JSON.stringify({
           type: 4,
@@ -620,4 +652,3 @@ export const handleCancelMatchQueue = (
       headers: { "content-type": "application/json" }
     });
   });
-

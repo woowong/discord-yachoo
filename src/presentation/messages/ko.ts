@@ -53,6 +53,7 @@ export const KoreanMessages = {
     acceptButtonLabel: "🤝 항복 수락",
     declineButtonLabel: "❌ 항복 거절",
     onlyOpponentCanRespond: "❌ 상대방만 항복을 수락하거나 거절할 수 있습니다.",
+    offerExpired: "❌ 항복 제안이 이미 취소되었거나 처리되었습니다.",
     declinedAnnounce: (declinerId: string) => `❌ <@${declinerId}> 님이 항복 제안을 거절하였습니다. 경기를 계속 진행합니다.`
   },
   gameEnd: {

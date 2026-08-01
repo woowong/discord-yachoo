@@ -55,11 +55,25 @@ The system SHALL handle the `/leaderboard` slash command to display top players 
 - **THEN** the system SHALL fetch top players for that `guildId` from PlayerRepository and return the serialized leaderboard embed containing a link pointing to the Web Dashboard.
 
 ### Requirement: Discord Game Interaction Handling
-The system SHALL handle component interactions (hold buttons, roll buttons, category selection) to progress the game state. When the game finishes, it MUST save the match record (with the `surrenderedId` if it ended in a surrender) and update player statistics scoped to the guild where the interaction occurred. For surrender interactions, the system MUST first send an ephemeral confirmation message containing a confirmation button that embeds the `gameId` in its `custom_id` to prevent accidental surrenders and allow resolution of the game state from the ephemeral context. In addition, all completion/surrender notifications MUST include a link pointing to the web replay URL of the match.
+The system SHALL handle component interactions for gameplay and surrender. A player clicking surrender MUST first receive an ephemeral confirmation. For a single-player game, confirming surrender MAY finish the game immediately. For a multiplayer game, confirming surrender MUST create a pending surrender proposal for the confirming player and send the opponent an accept/decline interaction.
 
-#### Scenario: Execute Confirmed Surrender
-- **WHEN** a player clicks the actual surrender confirmation button in the ephemeral message
-- **THEN** the system SHALL extract the `gameId` from the custom ID, load the active game, proceed to surrender the game, transition the state to Finished, record the game end statistics, save the match record with the player's ID in `surrenderedId`, and patch the main game board message to show the finished status with a link to the Web Dashboard replay.
+When a multiplayer surrender proposal is accepted, the orchestrator MUST use the proposer recorded in the current persisted game state as the surrendering player. The accepting user's ID MUST never be used as a fallback surrendering ID. The orchestrator MUST persist the resulting finished match, update winner/loss/ELO statistics, and update the main game board consistently with the proposer being the loser.
+
+#### Scenario: Confirming surrender in multiplayer
+- **WHEN** player 1 confirms surrender in an active multiplayer game
+- **THEN** the system MUST preserve the current turn state, record player 1 as the pending proposer, and send the opponent an accept/decline interaction without finishing the game yet
+
+#### Scenario: Opponent accepts a valid surrender proposal
+- **WHEN** player 2, the designated opponent, accepts player 1's still-pending surrender proposal
+- **THEN** the system MUST finish the game with player 1 in `surrenderedId`, record player 2 as the winner, update match statistics and ELO accordingly, and remove the active game
+
+#### Scenario: Stale acceptance does not surrender the accepting player
+- **WHEN** player 2 accepts an interaction whose proposal has already been cleared by a normal turn action
+- **THEN** the system MUST return an ephemeral invalid-or-expired-proposal response, MUST NOT finish the game, and MUST NOT write player 2 as `surrenderedId`
+
+#### Scenario: Current turn does not control surrender proposal eligibility
+- **WHEN** either active player clicks surrender while it is the other player's turn or while the game is in a scoring phase
+- **THEN** the system MUST allow the proposal flow without changing the current player or treating the current player as the surrendering player
 
 ### Requirement: Discord History Slash Command
 The system SHALL support the `/history` slash command to allow players to view recent games and detailed turn-by-turn logs for the current Discord server (guild). History listings and detailed logs MUST display surrender outcomes as `Won (KO)` or `Lost (KO)` (or `기권패`), provide direct web replay hyperlinks, and show both each turn's gained score and the player's cumulative score after that turn. Cumulative scores MUST include the upper section bonus when earned.
@@ -122,15 +136,19 @@ The Discord presentation layer SHALL render dice hold buttons and action buttons
 - **THEN** the surrender button MUST be disabled, style 4 (Danger), with emoji `🏳️` and NO text label, matching active turn rendering and maintaining identical button widths.
 
 ### Requirement: Discord Handlers for Surrender Proposal and Acceptance
-The Discord interaction parser and game orchestrator SHALL process surrender proposals, acceptances, and declines via dedicated component custom IDs (`offer_surrender`, `accept_surrender`, `decline_surrender`), providing appropriate Ephemeral feedback to unauthorized users.
+The Discord interaction parser and game orchestrator SHALL process surrender proposals, acceptances, and declines through dedicated component interactions. Accept and decline actions MUST be authorized against the current game state: only the opponent of the recorded proposer may respond, and a missing or cleared proposal MUST be treated as expired. Unauthorized and expired responses MUST be ephemeral and MUST NOT mutate the game.
 
 #### Scenario: Sending surrender proposal message
-- **WHEN** a player confirms a surrender proposal
-- **THEN** the system MUST update or send a channel message containing `[🤝 수락]` and `[❌ 거절]` buttons specifically targeting the opponent
+- **WHEN** a player confirms a surrender proposal in a multiplayer game
+- **THEN** the system MUST send a message containing accept and decline controls addressed to the opponent, while retaining the proposer identity in the persisted game state
 
 #### Scenario: Unauthorized user clicks accept or decline button
-- **WHEN** a user who is not the designated opponent attempts to click the accept or decline button
-- **THEN** the system MUST respond with an Ephemeral warning message denying the action
+- **WHEN** the proposer or a user who is not the designated opponent attempts to click the accept or decline button
+- **THEN** the system MUST return an ephemeral warning and MUST NOT change the game state
+
+#### Scenario: Expired or cleared proposal button is clicked
+- **WHEN** any user clicks an accept or decline button after `pendingSurrenderOfferByPlayerId` has been cleared
+- **THEN** the system MUST return an ephemeral expired-proposal response and MUST NOT finish, surrender, or otherwise mutate the game
 
 ### Requirement: Horizontal Single-Line Dice Rendering
 The Discord presentation layer SHALL render the current dice state in a 2-line layout in the embed description when roll count is greater than 0:

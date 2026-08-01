@@ -330,6 +330,26 @@ describe("Yacht Dice Game State Machine", () => {
       expect(result.status).toBe("Rolling");
     });
 
+    it("should allow a player to offer surrender outside their turn without changing turn state", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const rolledState = yield* rollDice(
+          initialState,
+          [false, false, false, false, false],
+          mockDiceProvider([1, 2, 3, 4, 5])
+        );
+        const scoringOffer = yield* offerSurrender(rolledState, "p1");
+        const nextTurnState = yield* selectCategory(scoringOffer, "Choice");
+        return yield* offerSurrender(nextTurnState, "p1");
+      });
+
+      const result = Effect.runSync(program);
+      expect(result.status).toBe("Rolling");
+      expect(result.currentPlayerIndex).toBe(1);
+      expect(result.rollCount).toBe(0);
+      expect(result.pendingSurrenderOfferByPlayerId).toBe("p1");
+    });
+
     it("should finish the game when opponent accepts surrender offer", () => {
       const program = Effect.gen(function* () {
         const initialState = yield* initGame(players, "multi");
@@ -348,6 +368,54 @@ describe("Yacht Dice Game State Machine", () => {
         const initialState = yield* initGame(players, "multi");
         const offeredState = yield* offerSurrender(initialState, "p1");
         yield* acceptSurrender(offeredState, "p1");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+    });
+
+    it("should fail when a non-participant attempts to accept a surrender offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        yield* acceptSurrender(offeredState, "outsider");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+    });
+
+    it("should fail when there is no pending surrender offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        yield* acceptSurrender(initialState, "p2");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+    });
+
+    it("should reject a stale acceptance after a normal turn action clears the offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        const continuedState = yield* rollDice(
+          offeredState,
+          [false, false, false, false, false],
+          mockDiceProvider([1, 2, 3, 4, 5])
+        );
+        yield* acceptSurrender(continuedState, "p2");
+      });
+
+      const result = Effect.runSync(Effect.exit(program));
+      expect(Exit.isFailure(result)).toBe(true);
+    });
+
+    it("should reject the proposer from declining their own surrender offer", () => {
+      const program = Effect.gen(function* () {
+        const initialState = yield* initGame(players, "multi");
+        const offeredState = yield* offerSurrender(initialState, "p1");
+        yield* declineSurrender(offeredState, "p1");
       });
 
       const result = Effect.runSync(Effect.exit(program));
