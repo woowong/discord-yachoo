@@ -161,6 +161,11 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].description).toContain("Alice");
       expect(response.data?.embeds?.[0].description).toContain("▫️ ▫️ 🔒 ▫️ ▫️");
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
+      const actionRow2 = response.data?.components?.[1];
+      expect(actionRow2?.components).toHaveLength(3);
+      expect(actionRow2?.components?.[2].custom_id).toBe("refresh_game");
+      expect(actionRow2?.components?.[2].style).toBe(2);
+      expect(actionRow2?.components?.[2].emoji).toEqual({ name: "🔄" });
     });
 
     it("should render scoreboard within 27 characters per line for 2 players", async () => {

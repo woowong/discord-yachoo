@@ -23,7 +23,8 @@ import {
   handleCancelMatchQueue,
   handleHold, 
   handleRoll, 
-  handleSelectCategory 
+  handleSelectCategory,
+  handleRefresh
 } from "./handlers/components";
 
 export const routeInteraction = (
@@ -90,9 +91,9 @@ export const routeInteraction = (
 
       // Load active game for gameplay components
       let gameId: string | null = null;
-      if (customId.startsWith("confirm_surrender_") || customId.startsWith("accept_surrender_") || customId.startsWith("decline_surrender_")) {
+      if (customId.startsWith("confirm_surrender_") || customId.startsWith("accept_surrender_") || customId.startsWith("decline_surrender_") || customId.startsWith("refresh_game_")) {
         const parts = customId.split("_");
-        gameId = parts[2] || null;
+        gameId = parts[2] || parts[1] || null;
       } else {
         const footerText = rawJson.message?.embeds?.[0]?.footer?.text || "";
         const gameIdMatch = footerText.match(/Game ID:\s*([a-zA-Z0-9]+)/);
@@ -117,6 +118,9 @@ export const routeInteraction = (
       }
       const gameState = gameStateOption.value;
 
+      if (customId === "refresh_game" || customId.startsWith("refresh_game_")) {
+        return yield* handleRefresh(interaction, gameState);
+      }
       if (customId === "surrender") {
         return yield* handleSurrender(interaction, gameState, rawJson);
       }

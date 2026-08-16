@@ -1515,4 +1515,102 @@ describe("Discord Yacht Bot Integration Tests", () => {
       expect(json.data.components[0].components[0].custom_id).toContain("queue:join:");
     });
   });
+
+  describe("Game Refresh Component Interaction", () => {
+    it("should handle refresh_game for an active game", async () => {
+      const activeGame = {
+        gameId: "game-refresh-active",
+        mode: "single",
+        status: "Rolling",
+        currentPlayerIndex: 0,
+        rollCount: 1,
+        currentDice: [2, 3, 4, 5, 6],
+        players: [
+          {
+            playerId: "user123",
+            playerName: "Alice",
+            scoreBoard: { Aces: 3 },
+            bonusScore: 0,
+            totalScore: 3
+          }
+        ],
+        turnHistory: [],
+        currentTurnRolls: []
+      };
+
+      mockFirst.mockResolvedValueOnce({ state: JSON.stringify(activeGame) });
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "user123", username: "Alice" },
+        guild_id: "guild1",
+        channel_id: "channel1",
+        data: {
+          custom_id: "refresh_game"
+        },
+        message: {
+          id: "msg-board-1",
+          embeds: [{ footer: { text: "Game ID: game-refresh-active" } }]
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.type).toBe(7); // UpdateMessage
+      expect(json.data.embeds[0].title).toBe("🎲 Yacht Dice Game");
+      expect(json.data.embeds[0].description).toContain("Alice");
+      // Row 2 contains refresh button
+      const row2 = json.data.components[1];
+      expect(row2.components).toHaveLength(3);
+      expect(row2.components[2].custom_id).toBe("refresh_game");
+    });
+
+    it("should handle refresh_game for a finished game", async () => {
+      const finishedGame = {
+        gameId: "game-refresh-finished",
+        mode: "single",
+        status: "Finished",
+        currentPlayerIndex: 0,
+        rollCount: 3,
+        currentDice: [6, 6, 6, 6, 6],
+        players: [
+          {
+            playerId: "user123",
+            playerName: "Alice",
+            scoreBoard: { Yacht: 50 },
+            bonusScore: 35,
+            totalScore: 85
+          }
+        ],
+        turnHistory: [],
+        currentTurnRolls: []
+      };
+
+      mockFirst.mockResolvedValueOnce({ state: JSON.stringify(finishedGame) });
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "user123", username: "Alice" },
+        guild_id: "guild1",
+        channel_id: "channel1",
+        data: {
+          custom_id: "refresh_game"
+        },
+        message: {
+          id: "msg-board-2",
+          embeds: [{ footer: { text: "Game ID: game-refresh-finished" } }]
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.type).toBe(7);
+      expect(json.data.embeds[0].description).toContain("Game Finished!");
+      expect(json.data.components).toEqual([]);
+    });
+  });
 });

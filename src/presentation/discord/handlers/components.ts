@@ -652,3 +652,17 @@ export const handleCancelMatchQueue = (
       headers: { "content-type": "application/json" }
     });
   });
+
+export const handleRefresh = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  gameState: GameState
+) =>
+  Effect.gen(function* () {
+    const serializer = yield* DiscordResponseSerializer;
+    yield* Effect.logInfo(`Game state refreshed: ${gameState.gameId} by user: ${interaction.user.id}`);
+    const responsePayload = serializer.serializeGame(gameState);
+    return new Response(JSON.stringify(responsePayload), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+

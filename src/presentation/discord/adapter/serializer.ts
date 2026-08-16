@@ -202,9 +202,15 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           emoji: { name: "🏳️" },
           custom_id: "surrender"
         };
+        const refreshButton = {
+          type: 2 as const,
+          style: 2 as const, // Secondary (Gray)
+          emoji: { name: "🔄" },
+          custom_id: "refresh_game"
+        };
         components.push({
           type: 1,
-          components: [rollButton, surrenderButton]
+          components: [rollButton, surrenderButton, refreshButton]
         });
 
         // Row 3: Select Menu for category scoring
