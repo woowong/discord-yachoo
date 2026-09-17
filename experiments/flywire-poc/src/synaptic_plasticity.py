@@ -34,6 +34,43 @@ def extract_kc_mbon_dense(adj_matrix: sp.csr_matrix, metadata: Dict) -> np.ndarr
     return adj_matrix[kc_slice, mbon_slice].toarray()
 
 
+_CSR_MAP_CACHE = {}
+
+
+def get_kc_mbon_csr_mapping(base_adj: sp.csr_matrix, metadata: Dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    cache_key = (base_adj.shape, base_adj.nnz)
+    if cache_key in _CSR_MAP_CACHE:
+        return _CSR_MAP_CACHE[cache_key]
+        
+    kc_slice, mbon_slice = get_kc_mbon_slices(metadata)
+    kc_start = kc_slice.start
+    mbon_start = mbon_slice.start
+    mbon_end = mbon_slice.stop
+
+    data_indices = []
+    dense_rows = []
+    dense_cols = []
+
+    for r in range(kc_slice.start, kc_slice.stop):
+        start_ptr = base_adj.indptr[r]
+        end_ptr = base_adj.indptr[r + 1]
+        cols = base_adj.indices[start_ptr:end_ptr]
+        mask = (cols >= mbon_start) & (cols < mbon_end)
+        matching_ptrs = np.arange(start_ptr, end_ptr)[mask]
+        matching_cols = cols[mask] - mbon_start
+        data_indices.extend(matching_ptrs)
+        dense_rows.extend([r - kc_start] * len(matching_cols))
+        dense_cols.extend(matching_cols)
+
+    mapping = (
+        np.array(data_indices, dtype=np.int32),
+        np.array(dense_rows, dtype=np.int32),
+        np.array(dense_cols, dtype=np.int32),
+    )
+    _CSR_MAP_CACHE[cache_key] = mapping
+    return mapping
+
+
 def set_kc_mbon_dense(
     base_adj: sp.csr_matrix,
     metadata: Dict,
@@ -43,19 +80,18 @@ def set_kc_mbon_dense(
     """
     Creates a new CSR matrix with updated KC -> MBON weights.
     If preserve_topology is True, weights where original connection was 0 remain 0.
-    PN -> KC and APL inhibitory weights remain completely untouched.
+    PN -> KC, CX, and APL inhibitory weights remain completely untouched.
+    Ultra-fast direct array update avoids expensive CSR <-> LIL roundtrips.
     """
+    if preserve_topology:
+        data_idx_arr, row_arr, col_arr = get_kc_mbon_csr_mapping(base_adj, metadata)
+        new_adj = base_adj.copy()
+        new_adj.data[data_idx_arr] = np.maximum(0.0, kc_mbon_dense[row_arr, col_arr])
+        return new_adj
+        
     kc_slice, mbon_slice = get_kc_mbon_slices(metadata)
     new_lil = base_adj.tolil(copy=True)
-    
-    if preserve_topology:
-        orig_sub = base_adj[kc_slice, mbon_slice].toarray()
-        topology_mask = orig_sub > 0
-        masked_dense = np.where(topology_mask, np.maximum(0.0, kc_mbon_dense), 0.0)
-        new_lil[kc_slice, mbon_slice] = masked_dense
-    else:
-        new_lil[kc_slice, mbon_slice] = np.maximum(0.0, kc_mbon_dense)
-        
+    new_lil[kc_slice, mbon_slice] = np.maximum(0.0, kc_mbon_dense)
     return new_lil.tocsr()
 
 

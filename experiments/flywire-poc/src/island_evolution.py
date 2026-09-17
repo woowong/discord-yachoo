@@ -97,10 +97,12 @@ def evaluate_individual_island(
         fitness = mean_score + (35.0 * upper_rate) + (35.0 * yacht_rate)
     elif bias_mode == "high_roller":
         fitness = 0.5 * mean_score + 0.5 * max_score + (30.0 * yacht_rate)
-    elif bias_mode == "conservative":
-        fitness = mean_score + 0.5 * min_score - (5.0 * avg_zeros) + (15.0 * upper_rate)
+    elif bias_mode == "straight":
+        fitness = mean_score + (60.0 * straight_rate) + (20.0 * upper_rate)
+    elif bias_mode == "full_house":
+        fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
     else:
-        fitness = mean_score + (30.0 * upper_rate) + (10.0 * yacht_rate)
+        fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
         
     ind.fitness = float(fitness)
     ind.stats = {
@@ -115,6 +117,91 @@ def evaluate_individual_island(
         "zero_scores": zero_count,
     }
     return ind.fitness
+
+
+_WORKER_ADJ = None
+_WORKER_META = None
+
+
+def _init_eval_worker(base_adj: sp.csr_matrix, metadata: Dict):
+    global _WORKER_ADJ, _WORKER_META
+    _WORKER_ADJ = base_adj
+    _WORKER_META = metadata
+
+
+def _eval_task_worker(task: Tuple[int, int, np.ndarray, int, str]) -> Tuple[int, int, float, Dict]:
+    isl_idx, ind_idx, weights, games_per_eval, bias_mode = task
+    adj = set_kc_mbon_dense(_WORKER_ADJ, _WORKER_META, weights, preserve_topology=True)
+    snn = FlySubcircuitSNN(adj, _WORKER_META)
+    agent = FlyBrainAgent(snn=snn, sim_steps=12, pulse_steps=3)
+    
+    total_scores = []
+    upper_bonuses = 0
+    yacht_hits = 0
+    large_straight_hits = 0
+    full_house_hits = 0
+    small_straight_hits = 0
+    four_kind_hits = 0
+    zero_count = 0
+    upper_sums = []
+    
+    for _ in range(games_per_eval):
+        game_res = play_single_game(agent, verbose=False)
+        total_scores.append(game_res["total_score"])
+        upper_sums.append(game_res["upper_sum"])
+        if game_res["upper_bonus"] > 0:
+            upper_bonuses += 1
+            
+        board = game_res["score_board"]
+        if board["Yacht"] == 50: yacht_hits += 1
+        if board["LargeStraight"] == 30: large_straight_hits += 1
+        if board["SmallStraight"] == 15: small_straight_hits += 1
+        if board["FullHouse"] > 0: full_house_hits += 1
+        if board["FourOfAKind"] > 0: four_kind_hits += 1
+        zero_count += sum(1 for pts in board.values() if pts == 0)
+        
+    mean_score = float(np.mean(total_scores))
+    max_score = int(np.max(total_scores))
+    min_score = int(np.min(total_scores))
+    upper_rate = upper_bonuses / games_per_eval
+    yacht_rate = yacht_hits / games_per_eval
+    straight_rate = (small_straight_hits + large_straight_hits) / games_per_eval
+    full_house_rate = full_house_hits / games_per_eval
+    four_kind_rate = four_kind_hits / games_per_eval
+    avg_zeros = zero_count / games_per_eval
+    
+    if bias_mode == "jackpot":
+        fitness = mean_score + (50.0 * yacht_rate) + (25.0 * straight_rate) + (20.0 * four_kind_rate)
+    elif bias_mode == "upper_bonus":
+        avg_upper_sum = float(np.mean(upper_sums))
+        fitness = mean_score + (60.0 * upper_rate) + (avg_upper_sum / 63.0) * 20.0
+    elif bias_mode == "balanced":
+        fitness = mean_score - (4.0 * avg_zeros) + (20.0 * full_house_rate) + (25.0 * upper_rate)
+    elif bias_mode == "hypermutation":
+        fitness = mean_score + (35.0 * upper_rate) + (35.0 * yacht_rate)
+    elif bias_mode == "high_roller":
+        fitness = 0.5 * mean_score + 0.5 * max_score + (30.0 * yacht_rate)
+    elif bias_mode == "conservative":
+        fitness = mean_score + 0.5 * min_score - (5.0 * avg_zeros) + (15.0 * upper_rate)
+    elif bias_mode == "straight":
+        fitness = mean_score + (60.0 * straight_rate) + (20.0 * upper_rate)
+    elif bias_mode == "full_house":
+        fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
+    else:
+        fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
+        
+    stats = {
+        "mean_score": mean_score,
+        "max_score": max_score,
+        "min_score": min_score,
+        "upper_bonus_rate": upper_rate,
+        "yacht_count": yacht_hits,
+        "full_house_count": full_house_hits,
+        "straight_count": small_straight_hits + large_straight_hits,
+        "four_kind_count": four_kind_hits,
+        "zero_scores": zero_count,
+    }
+    return isl_idx, ind_idx, float(fitness), stats
 
 
 class Island:
@@ -165,52 +252,33 @@ class Island:
                 num_games=games_per_eval,
                 bias_mode=self.config.bias_mode,
             )
+        self.post_evaluate_sort()
+
+    def post_evaluate_sort(self):
         self.population.sort(key=lambda ind: ind.fitness, reverse=True)
-        
         current_best = self.population[0]
         if current_best.fitness > self.best_historical_fitness + 0.1:
             self.best_historical_fitness = current_best.fitness
             self.best_individual = copy.deepcopy(current_best)
             self.stagnation_counter = 0
-            # Decay hypermutation back to baseline
-            self.current_sigma = max(
-                self.config.base_mutation_sigma,
-                self.current_sigma * 0.85
-            )
-            self.current_rate = max(
-                self.config.base_mutation_rate,
-                self.current_rate * 0.90
-            )
+            self.current_sigma = max(self.config.base_mutation_sigma, self.current_sigma * 0.85)
+            self.current_rate = max(self.config.base_mutation_rate, self.current_rate * 0.90)
         else:
             self.stagnation_counter += 1
             if self.stagnation_counter >= self.config.stagnation_threshold:
-                # Trigger adaptive hypermutation to escape local optima
-                self.current_sigma = min(
-                    0.25,
-                    self.config.base_mutation_sigma * self.config.hypermutation_multiplier
-                )
-                self.current_rate = min(
-                    0.30,
-                    self.config.base_mutation_rate * 1.5
-                )
+                self.current_sigma = min(0.25, self.config.base_mutation_sigma * self.config.hypermutation_multiplier)
+                self.current_rate = min(0.30, self.config.base_mutation_rate * 1.5)
 
     def step_reproduction(self):
         next_pop: List[Individual] = []
-        
-        # 1. Elitism
         for e in range(self.config.elite_count):
             elite = copy.deepcopy(self.population[e])
             elite.id = len(next_pop)
             next_pop.append(elite)
             
-        # 2. Tournament Crossover & Mutation
         while len(next_pop) < self.config.pop_size:
             p1 = self.tournament_selection()
             p2 = self.tournament_selection()
-            
-            c_seed = int(self.rng.integers(0, 1_000_000))
-            m_seed = int(self.rng.integers(0, 1_000_000))
-            
             child_w = crossover_weights(p1.weights, p2.weights)
             mut_w = mutate_weights(
                 child_w,
@@ -222,6 +290,9 @@ class Island:
         self.population = next_pop
 
 
+import multiprocessing
+
+
 class MultiIslandEvolution:
     def __init__(
         self,
@@ -229,23 +300,37 @@ class MultiIslandEvolution:
         migration_interval: int = 20,
         games_per_eval: int = 6,
         seed: int = 42,
+        use_scaled: bool = False,
+        num_workers: int = 10,
     ):
         self.migration_interval = migration_interval
         self.games_per_eval = games_per_eval
         self.rng = np.random.default_rng(seed)
+        self.use_scaled = use_scaled
+        self.num_workers = min(num_workers, multiprocessing.cpu_count())
         
-        self.base_adj, self.metadata = load_cached_subcircuit()
+        if use_scaled:
+            from forward_sim import load_scaled_subcircuit
+            self.base_adj, self.metadata = load_scaled_subcircuit()
+        else:
+            self.base_adj, self.metadata = load_cached_subcircuit()
+            
         self.initial_weights = extract_kc_mbon_dense(self.base_adj, self.metadata)
         
         if island_configs is None:
-            # Default 6-island architecture
+            # 10-Island M4 Architecture
+            pop = 16 if use_scaled else 12
             island_configs = [
-                IslandConfig("Jackpot Island", "jackpot", pop_size=12, base_mutation_sigma=0.06),
-                IslandConfig("Upper Bonus Island", "upper_bonus", pop_size=12, base_mutation_sigma=0.05),
-                IslandConfig("Balanced Safety Island", "balanced", pop_size=12, base_mutation_sigma=0.05),
-                IslandConfig("Hypermutation Island", "hypermutation", pop_size=12, base_mutation_sigma=0.12, base_mutation_rate=0.15),
-                IslandConfig("High-Roller Island", "high_roller", pop_size=12, base_mutation_sigma=0.07),
-                IslandConfig("Conservative Island", "conservative", pop_size=12, base_mutation_sigma=0.04),
+                IslandConfig("Jackpot Hunter", "jackpot", pop_size=pop, base_mutation_sigma=0.06),
+                IslandConfig("Upper Bonus Specialist", "upper_bonus", pop_size=pop, base_mutation_sigma=0.05),
+                IslandConfig("Balanced Maximizer", "balanced", pop_size=pop, base_mutation_sigma=0.05),
+                IslandConfig("Hypermutation Explorer", "hypermutation", pop_size=pop, base_mutation_sigma=0.12, base_mutation_rate=0.15),
+                IslandConfig("High-Roller Aggressive", "high_roller", pop_size=pop, base_mutation_sigma=0.07),
+                IslandConfig("Conservative MinMax", "conservative", pop_size=pop, base_mutation_sigma=0.04),
+                IslandConfig("Straight Runner", "straight", pop_size=pop, base_mutation_sigma=0.06),
+                IslandConfig("Full-House Harvester", "full_house", pop_size=pop, base_mutation_sigma=0.05),
+                IslandConfig("Adaptive Deme", "balanced", pop_size=pop, base_mutation_sigma=0.08),
+                IslandConfig("Apex Champion Crucible", "apex", pop_size=pop, base_mutation_sigma=0.06),
             ]
             
         self.islands: List[Island] = [
@@ -256,12 +341,23 @@ class MultiIslandEvolution:
         self.global_best_individual: Optional[Individual] = None
         self.global_best_fitness: float = -1e9
         self.history: List[Dict] = []
+        
+        # Multiprocessing pool for 10 M4 cores
+        self.pool = None
+        if self.num_workers > 1:
+            self.pool = multiprocessing.Pool(
+                processes=self.num_workers,
+                initializer=_init_eval_worker,
+                initargs=(self.base_adj, self.metadata),
+            )
+
+    def close(self):
+        if self.pool is not None:
+            self.pool.close()
+            self.pool.join()
+            self.pool = None
 
     def perform_migration(self):
-        """
-        Ring migration: Top champion of Island i migrates to Island (i+1) % K.
-        Creates a hybrid crossover with receiving island's champion and replaces weakest individuals.
-        """
         num_islands = len(self.islands)
         emigrants = [copy.deepcopy(isl.population[0]) for isl in self.islands]
         
@@ -271,14 +367,9 @@ class MultiIslandEvolution:
             migrant = emigrants[i]
             local_champ = target_island.population[0]
             
-            # Create hybrid crossover individual
-            hybrid_weights = crossover_weights(
-                migrant.weights,
-                local_champ.weights,
-            )
+            hybrid_weights = crossover_weights(migrant.weights, local_champ.weights)
             hybrid_ind = Individual(hybrid_weights, ind_id=len(target_island.population))
             
-            # Replace the two weakest individuals in the target island
             target_island.population[-1] = migrant
             if len(target_island.population) > 1:
                 target_island.population[-2] = hybrid_ind
@@ -291,11 +382,28 @@ class MultiIslandEvolution:
             "migrated": False,
         }
         
-        # 1. Evaluate all islands
+        # 1. Parallel evaluation across all islands & individuals
+        if self.pool is not None:
+            tasks = []
+            for isl_idx, isl in enumerate(self.islands):
+                for ind_idx, ind in enumerate(isl.population):
+                    tasks.append((isl_idx, ind_idx, ind.weights, self.games_per_eval, isl.config.bias_mode))
+                    
+            results = self.pool.map(_eval_task_worker, tasks)
+            for isl_idx, ind_idx, fit, stats in results:
+                ind = self.islands[isl_idx].population[ind_idx]
+                ind.fitness = fit
+                ind.stats = stats
+                
+            for isl in self.islands:
+                isl.post_evaluate_sort()
+        else:
+            for isl in self.islands:
+                isl.evaluate(games_per_eval=self.games_per_eval)
+                
+        # Track global best
         for isl in self.islands:
-            isl.evaluate(games_per_eval=self.games_per_eval)
             champ = isl.population[0]
-            
             if champ.fitness > self.global_best_fitness:
                 self.global_best_fitness = champ.fitness
                 self.global_best_individual = copy.deepcopy(champ)

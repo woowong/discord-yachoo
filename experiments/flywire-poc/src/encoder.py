@@ -28,6 +28,16 @@ def encode_state_to_pn(
     assert len(dice) == 5, f"Expected 5 dice, got {len(dice)}"
     assert 1 <= roll_count <= 3, f"Expected roll_count 1..3, got {roll_count}"
     
+    if num_pn == 100:
+        base_currents = encode_state_to_pn(
+            dice, roll_count, available_categories, num_pn=50,
+            dice_amp=dice_amp, roll_amp=roll_amp, cat_amp=cat_amp
+        )
+        currents_100 = np.zeros(100, dtype=np.float32)
+        currents_100[:50] = base_currents
+        currents_100[50:] = base_currents
+        return currents_100
+        
     currents = np.zeros(num_pn, dtype=np.float32)
     
     # 1. Encode dice slots

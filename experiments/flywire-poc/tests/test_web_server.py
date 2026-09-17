@@ -54,3 +54,21 @@ def test_game_session_and_server():
     reset_status = server.reset()
     assert reset_status["round"] == 1
     assert reset_status["total_score"] == 0
+
+    # Topology endpoint
+    topo = server.get_topology()
+    assert topo["total_neurons"] == 1575
+    assert "layers" in topo
+
+
+def test_scaled_server_topology():
+    server = ConnectomeVisualizerServer(use_champion=False, use_scaled=True)
+    status = server.get_status()
+    assert status["total_neurons"] >= 20000
+    assert status["is_scaled"] is True
+
+    topo = server.get_topology()
+    assert topo["total_neurons"] >= 20000
+    assert len(topo["coordinates_3d"]) >= 20000
+    assert len(topo["regions"]) >= 20000
+    assert topo["is_scaled"] is True

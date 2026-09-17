@@ -41,21 +41,27 @@ def broadcast_sse(event_type: str, data: Any):
 
 
 class ConnectomeVisualizerServer:
-    def __init__(self, use_champion: bool = True):
-        self.base_adj, self.metadata = load_cached_subcircuit()
+    def __init__(self, use_champion: bool = True, use_scaled: bool = False):
+        self.use_scaled = use_scaled
+        if use_scaled:
+            from forward_sim import load_scaled_subcircuit
+            self.base_adj, self.metadata = load_scaled_subcircuit()
+            champ_path = SRC_DIR.parent / "data" / "champion_fly_3d_weights.npz"
+        else:
+            self.base_adj, self.metadata = load_cached_subcircuit()
+            champ_path = SRC_DIR.parent / "data" / "super_champion_fly.npz"
+            
         self.use_champion = use_champion
-        
-        # Load super champion weights if available
-        champ_path = SRC_DIR.parent / "data" / "super_champion_fly.npz"
         if use_champion and champ_path.exists():
             data = np.load(champ_path)
             weights = data["kc_mbon_weights"]
             adj = set_kc_mbon_dense(self.base_adj, self.metadata, weights, preserve_topology=True)
             self.snn = FlySubcircuitSNN(adj, self.metadata)
-            self.model_name = f"Super Champion Fly SNN (Gen {data.get('generations', 150)})"
+            scale_label = "3D Scaled " if use_scaled else ""
+            self.model_name = f"{scale_label}Champion Fly SNN (Gen {data.get('generations', 100)})"
         else:
             self.snn = FlySubcircuitSNN(self.base_adj, self.metadata)
-            self.model_name = "Baseline Connectome SNN"
+            self.model_name = "3D Scaled Connectome SNN" if use_scaled else "Baseline Connectome SNN"
             
         self.agent = TelemetryFlyBrainAgent(self.snn, sim_steps=15, pulse_steps=4)
         self.session = GameSession(self.agent)
@@ -75,6 +81,16 @@ class ConnectomeVisualizerServer:
             "upper_sum": self.session.env.upper_section_sum,
             "upper_bonus": self.session.env.upper_bonus,
             "is_finished": self.session.env.is_finished,
+            "is_scaled": self.use_scaled or (self.snn.num_neurons > 5000),
+        }
+
+    def get_topology(self) -> Dict[str, Any]:
+        return {
+            "total_neurons": self.snn.num_neurons,
+            "coordinates_3d": self.metadata.get("coordinates_3d", []),
+            "regions": self.metadata.get("regions", []),
+            "layers": self.metadata.get("layers", {}),
+            "is_scaled": self.use_scaled or (self.snn.num_neurons > 5000),
         }
 
     def step(self) -> Dict[str, Any]:
@@ -115,6 +131,14 @@ class VisualizerHTTPHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             status = SERVER_INSTANCE.get_status() if SERVER_INSTANCE else {}
             self.wfile.write(json.dumps(status).encode("utf-8"))
+            return
+
+        elif self.path == "/api/topology":
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            topo = SERVER_INSTANCE.get_topology() if SERVER_INSTANCE else {}
+            self.wfile.write(json.dumps(topo).encode("utf-8"))
             return
 
         elif self.path == "/events":
@@ -187,10 +211,10 @@ class VisualizerHTTPHandler(SimpleHTTPRequestHandler):
         self.send_error(HTTPStatus.NOT_FOUND, "Endpoint not found")
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8765):
+def run_server(host: str = "0.0.0.0", port: int = 8765, use_scaled: bool = False):
     global SERVER_INSTANCE
     STATIC_DIR.mkdir(parents=True, exist_ok=True)
-    SERVER_INSTANCE = ConnectomeVisualizerServer(use_champion=True)
+    SERVER_INSTANCE = ConnectomeVisualizerServer(use_champion=True, use_scaled=use_scaled)
     
     server_address = (host, port)
     httpd = ThreadingHTTPServer(server_address, VisualizerHTTPHandler)
@@ -210,10 +234,15 @@ def run_server(host: str = "0.0.0.0", port: int = 8765):
         httpd.shutdown()
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host IP to bind")
-    parser.add_argument("--port", type=int, default=8765, help="Port to bind")
+def main():
+    parser = argparse.ArgumentParser(description="FlyWire Connectome SNN Web Visualizer Server")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host address to bind")
+    parser.add_argument("--port", type=int, default=8765, help="Port to listen on")
+    parser.add_argument("--scale-3d", action="store_true", help="Use scaled 3D bilateral connectome (~30k neurons)")
     args = parser.parse_args()
     
-    run_server(host=args.host, port=args.port)
+    run_server(host=args.host, port=args.port, use_scaled=args.scale_3d)
+
+
+if __name__ == "__main__":
+    main()

@@ -39,7 +39,25 @@ class FlySubcircuitSNN:
         self.pn_slice = slice(layers["input_pn"]["start"], layers["input_pn"]["start"] + layers["input_pn"]["count"])
         self.kc_slice = slice(layers["kenyon_cells"]["start"], layers["kenyon_cells"]["start"] + layers["kenyon_cells"]["count"])
         self.mbon_slice = slice(layers["mbon"]["start"], layers["mbon"]["start"] + layers["mbon"]["count"])
-        self.apl_idx = layers["apl_inhibition"]["index"]
+        
+        # APL indexing (single or bilateral)
+        apl_meta = layers["apl_inhibition"]
+        if "index" in apl_meta:
+            self.apl_indices = [apl_meta["index"]]
+            self.apl_idx = apl_meta["index"]
+        else:
+            self.apl_indices = apl_meta.get("indices", [apl_meta.get("left", 0), apl_meta.get("right", 0)])
+            self.apl_idx = self.apl_indices[0]
+            
+        # Optional Central Complex (CX)
+        if "central_complex" in layers:
+            cx_meta = layers["central_complex"]
+            self.cx_slice = slice(cx_meta["start"], cx_meta["start"] + cx_meta["count"])
+            self.num_cx = cx_meta["count"]
+        else:
+            self.cx_slice = None
+            self.num_cx = 0
+
         self.num_pn = layers["input_pn"]["count"]
         self.num_kc = layers["kenyon_cells"]["count"]
         self.num_mbon = layers["mbon"]["count"]
@@ -124,12 +142,16 @@ class FlySubcircuitSNN:
             kc_act = int(np.sum(spikes[self.kc_slice]))
             mbon_acts = spikes[self.mbon_slice]
             mbon_act = int(np.sum(mbon_acts))
-            apl_act = int(spikes[self.apl_idx])
+            apl_act = int(np.sum(spikes[self.apl_indices]))
             
             history["pn_spikes"].append(pn_act)
             history["kc_spikes"].append(kc_act)
             history["mbon_spikes"].append(mbon_act)
             history["apl_spikes"].append(apl_act)
+            if self.cx_slice is not None:
+                if "cx_spikes" not in history:
+                    history["cx_spikes"] = []
+                history["cx_spikes"].append(int(np.sum(spikes[self.cx_slice])))
             history["mbon_firing_counts"] += mbon_acts.astype(int)
             
         elapsed_ms = (time.perf_counter() - start_time) * 1000.0
@@ -139,13 +161,13 @@ class FlySubcircuitSNN:
         return history
 
 
-def load_cached_subcircuit(data_dir: Path = DATA_DIR) -> Tuple[sp.csr_matrix, Dict]:
-    adj_file = data_dir / "mb_subcircuit_adj.npz"
-    meta_file = data_dir / "mb_subcircuit_meta.json"
+def load_cached_subcircuit(data_dir: Path = DATA_DIR, prefix: str = "mb_subcircuit") -> Tuple[sp.csr_matrix, Dict]:
+    adj_file = data_dir / f"{prefix}_adj.npz"
+    meta_file = data_dir / f"{prefix}_meta.json"
     
     if not adj_file.exists() or not meta_file.exists():
         raise FileNotFoundError(
-            f"Cached subcircuit not found in {data_dir}. Run `python src/extract.py` first."
+            f"Cached subcircuit not found in {data_dir} with prefix '{prefix}'. Run `python src/extract.py` first."
         )
         
     adj = sp.load_npz(adj_file)
@@ -153,6 +175,10 @@ def load_cached_subcircuit(data_dir: Path = DATA_DIR) -> Tuple[sp.csr_matrix, Di
         meta = json.load(f)
         
     return adj, meta
+
+
+def load_scaled_subcircuit(data_dir: Path = DATA_DIR) -> Tuple[sp.csr_matrix, Dict]:
+    return load_cached_subcircuit(data_dir=data_dir, prefix="mb_scaled")
 
 
 def print_simulation_report(history: Dict, metadata: Dict):

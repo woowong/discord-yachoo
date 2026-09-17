@@ -1,20 +1,6 @@
-# flywire-connectome-extract Specification
+# flywire-connectome-extract Delta Specification
 
-## Purpose
-Provides connectivity to the FlyWire Codex/CAVE infrastructure to query and extract Drosophila synaptic subcircuits (specifically Mushroom Body circuits) and cache them as local matrix artifacts for downstream simulation.
-
-## Requirements
-
-### Requirement: FlyWire CAVE Authentication and Client Initialization
-The system SHALL initialize the CAVEclient for the Drosophila melanogaster FAFB dataset using user-provided API credentials.
-
-#### Scenario: Successful client initialization with valid token
-- **WHEN** a valid FlyWire CAVE auth token is provided via environment or credentials file
-- **THEN** the client connects to the FAFB v783 dataset without authentication error.
-
-#### Scenario: Authentication failure handling
-- **WHEN** the auth token is missing or invalid
-- **THEN** the system aborts gracefully with an explicit error message prompting for CAVE token configuration.
+## MODIFIED Requirements
 
 ### Requirement: Mushroom Body Subcircuit Query and Extraction
 The system SHALL query or synthesize scalable Drosophila neural subcircuits comprising bilateral Mushroom Bodies (left and right hemispheres), Central Complex motor relay centers, and sensory input clusters scaling up to 10,000–30,000+ neurons with 3D spatial coordinate annotations.

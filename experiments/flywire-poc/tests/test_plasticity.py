@@ -58,3 +58,20 @@ def test_crossover():
     assert child.shape == (10, 10)
     assert np.any(child == 1.0)
     assert np.any(child == 0.0)
+
+
+def test_scaled_kc_mbon_plasticity():
+    from forward_sim import load_scaled_subcircuit
+    adj, meta = load_scaled_subcircuit()
+    dense = extract_kc_mbon_dense(adj, meta)
+    assert dense.shape == (29000, 48)
+    
+    mutated = mutate_weights(dense, mutation_rate=0.1, sigma=0.05)
+    new_adj = set_kc_mbon_dense(adj, meta, mutated, preserve_topology=True)
+    assert new_adj.shape == adj.shape
+    assert new_adj.nnz == adj.nnz
+    
+    new_dense = extract_kc_mbon_dense(new_adj, meta)
+    assert not np.array_equal(dense, new_dense)
+    orig_zero = (dense == 0.0)
+    assert np.all(new_dense[orig_zero] == 0.0)

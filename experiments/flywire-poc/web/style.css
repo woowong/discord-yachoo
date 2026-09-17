@@ -270,6 +270,7 @@ body {
 
 .dot-pn { background-color: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
 .dot-kc { background-color: var(--neon-gold); box-shadow: 0 0 6px var(--neon-gold); }
+.dot-cx { background-color: #a855f7; box-shadow: 0 0 6px #a855f7; }
 .dot-apl { background-color: var(--neon-magenta); box-shadow: 0 0 6px var(--neon-magenta); }
 .dot-mbon { background-color: #ff3366; box-shadow: 0 0 6px #ff3366; }
 

@@ -23,6 +23,8 @@ def decode_hold_mask(
         * MBON 4: Harvest / Freeze Drive (lock in all)
     """
     assert len(mbon_firing_counts) >= 5, f"Expected at least 5 MBONs, got {len(mbon_firing_counts)}"
+    if len(mbon_firing_counts) == 48:
+        mbon_firing_counts = (mbon_firing_counts[:24] + mbon_firing_counts[24:48]) / 2.0
     drive_counts = mbon_firing_counts[:5]
     
     if dice is None:
@@ -104,6 +106,9 @@ def decode_category_selection(
     assert len(mbon_firing_counts) >= 17, f"Expected at least 17 MBONs, got {len(mbon_firing_counts)}"
     assert len(available_categories) > 0, "No available categories left!"
     
+    if len(mbon_firing_counts) == 48:
+        mbon_firing_counts = (mbon_firing_counts[:24] + mbon_firing_counts[24:48]) / 2.0
+        
     cat_counts = mbon_firing_counts[5:17].astype(np.float32).copy()
     avail_set = set(available_categories)
     
