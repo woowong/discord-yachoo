@@ -40,6 +40,9 @@ class FlySubcircuitSNN:
         self.kc_slice = slice(layers["kenyon_cells"]["start"], layers["kenyon_cells"]["start"] + layers["kenyon_cells"]["count"])
         self.mbon_slice = slice(layers["mbon"]["start"], layers["mbon"]["start"] + layers["mbon"]["count"])
         self.apl_idx = layers["apl_inhibition"]["index"]
+        self.num_pn = layers["input_pn"]["count"]
+        self.num_kc = layers["kenyon_cells"]["count"]
+        self.num_mbon = layers["mbon"]["count"]
         
         # State vectors
         self.V = np.full(self.num_neurons, v_rest, dtype=np.float32)
@@ -49,6 +52,10 @@ class FlySubcircuitSNN:
         """Reset membrane voltages and spike buffers."""
         self.V.fill(self.v_rest)
         self.S.fill(False)
+
+    def reset(self):
+        """Alias for reset_state."""
+        self.reset_state()
 
     def step(self, external_current: np.ndarray) -> np.ndarray:
         """
