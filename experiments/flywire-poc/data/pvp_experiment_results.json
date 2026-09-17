@@ -1,0 +1,855 @@
+{
+  "gladiator_leaderboard": [
+    {
+      "rank": 1,
+      "name": "Athena-Fly",
+      "elo": 1250.5509888235026,
+      "wins": 4,
+      "losses": 1,
+      "avg_pts": 60.8,
+      "dopamine": 289.0
+    },
+    {
+      "rank": 2,
+      "name": "Poseidon-Fly",
+      "elo": 1246.6462807163953,
+      "wins": 4,
+      "losses": 1,
+      "avg_pts": 45.8,
+      "dopamine": 254.0
+    },
+    {
+      "rank": 3,
+      "name": "Omega-Fly",
+      "elo": 1242.5709987228315,
+      "wins": 4,
+      "losses": 1,
+      "avg_pts": 49.8,
+      "dopamine": 257.0
+    },
+    {
+      "rank": 4,
+      "name": "Artemis-Fly",
+      "elo": 1218.7403092838858,
+      "wins": 3,
+      "losses": 2,
+      "avg_pts": 37.2,
+      "dopamine": 209.0
+    },
+    {
+      "rank": 5,
+      "name": "Hera-Fly",
+      "elo": 1215.930018169345,
+      "wins": 3,
+      "losses": 2,
+      "avg_pts": 33.8,
+      "dopamine": 192.0
+    },
+    {
+      "rank": 6,
+      "name": "Eagle-Fly",
+      "elo": 1214.4689102571817,
+      "wins": 3,
+      "losses": 2,
+      "avg_pts": 48.0,
+      "dopamine": 218.0
+    },
+    {
+      "rank": 7,
+      "name": "Shadow-Fly",
+      "elo": 1213.079520246527,
+      "wins": 3,
+      "losses": 2,
+      "avg_pts": 43.0,
+      "dopamine": 162.0
+    },
+    {
+      "rank": 8,
+      "name": "Alpha-Fly",
+      "elo": 1210.8338800902193,
+      "wins": 3,
+      "losses": 2,
+      "avg_pts": 44.4,
+      "dopamine": 252.0
+    },
+    {
+      "rank": 9,
+      "name": "Viper-Fly",
+      "elo": 1186.9917848768243,
+      "wins": 2,
+      "losses": 3,
+      "avg_pts": 38.4,
+      "dopamine": 130.0
+    },
+    {
+      "rank": 10,
+      "name": "Ares-Fly",
+      "elo": 1183.8976742441926,
+      "wins": 2,
+      "losses": 3,
+      "avg_pts": 51.6,
+      "dopamine": 155.0
+    },
+    {
+      "rank": 11,
+      "name": "Apollo-Fly",
+      "elo": 1183.8772604028152,
+      "wins": 2,
+      "losses": 3,
+      "avg_pts": 38.6,
+      "dopamine": 119.0
+    },
+    {
+      "rank": 12,
+      "name": "Phantom-Fly",
+      "elo": 1182.5452988127747,
+      "wins": 2,
+      "losses": 3,
+      "avg_pts": 42.6,
+      "dopamine": 133.0
+    },
+    {
+      "rank": 13,
+      "name": "Hermes-Fly",
+      "elo": 1179.7813628908277,
+      "wins": 2,
+      "losses": 3,
+      "avg_pts": 38.4,
+      "dopamine": 157.0
+    },
+    {
+      "rank": 14,
+      "name": "Zeus-Fly",
+      "elo": 1159.1262757696009,
+      "wins": 1,
+      "losses": 4,
+      "avg_pts": 28.8,
+      "dopamine": 71.0
+    },
+    {
+      "rank": 15,
+      "name": "Cobra-Fly",
+      "elo": 1157.3615045998486,
+      "wins": 1,
+      "losses": 4,
+      "avg_pts": 45.2,
+      "dopamine": 90.0
+    },
+    {
+      "rank": 16,
+      "name": "Titan-Fly",
+      "elo": 1153.5979320932279,
+      "wins": 1,
+      "losses": 4,
+      "avg_pts": 40.0,
+      "dopamine": 100.0
+    }
+  ],
+  "dramatic_match": {
+    "gladiator_a": "Zeus-Fly",
+    "gladiator_b": "Ares-Fly",
+    "score_a": 53,
+    "score_b": 47,
+    "winner": "A",
+    "narrative": "======================================================================\n \u2694\ufe0f [1v1 YACHT SHOWDOWN] Zeus-Fly vs Ares-Fly\n======================================================================\nR01 | Zeus-Fly: + 0 (Yacht       ) [Total:   0] vs Ares-Fly: +20 (Choice      ) [Total:  20] | \nR02 | Zeus-Fly: + 0 (FullHouse   ) [Total:   0] vs Ares-Fly: + 0 (Yacht       ) [Total:  20] | \nR03 | Zeus-Fly: + 0 (Deuces      ) [Total:   0] vs Ares-Fly: + 0 (LargeStraight) [Total:  20] | \nR04 | Zeus-Fly: +12 (Fours       ) [Total:  12] vs Ares-Fly: + 0 (FullHouse   ) [Total:  20] | \nR05 | Zeus-Fly: +18 (Sixes       ) [Total:  30] vs Ares-Fly: + 1 (Aces        ) [Total:  21] | \u26a1 [LEAD CHANGE!]\nR06 | Zeus-Fly: + 0 (Aces        ) [Total:  30] vs Ares-Fly: + 2 (Deuces      ) [Total:  23] | \nR07 | Zeus-Fly: + 0 (SmallStraight) [Total:  30] vs Ares-Fly: + 3 (Treys       ) [Total:  26] | \nR08 | Zeus-Fly: + 0 (LargeStraight) [Total:  30] vs Ares-Fly: + 0 (SmallStraight) [Total:  26] | \nR09 | Zeus-Fly: + 6 (Treys       ) [Total:  36] vs Ares-Fly: +15 (Fives       ) [Total:  41] | \u26a1 [LEAD CHANGE!]\nR10 | Zeus-Fly: + 0 (FourOfAKind ) [Total:  36] vs Ares-Fly: + 0 (Fours       ) [Total:  41] | \nR11 | Zeus-Fly: + 0 (Fives       ) [Total:  36] vs Ares-Fly: + 6 (Sixes       ) [Total:  47] | \nR12 | Zeus-Fly: +17 (Choice      ) [Total:  53] vs Ares-Fly: + 0 (FourOfAKind ) [Total:  47] | \u26a1 [LEAD CHANGE!]\n----------------------------------------------------------------------\nFINAL SCORE: Zeus-Fly 53 vs 47 Ares-Fly | Lead Changes: 3\n\ud83c\udfc6 WINNER: Zeus-Fly! (+6 pts victory margin)\n======================================================================",
+    "rounds": [
+      {
+        "round": 1,
+        "a_rolls": [
+          [
+            5,
+            2,
+            1,
+            4,
+            2
+          ],
+          [
+            4,
+            1,
+            3,
+            6,
+            1
+          ],
+          [
+            4,
+            1,
+            5,
+            6,
+            1
+          ]
+        ],
+        "a_cat": "Yacht",
+        "a_pts": 0,
+        "a_total": 0,
+        "b_rolls": [
+          [
+            6,
+            2,
+            4,
+            3,
+            5
+          ],
+          [
+            1,
+            6,
+            3,
+            4,
+            4
+          ],
+          [
+            4,
+            5,
+            3,
+            4,
+            4
+          ]
+        ],
+        "b_cat": "Choice",
+        "b_pts": 20,
+        "b_total": 20,
+        "leader": "B"
+      },
+      {
+        "round": 2,
+        "a_rolls": [
+          [
+            5,
+            3,
+            4,
+            2,
+            5
+          ],
+          [
+            5,
+            5,
+            2,
+            6,
+            2
+          ],
+          [
+            5,
+            5,
+            3,
+            3,
+            1
+          ]
+        ],
+        "a_cat": "FullHouse",
+        "a_pts": 0,
+        "a_total": 0,
+        "b_rolls": [
+          [
+            4,
+            1,
+            4,
+            5,
+            4
+          ],
+          [
+            3,
+            1,
+            5,
+            1,
+            5
+          ],
+          [
+            3,
+            5,
+            5,
+            4,
+            5
+          ]
+        ],
+        "b_cat": "Yacht",
+        "b_pts": 0,
+        "b_total": 20,
+        "leader": "B"
+      },
+      {
+        "round": 3,
+        "a_rolls": [
+          [
+            3,
+            5,
+            2,
+            4,
+            2
+          ],
+          [
+            2,
+            5,
+            3,
+            5,
+            6
+          ],
+          [
+            5,
+            5,
+            4,
+            5,
+            3
+          ]
+        ],
+        "a_cat": "Deuces",
+        "a_pts": 0,
+        "a_total": 0,
+        "b_rolls": [
+          [
+            2,
+            3,
+            5,
+            3,
+            2
+          ],
+          [
+            3,
+            1,
+            1,
+            3,
+            2
+          ],
+          [
+            3,
+            4,
+            4,
+            3,
+            3
+          ]
+        ],
+        "b_cat": "LargeStraight",
+        "b_pts": 0,
+        "b_total": 20,
+        "leader": "B"
+      },
+      {
+        "round": 4,
+        "a_rolls": [
+          [
+            6,
+            6,
+            5,
+            1,
+            4
+          ],
+          [
+            3,
+            3,
+            4,
+            4,
+            5
+          ],
+          [
+            6,
+            4,
+            4,
+            4,
+            3
+          ]
+        ],
+        "a_cat": "Fours",
+        "a_pts": 12,
+        "a_total": 12,
+        "b_rolls": [
+          [
+            5,
+            3,
+            4,
+            2,
+            3
+          ],
+          [
+            2,
+            6,
+            3,
+            3,
+            4
+          ],
+          [
+            4,
+            4,
+            3,
+            3,
+            2
+          ]
+        ],
+        "b_cat": "FullHouse",
+        "b_pts": 0,
+        "b_total": 20,
+        "leader": "B"
+      },
+      {
+        "round": 5,
+        "a_rolls": [
+          [
+            6,
+            4,
+            1,
+            3,
+            2
+          ],
+          [
+            6,
+            6,
+            1,
+            1,
+            3
+          ],
+          [
+            6,
+            6,
+            3,
+            6,
+            2
+          ]
+        ],
+        "a_cat": "Sixes",
+        "a_pts": 18,
+        "a_total": 30,
+        "b_rolls": [
+          [
+            6,
+            6,
+            3,
+            1,
+            1
+          ],
+          [
+            4,
+            2,
+            2,
+            5,
+            1
+          ],
+          [
+            2,
+            2,
+            2,
+            1,
+            4
+          ]
+        ],
+        "b_cat": "Aces",
+        "b_pts": 1,
+        "b_total": 21,
+        "leader": "A"
+      },
+      {
+        "round": 6,
+        "a_rolls": [
+          [
+            3,
+            5,
+            1,
+            3,
+            4
+          ],
+          [
+            3,
+            4,
+            4,
+            6,
+            1
+          ],
+          [
+            5,
+            4,
+            4,
+            5,
+            6
+          ]
+        ],
+        "a_cat": "Aces",
+        "a_pts": 0,
+        "a_total": 30,
+        "b_rolls": [
+          [
+            1,
+            4,
+            3,
+            5,
+            2
+          ],
+          [
+            3,
+            5,
+            5,
+            1,
+            3
+          ],
+          [
+            5,
+            5,
+            5,
+            3,
+            2
+          ]
+        ],
+        "b_cat": "Deuces",
+        "b_pts": 2,
+        "b_total": 23,
+        "leader": "A"
+      },
+      {
+        "round": 7,
+        "a_rolls": [
+          [
+            6,
+            5,
+            6,
+            4,
+            4
+          ],
+          [
+            1,
+            4,
+            2,
+            1,
+            1
+          ],
+          [
+            1,
+            6,
+            3,
+            1,
+            1
+          ]
+        ],
+        "a_cat": "SmallStraight",
+        "a_pts": 0,
+        "a_total": 30,
+        "b_rolls": [
+          [
+            2,
+            3,
+            2,
+            3,
+            5
+          ],
+          [
+            2,
+            3,
+            1,
+            2,
+            4
+          ],
+          [
+            2,
+            3,
+            5,
+            2,
+            2
+          ]
+        ],
+        "b_cat": "Treys",
+        "b_pts": 3,
+        "b_total": 26,
+        "leader": "A"
+      },
+      {
+        "round": 8,
+        "a_rolls": [
+          [
+            5,
+            6,
+            6,
+            3,
+            5
+          ],
+          [
+            2,
+            1,
+            5,
+            2,
+            5
+          ],
+          [
+            1,
+            3,
+            5,
+            5,
+            5
+          ]
+        ],
+        "a_cat": "LargeStraight",
+        "a_pts": 0,
+        "a_total": 30,
+        "b_rolls": [
+          [
+            3,
+            4,
+            3,
+            2,
+            1
+          ],
+          [
+            1,
+            5,
+            5,
+            4,
+            6
+          ],
+          [
+            1,
+            5,
+            5,
+            4,
+            3
+          ]
+        ],
+        "b_cat": "SmallStraight",
+        "b_pts": 0,
+        "b_total": 26,
+        "leader": "A"
+      },
+      {
+        "round": 9,
+        "a_rolls": [
+          [
+            3,
+            1,
+            2,
+            4,
+            6
+          ],
+          [
+            5,
+            2,
+            6,
+            2,
+            4
+          ],
+          [
+            3,
+            2,
+            1,
+            2,
+            3
+          ]
+        ],
+        "a_cat": "Treys",
+        "a_pts": 6,
+        "a_total": 36,
+        "b_rolls": [
+          [
+            5,
+            5,
+            1,
+            5,
+            1
+          ],
+          [
+            5,
+            4,
+            4,
+            5,
+            1
+          ],
+          [
+            5,
+            1,
+            3,
+            5,
+            5
+          ]
+        ],
+        "b_cat": "Fives",
+        "b_pts": 15,
+        "b_total": 41,
+        "leader": "B"
+      },
+      {
+        "round": 10,
+        "a_rolls": [
+          [
+            3,
+            3,
+            4,
+            3,
+            5
+          ],
+          [
+            5,
+            2,
+            6,
+            4,
+            6
+          ],
+          [
+            3,
+            4,
+            6,
+            5,
+            6
+          ]
+        ],
+        "a_cat": "FourOfAKind",
+        "a_pts": 0,
+        "a_total": 36,
+        "b_rolls": [
+          [
+            3,
+            5,
+            3,
+            6,
+            3
+          ],
+          [
+            1,
+            2,
+            4,
+            2,
+            5
+          ],
+          [
+            1,
+            2,
+            6,
+            2,
+            2
+          ]
+        ],
+        "b_cat": "Fours",
+        "b_pts": 0,
+        "b_total": 41,
+        "leader": "B"
+      },
+      {
+        "round": 11,
+        "a_rolls": [
+          [
+            3,
+            6,
+            2,
+            5,
+            1
+          ],
+          [
+            3,
+            2,
+            6,
+            5,
+            6
+          ],
+          [
+            2,
+            4,
+            6,
+            3,
+            6
+          ]
+        ],
+        "a_cat": "Fives",
+        "a_pts": 0,
+        "a_total": 36,
+        "b_rolls": [
+          [
+            4,
+            2,
+            1,
+            3,
+            5
+          ],
+          [
+            2,
+            6,
+            3,
+            1,
+            3
+          ],
+          [
+            6,
+            2,
+            3,
+            3,
+            3
+          ]
+        ],
+        "b_cat": "Sixes",
+        "b_pts": 6,
+        "b_total": 47,
+        "leader": "B"
+      },
+      {
+        "round": 12,
+        "a_rolls": [
+          [
+            1,
+            4,
+            4,
+            2,
+            4
+          ],
+          [
+            4,
+            4,
+            4,
+            3,
+            4
+          ],
+          [
+            4,
+            4,
+            4,
+            1,
+            4
+          ]
+        ],
+        "a_cat": "Choice",
+        "a_pts": 17,
+        "a_total": 53,
+        "b_rolls": [
+          [
+            2,
+            4,
+            6,
+            5,
+            1
+          ],
+          [
+            5,
+            3,
+            6,
+            4,
+            2
+          ],
+          [
+            5,
+            4,
+            6,
+            5,
+            1
+          ]
+        ],
+        "b_cat": "FourOfAKind",
+        "b_pts": 0,
+        "b_total": 47,
+        "leader": "A"
+      }
+    ]
+  },
+  "cognition_comparison": {
+    "Static Fly (APL -0.6 Fixed)": {
+      "mean": 36.06666666666667,
+      "max": 64
+    },
+    "Cognitive Fly (Dynamic APL + Memory)": {
+      "mean": 44.833333333333336,
+      "max": 96
+    }
+  },
+  "scaling_comparison": {
+    "Standard MB (1,500 KCs, 27k Synapses)": {
+      "neurons": 1575,
+      "synapses": 27664,
+      "mean_score": 44.833333333333336,
+      "max_score": 96
+    },
+    "Expanded MB (3,000 KCs, ~55k Synapses)": {
+      "neurons": 3075,
+      "synapses": 55223,
+      "mean_score": 45.3,
+      "max_score": 84,
+      "gen_time_ms": 55.08429200563114
+    }
+  }
+}
