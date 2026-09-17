@@ -59,7 +59,7 @@ class FlyBrainAgent(BaseYachtAgent):
 
     def decide_hold(self, dice: List[int], roll_count: int, available_categories: List[ScoreCategory]) -> List[bool]:
         mbon_counts = self._run_brain(dice, roll_count, available_categories)
-        return decode_hold_mask(mbon_counts)
+        return decode_hold_mask(mbon_counts, dice=dice)
 
     def decide_category(self, dice: List[int], roll_count: int, available_categories: List[ScoreCategory]) -> ScoreCategory:
         mbon_counts = self._run_brain(dice, roll_count, available_categories)

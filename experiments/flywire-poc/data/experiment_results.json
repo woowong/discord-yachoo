@@ -1,0 +1,549 @@
+{
+  "evolution_history": [
+    {
+      "gen": 1,
+      "best_fitness": 56.8,
+      "best_mean_score": 56.8,
+      "best_max_score": 92,
+      "pop_mean_score": 38.456,
+      "pop_std_score": 6.234489874881504,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.685306125000352
+    },
+    {
+      "gen": 2,
+      "best_fitness": 50.2,
+      "best_mean_score": 50.2,
+      "best_max_score": 75,
+      "pop_mean_score": 36.904,
+      "pop_std_score": 4.596736233459562,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6730482499988284
+    },
+    {
+      "gen": 3,
+      "best_fitness": 52.4,
+      "best_mean_score": 52.4,
+      "best_max_score": 60,
+      "pop_mean_score": 39.784,
+      "pop_std_score": 5.56817241112378,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6830084169996553
+    },
+    {
+      "gen": 4,
+      "best_fitness": 55.2,
+      "best_mean_score": 55.2,
+      "best_max_score": 65,
+      "pop_mean_score": 38.61600000000001,
+      "pop_std_score": 6.10073307070552,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.685583750004298
+    },
+    {
+      "gen": 5,
+      "best_fitness": 52.2,
+      "best_mean_score": 52.2,
+      "best_max_score": 74,
+      "pop_mean_score": 39.992000000000004,
+      "pop_std_score": 5.972062960150371,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.682240667003498
+    },
+    {
+      "gen": 6,
+      "best_fitness": 51.4,
+      "best_mean_score": 51.4,
+      "best_max_score": 87,
+      "pop_mean_score": 38.0,
+      "pop_std_score": 6.34047316846306,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.690265167002508
+    },
+    {
+      "gen": 7,
+      "best_fitness": 47.6,
+      "best_mean_score": 47.6,
+      "best_max_score": 70,
+      "pop_mean_score": 39.864000000000004,
+      "pop_std_score": 3.7772879159523978,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6714303749977262
+    },
+    {
+      "gen": 8,
+      "best_fitness": 50.4,
+      "best_mean_score": 50.4,
+      "best_max_score": 72,
+      "pop_mean_score": 39.74400000000001,
+      "pop_std_score": 4.891959116754759,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6854139170027338
+    },
+    {
+      "gen": 9,
+      "best_fitness": 52.4,
+      "best_mean_score": 52.4,
+      "best_max_score": 64,
+      "pop_mean_score": 39.34400000000001,
+      "pop_std_score": 6.715360303066396,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6747452499985229
+    },
+    {
+      "gen": 10,
+      "best_fitness": 57.2,
+      "best_mean_score": 57.2,
+      "best_max_score": 67,
+      "pop_mean_score": 41.608000000000004,
+      "pop_std_score": 6.949297518454653,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6814263339983881
+    },
+    {
+      "gen": 11,
+      "best_fitness": 53.0,
+      "best_mean_score": 53.0,
+      "best_max_score": 67,
+      "pop_mean_score": 40.56,
+      "pop_std_score": 5.789645930452052,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6693869169976097
+    },
+    {
+      "gen": 12,
+      "best_fitness": 51.0,
+      "best_mean_score": 51.0,
+      "best_max_score": 85,
+      "pop_mean_score": 38.736000000000004,
+      "pop_std_score": 5.755753990573258,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6821113749974757
+    },
+    {
+      "gen": 13,
+      "best_fitness": 52.8,
+      "best_mean_score": 52.8,
+      "best_max_score": 100,
+      "pop_mean_score": 39.744,
+      "pop_std_score": 5.850817378794179,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6709297080014949
+    },
+    {
+      "gen": 14,
+      "best_fitness": 49.0,
+      "best_mean_score": 49.0,
+      "best_max_score": 59,
+      "pop_mean_score": 39.64,
+      "pop_std_score": 5.65713708513414,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6733150419968297
+    },
+    {
+      "gen": 15,
+      "best_fitness": 57.4,
+      "best_mean_score": 57.4,
+      "best_max_score": 96,
+      "pop_mean_score": 40.424,
+      "pop_std_score": 6.024568366281522,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6717918750000536
+    },
+    {
+      "gen": 16,
+      "best_fitness": 49.8,
+      "best_mean_score": 49.8,
+      "best_max_score": 62,
+      "pop_mean_score": 39.288000000000004,
+      "pop_std_score": 5.67212975874142,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6752527499993448
+    },
+    {
+      "gen": 17,
+      "best_fitness": 49.6,
+      "best_mean_score": 49.6,
+      "best_max_score": 73,
+      "pop_mean_score": 39.047999999999995,
+      "pop_std_score": 5.05087081600787,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6717582499986747
+    },
+    {
+      "gen": 18,
+      "best_fitness": 50.2,
+      "best_mean_score": 50.2,
+      "best_max_score": 61,
+      "pop_mean_score": 37.367999999999995,
+      "pop_std_score": 5.340765488204852,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6852282499967259
+    },
+    {
+      "gen": 19,
+      "best_fitness": 50.2,
+      "best_mean_score": 50.2,
+      "best_max_score": 69,
+      "pop_mean_score": 39.672,
+      "pop_std_score": 4.894365740318147,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6839255000013509
+    },
+    {
+      "gen": 20,
+      "best_fitness": 56.8,
+      "best_mean_score": 56.8,
+      "best_max_score": 75,
+      "pop_mean_score": 38.912,
+      "pop_std_score": 6.1264227735277945,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6745689169983962
+    },
+    {
+      "gen": 21,
+      "best_fitness": 45.8,
+      "best_mean_score": 45.8,
+      "best_max_score": 57,
+      "pop_mean_score": 39.32,
+      "pop_std_score": 4.830238089369923,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6703583330017864
+    },
+    {
+      "gen": 22,
+      "best_fitness": 55.0,
+      "best_mean_score": 55.0,
+      "best_max_score": 73,
+      "pop_mean_score": 41.272,
+      "pop_std_score": 6.62453137965245,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.67274075000023
+    },
+    {
+      "gen": 23,
+      "best_fitness": 50.0,
+      "best_mean_score": 50.0,
+      "best_max_score": 71,
+      "pop_mean_score": 39.632000000000005,
+      "pop_std_score": 5.406271913250387,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6741338330029976
+    },
+    {
+      "gen": 24,
+      "best_fitness": 56.0,
+      "best_mean_score": 56.0,
+      "best_max_score": 81,
+      "pop_mean_score": 39.896,
+      "pop_std_score": 6.703102565230521,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6664343329975964
+    },
+    {
+      "gen": 25,
+      "best_fitness": 61.8,
+      "best_mean_score": 61.8,
+      "best_max_score": 84,
+      "pop_mean_score": 37.984,
+      "pop_std_score": 7.135246596999994,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6640885839951807
+    },
+    {
+      "gen": 26,
+      "best_fitness": 52.8,
+      "best_mean_score": 52.8,
+      "best_max_score": 88,
+      "pop_mean_score": 41.032,
+      "pop_std_score": 6.516607706468144,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6630531670016353
+    },
+    {
+      "gen": 27,
+      "best_fitness": 48.6,
+      "best_mean_score": 48.6,
+      "best_max_score": 64,
+      "pop_mean_score": 38.864000000000004,
+      "pop_std_score": 5.1848147507890765,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6643372920007096
+    },
+    {
+      "gen": 28,
+      "best_fitness": 49.4,
+      "best_mean_score": 49.4,
+      "best_max_score": 72,
+      "pop_mean_score": 37.408,
+      "pop_std_score": 4.548223389412618,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6587010420043953
+    },
+    {
+      "gen": 29,
+      "best_fitness": 53.6,
+      "best_mean_score": 53.6,
+      "best_max_score": 80,
+      "pop_mean_score": 40.304,
+      "pop_std_score": 5.518295388976563,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6629041249980219
+    },
+    {
+      "gen": 30,
+      "best_fitness": 43.6,
+      "best_mean_score": 43.6,
+      "best_max_score": 64,
+      "pop_mean_score": 37.04,
+      "pop_std_score": 3.696051947686883,
+      "upper_bonus_rate": 0.0,
+      "yacht_hits": 0,
+      "duration_sec": 0.6609337919944664
+    }
+  ],
+  "topology_comparison": {
+    "Random Agent": 43.25,
+    "Untrained Fly (Gen 0)": 36.5,
+    "Trained Champion Fly (Gen 30)": 39.4,
+    "Random Erd\u0151s\u2013R\u00e9nyi SNN": 41.05,
+    "Standard Dense MLP": 43.85
+  },
+  "doping_comparison": {
+    "Dopamine Jackpot Fly": {
+      "mean_score": 39.25,
+      "max_score": 77,
+      "category_summary": {
+        "Aces": {
+          "mean": 0.6,
+          "zeros": 10,
+          "count": 20
+        },
+        "Deuces": {
+          "mean": 1.8,
+          "zeros": 7,
+          "count": 20
+        },
+        "Treys": {
+          "mean": 2.7,
+          "zeros": 7,
+          "count": 20
+        },
+        "Fours": {
+          "mean": 3.0,
+          "zeros": 9,
+          "count": 20
+        },
+        "Fives": {
+          "mean": 3.5,
+          "zeros": 9,
+          "count": 20
+        },
+        "Sixes": {
+          "mean": 4.5,
+          "zeros": 9,
+          "count": 20
+        },
+        "Choice": {
+          "mean": 17.45,
+          "zeros": 0,
+          "count": 20
+        },
+        "FourOfAKind": {
+          "mean": 0.0,
+          "zeros": 20,
+          "count": 20
+        },
+        "FullHouse": {
+          "mean": 1.2,
+          "zeros": 19,
+          "count": 20
+        },
+        "SmallStraight": {
+          "mean": 1.5,
+          "zeros": 18,
+          "count": 20
+        },
+        "LargeStraight": {
+          "mean": 3.0,
+          "zeros": 18,
+          "count": 20
+        },
+        "Yacht": {
+          "mean": 0.0,
+          "zeros": 20,
+          "count": 20
+        }
+      }
+    },
+    "Octopamine Aversion Fly": {
+      "mean_score": 39.85,
+      "max_score": 83,
+      "category_summary": {
+        "Aces": {
+          "mean": 0.65,
+          "zeros": 9,
+          "count": 20
+        },
+        "Deuces": {
+          "mean": 0.9,
+          "zeros": 11,
+          "count": 20
+        },
+        "Treys": {
+          "mean": 1.5,
+          "zeros": 13,
+          "count": 20
+        },
+        "Fours": {
+          "mean": 3.4,
+          "zeros": 7,
+          "count": 20
+        },
+        "Fives": {
+          "mean": 5.5,
+          "zeros": 3,
+          "count": 20
+        },
+        "Sixes": {
+          "mean": 5.1,
+          "zeros": 8,
+          "count": 20
+        },
+        "Choice": {
+          "mean": 16.9,
+          "zeros": 0,
+          "count": 20
+        },
+        "FourOfAKind": {
+          "mean": 0.0,
+          "zeros": 20,
+          "count": 20
+        },
+        "FullHouse": {
+          "mean": 2.15,
+          "zeros": 18,
+          "count": 20
+        },
+        "SmallStraight": {
+          "mean": 3.75,
+          "zeros": 15,
+          "count": 20
+        },
+        "LargeStraight": {
+          "mean": 0.0,
+          "zeros": 20,
+          "count": 20
+        },
+        "Yacht": {
+          "mean": 0.0,
+          "zeros": 20,
+          "count": 20
+        }
+      }
+    }
+  },
+  "champion_phenotype": {
+    "hold_ratios_by_face": {
+      "1": 0.9409282700421941,
+      "2": 0.9173913043478261,
+      "3": 0.9444444444444444,
+      "4": 0.9514563106796117,
+      "5": 0.9264069264069265,
+      "6": 0.9671361502347418
+    },
+    "category_summary": {
+      "Aces": {
+        "mean": 1.0,
+        "zeros": 7,
+        "count": 20
+      },
+      "Deuces": {
+        "mean": 2.2,
+        "zeros": 3,
+        "count": 20
+      },
+      "Treys": {
+        "mean": 2.7,
+        "zeros": 6,
+        "count": 20
+      },
+      "Fours": {
+        "mean": 2.8,
+        "zeros": 11,
+        "count": 20
+      },
+      "Fives": {
+        "mean": 6.0,
+        "zeros": 3,
+        "count": 20
+      },
+      "Sixes": {
+        "mean": 4.8,
+        "zeros": 8,
+        "count": 20
+      },
+      "Choice": {
+        "mean": 16.35,
+        "zeros": 0,
+        "count": 20
+      },
+      "FourOfAKind": {
+        "mean": 0.0,
+        "zeros": 20,
+        "count": 20
+      },
+      "FullHouse": {
+        "mean": 1.3,
+        "zeros": 19,
+        "count": 20
+      },
+      "SmallStraight": {
+        "mean": 2.25,
+        "zeros": 17,
+        "count": 20
+      },
+      "LargeStraight": {
+        "mean": 0.0,
+        "zeros": 20,
+        "count": 20
+      },
+      "Yacht": {
+        "mean": 0.0,
+        "zeros": 20,
+        "count": 20
+      }
+    },
+    "max_score": 71,
+    "min_score": 22
+  }
+}
