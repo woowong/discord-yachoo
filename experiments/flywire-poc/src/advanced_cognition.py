@@ -81,6 +81,6 @@ class AdvancedCognitiveFlyAgent(FlyBrainAgent):
             self.snn.set_apl_inhibition_strength(self.relaxed_apl)
             
         mbon_counts = self._run_brain(dice, roll_count, available_categories)
-        selected = decode_category_selection(mbon_counts, available_categories)
+        selected = decode_category_selection(mbon_counts, available_categories, dice=dice)
         self.reset_turn_memory()
         return selected

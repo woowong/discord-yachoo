@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import List, Set
 import numpy as np
-from yacht_env import CATEGORIES, ScoreCategory
+from yacht_env import CATEGORIES, ScoreCategory, calculate_score
 
 
 def encode_state_to_pn(
@@ -17,7 +17,7 @@ def encode_state_to_pn(
     Encodes the current Yacht state into input current for Projection Neurons (PNs):
     - PN [0..29]:  5 dice x 6 values (One-hot per dice slot)
     - PN [30..32]: Roll count (1st roll, 2nd roll, 3rd roll)
-    - PN [33..44]: 12 Categories availability mask
+    - PN [33..44]: 12 Categories availability with Sensory Affordance (prospective point yield)
     - PN [45..49]: High-level pattern feature detectors:
         * PN 45: Max duplicate count (pair, triple, 4-kind, yacht)
         * PN 46: Full house indicator
@@ -40,11 +40,13 @@ def encode_state_to_pn(
     roll_idx = 30 + (roll_count - 1)
     currents[roll_idx] = roll_amp
     
-    # 3. Encode available categories
+    # 3. Encode available categories with Sensory Affordance (prospective points)
     avail_set: Set[ScoreCategory] = set(available_categories)
     for cat_idx, cat in enumerate(CATEGORIES):
         if cat in avail_set:
-            currents[33 + cat_idx] = cat_amp
+            pts = calculate_score(cat, dice)
+            # Base current + proportional affordance yield
+            currents[33 + cat_idx] = cat_amp + (pts / 50.0) * 2.0
             
     # 4. Sensory feature detectors (PN 45..49)
     if num_pn >= 50:
