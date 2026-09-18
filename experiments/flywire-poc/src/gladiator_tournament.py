@@ -133,7 +133,17 @@ def run_gladiator_tournament(num_games: int = 200, verbose: bool = True) -> Dict
     baseline_snn = FlySubcircuitSNN(base_adj, base_meta)
     baseline_agent = FlyBrainAgent(snn=baseline_snn, enable_dan_modulation=False)
 
-    # 2. Dopamine Island Champion Model
+    # 2. Fly Brain v3 Strategic QD Champion (64-PN)
+    v3_champ_path = DATA_DIR / "champion_fly_v3_weights.npz"
+    v3_agent = None
+    if v3_champ_path.exists():
+        v3_data = np.load(v3_champ_path)
+        v3_w = v3_data["weights"] if "weights" in v3_data else v3_data["kc_mbon_weights"]
+        v3_adj = set_kc_mbon_dense(base_adj, base_meta, v3_w, preserve_topology=True)
+        v3_snn = FlySubcircuitSNN(v3_adj, base_meta)
+        v3_agent = FlyBrainAgent(snn=v3_snn, enable_dan_modulation=True)
+
+    # 3. Legacy Dopamine Island Champion Model
     dopamine_champ_path = DATA_DIR / "champion_fly_weights.npz"
     if dopamine_champ_path.exists():
         data = np.load(dopamine_champ_path)
@@ -144,30 +154,16 @@ def run_gladiator_tournament(num_games: int = 200, verbose: bool = True) -> Dict
     else:
         champ_agent = baseline_agent
 
-    # 3. Pure Neural Control (Evolved weights, no DAN dopamine modulation)
-    pure_snn_agent = FlyBrainAgent(snn=champ_snn, enable_dan_modulation=False)
-
-    # 4. Scaled 30k Bilateral Champion (if weights exist)
-    scaled_agent = None
-    scaled_champ_path = DATA_DIR / "champion_fly_3d_weights.npz"
-    if scaled_champ_path.exists():
-        try:
-            sc_adj, sc_meta = load_scaled_subcircuit()
-            sc_data = np.load(scaled_champ_path)
-            sc_w = sc_data["weights"] if "weights" in sc_data else sc_data["kc_mbon_weights"]
-            sc_evolved_adj = set_kc_mbon_dense(sc_adj, sc_meta, sc_w, preserve_topology=True)
-            scaled_snn = FlySubcircuitSNN(sc_evolved_adj, sc_meta)
-            scaled_agent = FlyBrainAgent(snn=scaled_snn, enable_dan_modulation=True)
-        except Exception as e:
-            print(f"Could not load scaled model: {e}")
+    # 4. Pure Neural Control (Evolved weights, no DAN dopamine modulation)
+    pure_snn_agent = FlyBrainAgent(snn=v3_snn if v3_agent else champ_snn, enable_dan_modulation=False)
 
     agents_to_test = [
         ("Baseline (Unevolved, No Dopamine)", baseline_agent),
         ("Pure SNN Control (Evolved, No Dopamine)", pure_snn_agent),
-        ("Dopamine Island Champion (PAM + PPL1 Satiety)", champ_agent),
+        ("Fly Brain v2 Champion (Dopamine Island)", champ_agent),
     ]
-    if scaled_agent is not None:
-        agents_to_test.append(("3D Scaled Bilateral Champion (30k Neurons)", scaled_agent))
+    if v3_agent is not None:
+        agents_to_test.append(("Fly Brain v3 Strategic QD Champion (64-PN)", v3_agent))
 
     print(f"\n⚔️  Starting Gladiator Tournament ({num_games} games per contestant)...")
     tournament_results = {}

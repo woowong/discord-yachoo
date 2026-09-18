@@ -94,7 +94,7 @@ def test_multi_island_migration():
 
 
 def test_dopamine_island_configurations():
-    # Test default initialization with 4 dopamine islands
+    # Test default initialization with 4 strategic QD islands
     engine = MultiIslandEvolution(
         island_configs=None,
         migration_interval=5,
@@ -103,10 +103,25 @@ def test_dopamine_island_configurations():
     )
     assert len(engine.islands) == 4
     bias_modes = [isl.config.bias_mode for isl in engine.islands]
-    assert "satiety_gated" in bias_modes
-    assert "affordance_rpe" in bias_modes
-    assert "dynamic_apl" in bias_modes
-    assert "pure_snn" in bias_modes
+    assert "straight_hunter" in bias_modes
+    assert "upper_saver" in bias_modes
+    assert "jackpot_predator" in bias_modes
+    assert "hybrid_synthesizer" in bias_modes
     assert engine.migration_interval == 5
     engine.close()
+
+    # Test legacy dopamine preset
+    engine_legacy = MultiIslandEvolution(
+        island_configs=None,
+        migration_interval=5,
+        games_per_eval=1,
+        num_workers=1,
+        preset="dopamine",
+    )
+    legacy_modes = [isl.config.bias_mode for isl in engine_legacy.islands]
+    assert "satiety_gated" in legacy_modes
+    assert "affordance_rpe" in legacy_modes
+    assert "dynamic_apl" in legacy_modes
+    assert "pure_snn" in legacy_modes
+    engine_legacy.close()
 

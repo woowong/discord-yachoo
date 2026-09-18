@@ -29,12 +29,12 @@ def extract_mushroom_body_online(client) -> Tuple[sp.csr_matrix, Dict]:
 def generate_synthetic_mushroom_body(
     num_kc: int = 1500,
     num_mbon: int = 24,
-    num_input_pn: int = 50,
+    num_input_pn: int = 64,
     seed: int = 42
 ) -> Tuple[sp.csr_matrix, Dict]:
     """
     Generates a biologically faithful synthetic Mushroom Body subcircuit with synaptic scaling:
-    - Projection Neurons (PN, Antennal Lobe inputs): 50
+    - Projection Neurons (PN, Antennal Lobe inputs): 64
     - Kenyon Cells (KC, sparse expansion layer): ~1,500
     - Mushroom Body Output Neurons (MBON, output decision layer): 24
     - APL (Anterior Paired Lateral, feedback inhibition): 1
@@ -117,7 +117,7 @@ def generate_synthetic_mushroom_body(
 
 def generate_scaled_bilateral_connectome(
     num_kc_per_hemi: int = 14500,
-    num_pn_per_hemi: int = 50,
+    num_pn_per_hemi: int = 64,
     num_mbon_per_hemi: int = 24,
     num_cx: int = 800,
     seed: int = 42
@@ -125,7 +125,7 @@ def generate_scaled_bilateral_connectome(
     """
     Generates a scaled, biologically faithful bilateral Drosophila connectome (~30,000 neurons)
     with realistic 3D morphological coordinates and multi-neuropil synaptic integration:
-    - Bilateral Antennal Lobe PNs (Left: 0..49, Right: 50..99)
+    - Bilateral Antennal Lobe PNs (Left: 0..63, Right: 64..127)
     - Bilateral Kenyon Cells (Left MB: 100..100+N_kc-1, Right MB: ...)
     - Central Complex (CX: Protocerebral Bridge + Ellipsoid Body ring)
     - Bilateral APL Giant Feedback Inhibitory Neurons
@@ -363,11 +363,12 @@ def main():
     parser.add_argument("--demo", action="store_true", help="Generate biological benchmark topology without querying remote CAVE")
     parser.add_argument("--scale-3d", action="store_true", help="Generate scaled bilateral 3D connectome (~30k neurons)")
     parser.add_argument("--kc-per-hemi", type=int, default=14500, help="Number of Kenyon Cells per hemisphere")
+    parser.add_argument("--num-pn", type=int, default=64, help="Number of PN inputs (per hemisphere if scaled)")
     args = parser.parse_args()
     
     if args.scale_3d:
-        print(f"Generating scaled bilateral 3D Drosophila connectome ({args.kc_per_hemi * 2} KCs)...")
-        adj, meta = generate_scaled_bilateral_connectome(num_kc_per_hemi=args.kc_per_hemi)
+        print(f"Generating scaled bilateral 3D Drosophila connectome ({args.kc_per_hemi * 2} KCs, {args.num_pn * 2} PNs)...")
+        adj, meta = generate_scaled_bilateral_connectome(num_kc_per_hemi=args.kc_per_hemi, num_pn_per_hemi=args.num_pn)
         save_subcircuit(adj, meta, prefix="mb_scaled")
         return
 
@@ -382,8 +383,8 @@ def main():
             print(f"Online extraction failed or not fully configured: {e}")
             print("Falling back to biological benchmark topology...")
             
-    print("Extracting representative Drosophila Mushroom Body circuit (Kenyon Cells + MBONs)...")
-    adj, meta = generate_synthetic_mushroom_body()
+    print(f"Extracting representative Drosophila Mushroom Body circuit (Kenyon Cells + MBONs, {args.num_pn} PNs)...")
+    adj, meta = generate_synthetic_mushroom_body(num_input_pn=args.num_pn)
     save_subcircuit(adj, meta)
 
 

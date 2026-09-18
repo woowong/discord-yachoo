@@ -79,14 +79,32 @@ def decode_hold_mask(
             return [d in (5, 6) for d in dice]
             
     elif best_drive == 1:
-        # Straight Sequence Drive: hold longest contiguous run
+        # Straight Sequence Drive: hold longest sequence run without holding duplicates
+        dice_set = set(dice)
         best_run = set()
-        for start in [1, 2, 3]:
-            candidate = set(range(start, start + 4))
-            common = candidate.intersection(dice)
+        
+        candidates = [
+            set(range(1, 6)),  # 1,2,3,4,5 (Large Straight)
+            set(range(2, 7)),  # 2,3,4,5,6 (Large Straight)
+            {1, 2, 3, 4},      # Small Straight
+            {2, 3, 4, 5},
+            {3, 4, 5, 6},
+        ]
+        
+        for cand in candidates:
+            common = cand.intersection(dice_set)
             if len(common) > len(best_run):
                 best_run = common
-        return [d in best_run for d in dice]
+            elif len(common) == len(best_run) and len(cand) == 5:
+                best_run = common
+                
+        remaining_to_hold = set(best_run)
+        holds = [False] * 5
+        for i, d in enumerate(dice):
+            if d in remaining_to_hold:
+                holds[i] = True
+                remaining_to_hold.remove(d)
+        return holds
         
     elif best_drive == 2:
         # High-Value Drive: hold 5s and 6s

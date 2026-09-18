@@ -63,7 +63,7 @@ class FlyBrainAgent(BaseYachtAgent):
         pn_current = encode_state_to_pn(dice, roll_count, available_categories, num_pn=self.snn.metadata["layers"]["input_pn"]["count"])
         
         self.snn.reset_state()
-        mbon_counts = np.zeros(self.snn.metadata["layers"]["mbon"]["count"], dtype=int)
+        mbon_counts = np.zeros(self.snn.metadata["layers"]["mbon"]["count"], dtype=np.float32)
         
         for t in range(self.sim_steps):
             ext_current = np.zeros(self.snn.num_neurons, dtype=np.float32)
@@ -72,7 +72,10 @@ class FlyBrainAgent(BaseYachtAgent):
                 ext_current[self.snn.pn_slice] = pn_current
                 
             spikes = self.snn.step(ext_current)
-            mbon_counts += spikes[self.snn.mbon_slice].astype(int)
+            if hasattr(self.snn, "last_mbon_current"):
+                mbon_counts += self.snn.last_mbon_current
+            else:
+                mbon_counts += spikes[self.snn.mbon_slice].astype(np.float32)
             
         return mbon_counts
 

@@ -90,38 +90,21 @@ def evaluate_individual_island(
     four_kind_rate = four_kind_hits / num_games
     avg_zeros = zero_count / num_games
     
-    # Island-specific dopamine fitness landscape
-    if bias_mode == "satiety_gated":
-        # Island A (Satiety-Gated): Heavy penalty for wasting turns on 0-point redundant patterns
-        fitness = mean_score - (15.0 * avg_zeros) + (25.0 * full_house_rate) + (25.0 * upper_rate)
-    elif bias_mode == "affordance_rpe":
-        # Island B (Affordance RPE): PAM dopamine bursts amplify high-potential categories (Upper Bonus, Yacht)
-        avg_upper_sum = float(np.mean(upper_sums))
-        fitness = mean_score + (60.0 * upper_rate) + (50.0 * yacht_rate) + (avg_upper_sum / 63.0) * 30.0
-    elif bias_mode == "dynamic_apl":
-        # Island C (Dynamic APL Attention / Male-Dimorphic Aggressive Drive): Rewards high-risk pursuit (Large Straight, Yacht)
-        fitness = 0.5 * mean_score + 0.5 * max_score + (50.0 * yacht_rate) + (40.0 * straight_rate) + (30.0 * four_kind_rate)
-    elif bias_mode == "pure_snn":
-        # Island D (Pure SNN Control): Pure score optimization without dopamine biasing
-        fitness = mean_score
-    elif bias_mode == "jackpot":
-        fitness = mean_score + (50.0 * yacht_rate) + (25.0 * straight_rate) + (20.0 * four_kind_rate)
-    elif bias_mode == "upper_bonus":
-        avg_upper_sum = float(np.mean(upper_sums))
-        fitness = mean_score + (60.0 * upper_rate) + (avg_upper_sum / 63.0) * 20.0
-    elif bias_mode == "balanced":
-        fitness = mean_score - (4.0 * avg_zeros) + (20.0 * full_house_rate) + (25.0 * upper_rate)
-    elif bias_mode == "hypermutation":
-        fitness = mean_score + (35.0 * upper_rate) + (35.0 * yacht_rate)
-    elif bias_mode == "high_roller":
-        fitness = 0.5 * mean_score + 0.5 * max_score + (30.0 * yacht_rate)
-    elif bias_mode == "straight":
-        fitness = mean_score + (60.0 * straight_rate) + (20.0 * upper_rate)
-    elif bias_mode == "full_house":
-        fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
-    else:
-        fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
-
+    fitness = calculate_island_fitness(
+        bias_mode=bias_mode,
+        mean_score=mean_score,
+        max_score=max_score,
+        min_score=min_score,
+        upper_sums=upper_sums,
+        upper_bonuses=upper_bonuses,
+        yacht_hits=yacht_hits,
+        large_straight_hits=large_straight_hits,
+        small_straight_hits=small_straight_hits,
+        full_house_hits=full_house_hits,
+        four_kind_hits=four_kind_hits,
+        zero_count=zero_count,
+        num_games=num_games,
+    )
         
     ind.fitness = float(fitness)
     ind.stats = {
@@ -136,6 +119,72 @@ def evaluate_individual_island(
         "zero_scores": zero_count,
     }
     return ind.fitness
+
+
+def calculate_island_fitness(
+    bias_mode: str,
+    mean_score: float,
+    max_score: float,
+    min_score: float,
+    upper_sums: List[int],
+    upper_bonuses: int,
+    yacht_hits: int,
+    large_straight_hits: int,
+    small_straight_hits: int,
+    full_house_hits: int,
+    four_kind_hits: int,
+    zero_count: int,
+    num_games: int,
+) -> float:
+    """
+    Computes fitness for specialized Quality-Diversity demes and legacy dopamine habitats.
+    Includes continuous quadratic reward shaping for upper bonus: (UpperSum / 63)^2.
+    """
+    upper_rate = upper_bonuses / num_games
+    yacht_rate = yacht_hits / num_games
+    straight_rate = (small_straight_hits + large_straight_hits) / num_games
+    large_rate = large_straight_hits / num_games
+    full_house_rate = full_house_hits / num_games
+    four_kind_rate = four_kind_hits / num_games
+    avg_zeros = zero_count / num_games
+    avg_upper_sum = float(np.mean(upper_sums)) if upper_sums else 0.0
+
+    # 4 Strategic Quality-Diversity Demes
+    if bias_mode in ("straight_hunter", "straight"):
+        # Island 1 (Straight Hunter): Heavy dopamine rewards for straight formation and large straight hunting
+        fitness = mean_score + (85.0 * straight_rate) + (50.0 * large_rate) + (15.0 * upper_rate) - (5.0 * avg_zeros)
+    elif bias_mode in ("upper_saver", "upper_bonus"):
+        # Island 2 (Upper 63 Saver): Continuous quadratic shaping ((UpperSum/63)^2) eliminating 63-point cliff
+        quad_shaping = ((avg_upper_sum / 63.0) ** 2) * 55.0
+        fitness = mean_score + quad_shaping + (75.0 * upper_rate) - (5.0 * avg_zeros)
+    elif bias_mode in ("jackpot_predator", "jackpot"):
+        # Island 3 (Jackpot Predator): Yacht, Full House, and Four-of-a-Kind focus
+        fitness = mean_score + (55.0 * yacht_rate) + (45.0 * full_house_rate) + (35.0 * four_kind_rate) - (5.0 * avg_zeros)
+    elif bias_mode in ("hybrid_synthesizer", "hybrid", "balanced"):
+        # Island 4 (Hybrid Synthesizer): Balanced 200+ all-rounder synthesizing all specializations
+        quad_shaping = ((avg_upper_sum / 63.0) ** 2) * 35.0
+        fitness = mean_score + (55.0 * upper_rate) + (45.0 * straight_rate) + (40.0 * yacht_rate) + (25.0 * full_house_rate) + quad_shaping - (8.0 * avg_zeros)
+    # Legacy modes for backward compatibility
+    elif bias_mode == "satiety_gated":
+        fitness = mean_score - (15.0 * avg_zeros) + (25.0 * full_house_rate) + (25.0 * upper_rate)
+    elif bias_mode == "affordance_rpe":
+        fitness = mean_score + (60.0 * upper_rate) + (50.0 * yacht_rate) + (avg_upper_sum / 63.0) * 30.0
+    elif bias_mode == "dynamic_apl":
+        fitness = 0.5 * mean_score + 0.5 * max_score + (50.0 * yacht_rate) + (40.0 * straight_rate) + (30.0 * four_kind_rate)
+    elif bias_mode == "pure_snn":
+        fitness = mean_score
+    elif bias_mode == "hypermutation":
+        fitness = mean_score + (35.0 * upper_rate) + (35.0 * yacht_rate)
+    elif bias_mode == "high_roller":
+        fitness = 0.5 * mean_score + 0.5 * max_score + (30.0 * yacht_rate)
+    elif bias_mode == "conservative":
+        fitness = mean_score + 0.5 * min_score - (5.0 * avg_zeros) + (15.0 * upper_rate)
+    elif bias_mode == "full_house":
+        fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
+    else:
+        fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
+
+    return float(fitness)
 
 
 _WORKER_ADJ = None
@@ -190,34 +239,21 @@ def _eval_task_worker(task: Tuple[int, int, np.ndarray, int, str]) -> Tuple[int,
     four_kind_rate = four_kind_hits / games_per_eval
     avg_zeros = zero_count / games_per_eval
     
-    if bias_mode == "satiety_gated":
-        fitness = mean_score - (15.0 * avg_zeros) + (25.0 * full_house_rate) + (25.0 * upper_rate)
-    elif bias_mode == "affordance_rpe":
-        avg_upper_sum = float(np.mean(upper_sums))
-        fitness = mean_score + (60.0 * upper_rate) + (50.0 * yacht_rate) + (avg_upper_sum / 63.0) * 30.0
-    elif bias_mode == "dynamic_apl":
-        fitness = 0.5 * mean_score + 0.5 * max_score + (50.0 * yacht_rate) + (40.0 * straight_rate) + (30.0 * four_kind_rate)
-    elif bias_mode == "pure_snn":
-        fitness = mean_score
-    elif bias_mode == "jackpot":
-        fitness = mean_score + (50.0 * yacht_rate) + (25.0 * straight_rate) + (20.0 * four_kind_rate)
-    elif bias_mode == "upper_bonus":
-        avg_upper_sum = float(np.mean(upper_sums))
-        fitness = mean_score + (60.0 * upper_rate) + (avg_upper_sum / 63.0) * 20.0
-    elif bias_mode == "balanced":
-        fitness = mean_score - (4.0 * avg_zeros) + (20.0 * full_house_rate) + (25.0 * upper_rate)
-    elif bias_mode == "hypermutation":
-        fitness = mean_score + (35.0 * upper_rate) + (35.0 * yacht_rate)
-    elif bias_mode == "high_roller":
-        fitness = 0.5 * mean_score + 0.5 * max_score + (30.0 * yacht_rate)
-    elif bias_mode == "conservative":
-        fitness = mean_score + 0.5 * min_score - (5.0 * avg_zeros) + (15.0 * upper_rate)
-    elif bias_mode == "straight":
-        fitness = mean_score + (60.0 * straight_rate) + (20.0 * upper_rate)
-    elif bias_mode == "full_house":
-        fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
-    else:
-        fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
+    fitness = calculate_island_fitness(
+        bias_mode=bias_mode,
+        mean_score=mean_score,
+        max_score=max_score,
+        min_score=min_score,
+        upper_sums=upper_sums,
+        upper_bonuses=upper_bonuses,
+        yacht_hits=yacht_hits,
+        large_straight_hits=large_straight_hits,
+        small_straight_hits=small_straight_hits,
+        full_house_hits=full_house_hits,
+        four_kind_hits=four_kind_hits,
+        zero_count=zero_count,
+        num_games=games_per_eval,
+    )
 
         
     stats = {
@@ -332,12 +368,14 @@ class MultiIslandEvolution:
         seed: int = 42,
         use_scaled: bool = False,
         num_workers: int = 10,
+        preset: str = "strategic_qd",
     ):
         self.migration_interval = migration_interval
         self.games_per_eval = games_per_eval
         self.rng = np.random.default_rng(seed)
         self.use_scaled = use_scaled
         self.num_workers = min(num_workers, multiprocessing.cpu_count())
+        self.preset = preset
         
         if use_scaled:
             from forward_sim import load_scaled_subcircuit
@@ -360,14 +398,23 @@ class MultiIslandEvolution:
                 print(f"Could not load champion weights: {e}")
 
         if island_configs is None:
-            # 4 Dopamine Evolution Islands
             pop = 16 if use_scaled else 12
-            island_configs = [
-                IslandConfig("Island A: Satiety-Gated", "satiety_gated", pop_size=pop, base_mutation_sigma=0.05),
-                IslandConfig("Island B: Affordance RPE", "affordance_rpe", pop_size=pop, base_mutation_sigma=0.06),
-                IslandConfig("Island C: Dynamic APL Attention", "dynamic_apl", pop_size=pop, base_mutation_sigma=0.08),
-                IslandConfig("Island D: Pure SNN Control", "pure_snn", pop_size=pop, base_mutation_sigma=0.05),
-            ]
+            if preset == "strategic_qd":
+                # 4 Strategic Quality-Diversity Demes
+                island_configs = [
+                    IslandConfig("Island 1: Straight Hunter", "straight_hunter", pop_size=pop, base_mutation_sigma=0.06),
+                    IslandConfig("Island 2: Upper 63 Saver", "upper_saver", pop_size=pop, base_mutation_sigma=0.05),
+                    IslandConfig("Island 3: Jackpot Predator", "jackpot_predator", pop_size=pop, base_mutation_sigma=0.05),
+                    IslandConfig("Island 4: Hybrid Synthesizer", "hybrid_synthesizer", pop_size=pop, base_mutation_sigma=0.07),
+                ]
+            else:
+                # 4 Dopamine Evolution Islands (legacy)
+                island_configs = [
+                    IslandConfig("Island A: Satiety-Gated", "satiety_gated", pop_size=pop, base_mutation_sigma=0.05),
+                    IslandConfig("Island B: Affordance RPE", "affordance_rpe", pop_size=pop, base_mutation_sigma=0.06),
+                    IslandConfig("Island C: Dynamic APL Attention", "dynamic_apl", pop_size=pop, base_mutation_sigma=0.08),
+                    IslandConfig("Island D: Pure SNN Control", "pure_snn", pop_size=pop, base_mutation_sigma=0.05),
+                ]
 
             
         self.islands: List[Island] = [
@@ -480,18 +527,23 @@ class MultiIslandEvolution:
         num_generations: int = 100,
         save_name: Optional[str] = None,
         verbose: bool = True,
+        checkpoint_interval: int = 25,
+        checkpoint_callback: Optional[Callable[[int, int, Dict], None]] = None,
     ) -> Individual:
         """
         Executes multi-generation island neuroevolution with multi-core parallel processing
         and saves the elite champion weights.
         """
+        from notion_reporter import format_milestone_notion_payload, save_notion_report_payload
+
         data_dir = Path(__file__).resolve().parent.parent / "data"
         if save_name is None:
-            save_name = "champion_fly_3d_weights.npz" if self.use_scaled else "champion_fly_weights.npz"
+            save_name = "champion_fly_v3_weights.npz"
 
-        print(f"\n🚀 Launching Dopamine Island Evolution ({len(self.islands)} Demes, {self.num_workers} Parallel Workers)...")
+        print(f"\n🚀 Launching Island Evolution ({len(self.islands)} Demes, {self.num_workers} Parallel Workers, Preset: {self.preset})...")
         print(f"   - Target generations: {num_generations}")
         print(f"   - Migration interval: every {self.migration_interval} generations (Ring topology)")
+        print(f"   - Checkpoint interval: every {checkpoint_interval} generations")
         print(f"   - Connectome: {'Scaled 30k Bilateral' if self.use_scaled else 'Base 1.5k Subcircuit'}")
         for isl in self.islands:
             print(f"   - [{isl.config.name}] Mode: {isl.config.bias_mode}, Pop: {isl.config.pop_size}")
@@ -504,6 +556,16 @@ class MultiIslandEvolution:
                 best_fit = stats.get("global_best_fitness", 0)
                 dur = stats.get("duration_sec", 0)
                 print(f"[Gen {gen:3d}/{num_generations}] Best Fitness: {best_fit:.2f} | Mean: {best_mean:.1f} | Duration: {dur:.2f}s | Migrated: {stats['migrated']}")
+
+            # Checkpoint trigger (Gen 0, every checkpoint_interval, and final gen)
+            is_checkpoint = (gen == 0 or (gen + 1) % checkpoint_interval == 0 or gen == num_generations - 1)
+            if is_checkpoint:
+                payload = format_milestone_notion_payload(gen, num_generations, stats)
+                saved_path = save_notion_report_payload(payload, gen)
+                if verbose:
+                    print(f"   📑 Generated Notion milestone payload for Gen {gen+1} -> {saved_path.name}")
+                if checkpoint_callback is not None:
+                    checkpoint_callback(gen, num_generations, stats)
 
         total_sec = time.perf_counter() - start_total
         print(f"\n🏆 Evolution Complete in {total_sec:.1f}s! Global Best Fitness: {self.global_best_fitness:.2f}")
@@ -529,12 +591,15 @@ class MultiIslandEvolution:
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Dopamine Island Multi-Process Evolution")
+    parser = argparse.ArgumentParser(description="Multi-Island Quality-Diversity Neuroevolution")
     parser.add_argument("--generations", type=int, default=100, help="Number of generations")
     parser.add_argument("--scaled", action="store_true", help="Use 30k scaled bilateral connectome")
     parser.add_argument("--workers", type=int, default=10, help="Number of parallel worker processes")
     parser.add_argument("--games", type=int, default=6, help="Games per evaluation")
     parser.add_argument("--migration-interval", type=int, default=5, help="Migration interval")
+    parser.add_argument("--checkpoint-interval", type=int, default=25, help="Generations between Notion checkpoints")
+    parser.add_argument("--preset", type=str, default="strategic_qd", choices=["strategic_qd", "dopamine"], help="Island preset")
+    parser.add_argument("--save-name", type=str, default="champion_fly_v3_weights.npz", help="Weights save filename")
     args = parser.parse_args()
 
     engine = MultiIslandEvolution(
@@ -542,9 +607,14 @@ def main():
         num_workers=args.workers,
         games_per_eval=args.games,
         migration_interval=args.migration_interval,
+        preset=args.preset,
     )
     try:
-        engine.run_evolution(num_generations=args.generations)
+        engine.run_evolution(
+            num_generations=args.generations,
+            save_name=args.save_name,
+            checkpoint_interval=args.checkpoint_interval,
+        )
     finally:
         engine.close()
 

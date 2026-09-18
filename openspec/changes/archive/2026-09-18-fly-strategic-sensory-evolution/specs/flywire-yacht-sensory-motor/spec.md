@@ -1,9 +1,4 @@
-# flywire-yacht-sensory-motor Specification
-
-## Purpose
-Translates Yacht game state into biological sensory neuron stimulations and converts Mushroom Body output spikes into valid game actions (dice hold masks and category selections).
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Yacht Game State Sensory Encoding
 The system SHALL encode current dice rolls (5 dice), roll count (0..2), category availability, and strategic interoceptive features into external current vectors for at least 64 input Projection Neurons (PNs) (or 128 PNs in bilateral hemisphere connectomes), incorporating:
@@ -60,10 +55,3 @@ The system SHALL map output MBON firing activity during rolling phases into a 5-
 #### Scenario: Straight hunting hold behavior
 - **WHEN** MBON 1 (Straight Drive) exhibits dominant firing activity and dice contain a 4-dice straight potential (e.g. `[1, 3, 4, 5, 6]`)
 - **THEN** the decoder outputs a hold mask preserving the straight run (`[False, True, True, True, True]` or `[True, False, True, True, True]`) rather than collapsing into duplicate pairs.
-
-### Requirement: Category Selection Decoding
-The system SHALL map output MBON firing counts into exactly one valid and currently available scoring category.
-
-#### Scenario: Selecting available category
-- **WHEN** the scoring phase occurs and the agent's highest firing output neuron corresponds to an already-used category
-- **THEN** the decoder falls back to the next highest firing available category, never selecting a previously filled category.

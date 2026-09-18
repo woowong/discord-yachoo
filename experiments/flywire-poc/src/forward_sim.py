@@ -42,11 +42,14 @@ class FlySubcircuitSNN:
         
         # APL indexing (single or bilateral)
         apl_meta = layers["apl_inhibition"]
-        if "index" in apl_meta:
+        if "indices" in apl_meta:
+            self.apl_indices = apl_meta["indices"]
+            self.apl_idx = self.apl_indices[0]
+        elif "index" in apl_meta:
             self.apl_indices = [apl_meta["index"]]
             self.apl_idx = apl_meta["index"]
         else:
-            self.apl_indices = apl_meta.get("indices", [apl_meta.get("left", 0), apl_meta.get("right", 0)])
+            self.apl_indices = [apl_meta.get("left", 0), apl_meta.get("right", 0)]
             self.apl_idx = self.apl_indices[0]
             
         # Optional Central Complex (CX)
@@ -61,6 +64,15 @@ class FlySubcircuitSNN:
         self.num_pn = layers["input_pn"]["count"]
         self.num_kc = layers["kenyon_cells"]["count"]
         self.num_mbon = layers["mbon"]["count"]
+        
+        # Synaptic in-degree normalization for MBONs
+        kc_slice = slice(layers["kenyon_cells"]["start"], layers["kenyon_cells"]["start"] + layers["kenyon_cells"]["count"])
+        mbon_start = layers["mbon"]["start"]
+        sub_w = self.W[kc_slice, mbon_start:mbon_start + self.num_mbon]
+        in_degrees = np.diff(sub_w.tocsc().indptr).astype(np.float32)
+        mean_deg = np.mean(in_degrees) if len(in_degrees) > 0 else 1.0
+        self.mbon_degree_norm = np.where(in_degrees > 0, in_degrees / max(mean_deg, 1.0), 1.0)
+        self.last_mbon_current = np.zeros(self.num_mbon, dtype=np.float32)
         
         # DAN (Dopaminergic Neuron) neuromodulation gains (PAM / PPL1)
         self.dan_gains: Optional[np.ndarray] = None
@@ -84,6 +96,7 @@ class FlySubcircuitSNN:
         """Reset membrane voltages and spike buffers."""
         self.V.fill(self.v_rest)
         self.S.fill(False)
+        self.last_mbon_current.fill(0.0)
 
     def reset(self):
         """Alias for reset_state."""
@@ -104,8 +117,10 @@ class FlySubcircuitSNN:
             synaptic_current = self.W.T.dot(self.S.astype(np.float32))
             if self.dan_gains is not None:
                 synaptic_current[self.mbon_slice] *= self.dan_gains
+            self.last_mbon_current = synaptic_current[self.mbon_slice] / self.mbon_degree_norm
         else:
             synaptic_current = 0.0
+            self.last_mbon_current.fill(0.0)
             
         # Membrane voltage decay and integration
         self.V = self.V * self.tau_decay + synaptic_current + external_current
@@ -212,18 +227,54 @@ def compute_dan_modulation(
     - PPL1 cluster (Aversive/Satiety): Suppresses MBONs of consumed/filled categories to 0.0 (satiety inhibition).
     - Behavioral drives: MBON 1 (Straight) is inhibited if straights are unavailable.
     """
+    from collections import Counter
     from yacht_env import CATEGORIES, calculate_score
     gains = np.ones(num_mbon, dtype=np.float32)
     avail_set = set(available_categories)
+    c = Counter(dice) if dice else Counter()
+    max_c = max(c.values()) if c else 0
+    unique = set(dice) if dice else set()
     
     # Support both 24 MBONs (unilateral) and 48 MBONs (bilateral left/right)
     offsets = [0] if num_mbon < 48 else [0, 24]
     
     for offset in offsets:
         # Drive modulation (MBON 0..4)
+        # MBON 0: Multiples Drive (holding matching dice)
+        has_multiples = ("FullHouse" in avail_set) or ("FourOfAKind" in avail_set) or ("Yacht" in avail_set)
+        if has_multiples and max_c >= 2 and offset < num_mbon:
+            gains[offset] = pam_boost * (1.1 + 0.15 * max_c)
+            
+        # MBON 1: Straight Sequence Drive
         has_straight = ("SmallStraight" in avail_set) or ("LargeStraight" in avail_set)
         if not has_straight and offset + 1 < num_mbon:
             gains[offset + 1] = ppl1_inhibit  # Suppress Straight drive when straights consumed
+        elif dice is not None and has_straight and offset + 1 < num_mbon:
+            has_straight_potential = (
+                {1, 2, 3, 4}.issubset(unique) or {2, 3, 4, 5}.issubset(unique) or {3, 4, 5, 6}.issubset(unique) or
+                {1, 2, 4, 5}.issubset(unique) or {2, 3, 5, 6}.issubset(unique) or {1, 3, 4, 5}.issubset(unique) or
+                {2, 4, 5, 6}.issubset(unique) or {1, 2, 3, 5}.issubset(unique)
+            )
+            if has_straight_potential:
+                gains[offset + 1] = pam_boost * 1.6  # PAM burst for straight hunting
+
+        # MBON 2: High Value Drive
+        has_high_upper = ("Fives" in avail_set) or ("Sixes" in avail_set)
+        if has_high_upper and dice is not None and offset + 2 < num_mbon:
+            if any(d in (5, 6) for d in dice):
+                gains[offset + 2] = pam_boost * 1.25  # PAM burst for upper high-value holding
+
+        # MBON 4: Harvest / Freeze Drive (lock in completed combos)
+        if dice is not None and offset + 4 < num_mbon:
+            is_pat = False
+            if "Yacht" in avail_set and max_c == 5:
+                is_pat = True
+            elif "LargeStraight" in avail_set and ({1, 2, 3, 4, 5}.issubset(unique) or {2, 3, 4, 5, 6}.issubset(unique)):
+                is_pat = True
+            elif "FullHouse" in avail_set and sorted(c.values(), reverse=True) == [3, 2]:
+                is_pat = True
+            if is_pat:
+                gains[offset + 4] = pam_boost * 2.2
             
         # Category modulation (MBON 5..16)
         for i, cat in enumerate(CATEGORIES):
@@ -237,7 +288,7 @@ def compute_dan_modulation(
                     gains[mbon_idx] = pam_boost
                 elif dice is not None:
                     pts = calculate_score(cat, dice)
-                    if pts >= 20:
+                    if pts >= 15:
                         gains[mbon_idx] = pam_boost
                         
     return gains

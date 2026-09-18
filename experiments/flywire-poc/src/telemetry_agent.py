@@ -27,10 +27,19 @@ class TelemetryFlyBrainAgent(FlyBrainAgent):
         available_categories: List[ScoreCategory],
         phase: str = "hold",
     ) -> Tuple[np.ndarray, Dict[str, Any]]:
+        # Apply DAN neuromodulation
+        if hasattr(self.snn, "set_dan_modulation"):
+            if self.enable_dan_modulation:
+                from forward_sim import compute_dan_modulation
+                dan_gains = compute_dan_modulation(available_categories, dice=dice, num_mbon=self.snn.num_mbon)
+                self.snn.set_dan_modulation(dan_gains)
+            else:
+                self.snn.set_dan_modulation(None)
+
         self.snn.reset()
         pn_current = encode_state_to_pn(dice, roll_count, available_categories, num_pn=self.snn.num_pn)
         
-        mbon_counts = np.zeros(self.snn.num_mbon, dtype=int)
+        mbon_counts = np.zeros(self.snn.num_mbon, dtype=np.float32)
         spikes_per_step: List[List[int]] = []
         kc_spike_counts = 0
         apl_fired_steps: List[int] = []
@@ -55,8 +64,11 @@ class TelemetryFlyBrainAgent(FlyBrainAgent):
             if apl_idx is not None and spikes[apl_idx]:
                 apl_fired_steps.append(t)
                 
-            # Track MBON
-            mbon_counts += spikes[self.snn.mbon_slice].astype(int)
+            # Track MBON drive
+            if hasattr(self.snn, "last_mbon_current"):
+                mbon_counts += self.snn.last_mbon_current
+            else:
+                mbon_counts += spikes[self.snn.mbon_slice].astype(np.float32)
             
         telemetry = {
             "phase": phase,

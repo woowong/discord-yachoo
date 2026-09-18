@@ -1,0 +1,820 @@
+{
+  "parent": {
+    "page_id": "3b6a6abe-c85c-8083-bd48-cf5d4674ae6c"
+  },
+  "icon": {
+    "type": "emoji",
+    "emoji": "🏆"
+  },
+  "properties": {
+    "title": [
+      {
+        "type": "text",
+        "text": {
+          "content": "[Final Champion] Fly Brain v3 최종 진화 및 글래디에이터 보고서 (Gen 100/100)"
+        }
+      }
+    ]
+  },
+  "children": [
+    {
+      "object": "block",
+      "type": "heading_1",
+      "heading_1": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "🧬 Fly Brain v3: 64-PN 전략 감각 신경진화 리포트"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "🧬 Fly Brain v3: 64-PN 전략 감각 신경진화 리포트",
+            "href": null
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "callout",
+      "callout": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "세대 진행: 100/100 | 글로벌 최고 적합도: 276.33 | 챔피언 평균 점수: 152.2점 (최고 162점)"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "세대 진행: 100/100 | 글로벌 최고 적합도: 276.33 | 챔피언 평균 점수: 152.2점 (최고 162점)",
+            "href": null
+          }
+        ],
+        "icon": {
+          "type": "emoji",
+          "emoji": "🏆"
+        }
+      }
+    },
+    {
+      "object": "block",
+      "type": "divider",
+      "divider": {}
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "📊 세대 핵심 성과 지표 (Core Metrics)"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "📊 세대 핵심 성과 지표 (Core Metrics)",
+            "href": null
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "글로벌 챔피언 평균 점수:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "글로벌 챔피언 평균 점수:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 152.2 pts (최고 162 pts)"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 152.2 pts (최고 162 pts)"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "전역 최고 적합도 (Fitness):"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "전역 최고 적합도 (Fitness):"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 276.33"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 276.33"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "세대 소요 시간:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "세대 소요 시간:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 0.49 초"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 0.49 초"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "환형 이주(Ring Migration) 수행 여부:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "환형 이주(Ring Migration) 수행 여부:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 예 (교잡 완료)"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 예 (교잡 완료)"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "🏝️ 4대 전문 생태계 (Quality-Diversity Demes) 현황"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "🏝️ 4대 전문 생태계 (Quality-Diversity Demes) 현황",
+            "href": null
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "[Island 1: Straight Hunter]"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "[Island 1: Straight Hunter]"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 적합도: 192.2 | 평균 점수: 161.3점 | 상단 보너스: 16.7% | 야추: 4회 | 변이 강도 σ: 0.120 (⚠️ 정체(Hypermutation))"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 적합도: 192.2 | 평균 점수: 161.3점 | 상단 보너스: 16.7% | 야추: 4회 | 변이 강도 σ: 0.120 (⚠️ 정체(Hypermutation))"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "[Island 2: Upper 63 Saver]"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "[Island 2: Upper 63 Saver]"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 적합도: 148.3 | 평균 점수: 138.2점 | 상단 보너스: 0.0% | 야추: 4회 | 변이 강도 σ: 0.085 (정상 진화)"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 적합도: 148.3 | 평균 점수: 138.2점 | 상단 보너스: 0.0% | 야추: 4회 | 변이 강도 σ: 0.085 (정상 진화)"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "[Island 3: Jackpot Predator]"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "[Island 3: Jackpot Predator]"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 적합도: 224.7 | 평균 점수: 133.0점 | 상단 보너스: 16.7% | 야추: 3회 | 변이 강도 σ: 0.100 (⚠️ 정체(Hypermutation))"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 적합도: 224.7 | 평균 점수: 133.0점 | 상단 보너스: 16.7% | 야추: 3회 | 변이 강도 σ: 0.100 (⚠️ 정체(Hypermutation))"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "[Island 4: Hybrid Synthesizer]"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "[Island 4: Hybrid Synthesizer]"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 적합도: 193.0 | 평균 점수: 132.2점 | 상단 보너스: 16.7% | 야추: 4회 | 변이 강도 σ: 0.140 (⚠️ 정체(Hypermutation))"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 적합도: 193.0 | 평균 점수: 132.2점 | 상단 보너스: 16.7% | 야추: 4회 | 변이 강도 σ: 0.140 (⚠️ 정체(Hypermutation))"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "⚔️ 글래디에이터 토너먼트 벤치마크 결과"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "⚔️ 글래디에이터 토너먼트 벤치마크 결과",
+            "href": null
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "총 대국 수:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "총 대국 수:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 200 게임"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 200 게임"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "평균 점수:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "평균 점수:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 147.5 점"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 147.5 점"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "스트레이트 성공률 (Small + Large):"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "스트레이트 성공률 (Small + Large):"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 87.5% (목표: >20%)"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 87.5% (목표: >20%)"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "상단 63점 보너스 획득률:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "상단 63점 보너스 획득률:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 2.0% (목표: >10%)"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 2.0% (목표: >10%)"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "야추(Yacht) 성공률:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "야추(Yacht) 성공률:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 31.0%"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 31.0%"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "풀하우스 성공률:"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "풀하우스 성공률:"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 97.5%"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 97.5%"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "🧠 64-PN 전략 감각 아키텍처 관찰 요약"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "🧠 64-PN 전략 감각 아키텍처 관찰 요약",
+            "href": null
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "상단 미시 경제학 (PN 50, 51, 57, 58):"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "상단 미시 경제학 (PN 50, 51, 57, 58):"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 63점 결핍도 및 2차 보상 셰이핑((UpperSum/63)^2) 적용으로 조기 6 소진 억제"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 63점 결핍도 및 2차 보상 셰이핑((UpperSum/63)^2) 적용으로 조기 6 소진 억제"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "스트레이트 위상 레이더 (PN 52, 53, 56):"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "스트레이트 위상 레이더 (PN 52, 53, 56):"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " 양방향 오픈 스트레이트와 갓샷 간극 분리 인식을 통해 페어 매몰 탈출"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " 양방향 오픈 스트레이트와 갓샷 간극 분리 인식을 통해 페어 매몰 탈출"
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": {
+        "rich_text": [
+          {
+            "type": "text",
+            "text": {
+              "content": "희생 에어백 및 PvP 마진 (PN 59, 60, 62):"
+            },
+            "annotations": {
+              "bold": true,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": "희생 에어백 및 PvP 마진 (PN 59, 60, 62):"
+          },
+          {
+            "type": "text",
+            "text": {
+              "content": " Aces/Choice 잔여 상태에 따른 위험 감수 및 대국 격차 추종"
+            },
+            "annotations": {
+              "bold": false,
+              "italic": false,
+              "strikethrough": false,
+              "underline": false,
+              "code": false,
+              "color": "default"
+            },
+            "plain_text": " Aces/Choice 잔여 상태에 따른 위험 감수 및 대국 격차 추종"
+          }
+        ]
+      }
+    }
+  ]
+}

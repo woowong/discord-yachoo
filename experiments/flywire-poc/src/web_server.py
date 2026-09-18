@@ -49,8 +49,9 @@ class ConnectomeVisualizerServer:
             champ_path = SRC_DIR.parent / "data" / "champion_fly_3d_weights.npz"
         else:
             self.base_adj, self.metadata = load_cached_subcircuit()
+            v3_champ = SRC_DIR.parent / "data" / "champion_fly_v3_weights.npz"
             dopamine_champ = SRC_DIR.parent / "data" / "champion_fly_weights.npz"
-            champ_path = dopamine_champ if dopamine_champ.exists() else (SRC_DIR.parent / "data" / "super_champion_fly.npz")
+            champ_path = v3_champ if v3_champ.exists() else (dopamine_champ if dopamine_champ.exists() else (SRC_DIR.parent / "data" / "super_champion_fly.npz"))
             
         self.use_champion = use_champion
         if use_champion and champ_path.exists():
@@ -59,7 +60,7 @@ class ConnectomeVisualizerServer:
             adj = set_kc_mbon_dense(self.base_adj, self.metadata, weights, preserve_topology=True)
             self.snn = FlySubcircuitSNN(adj, self.metadata)
             scale_label = "3D Scaled " if use_scaled else ""
-            self.model_name = f"{scale_label}Dopamine Island Champion Fly SNN"
+            self.model_name = f"{scale_label}Dopamine Island Champion Fly Brain v3 (64-PN)"
         else:
             self.snn = FlySubcircuitSNN(self.base_adj, self.metadata)
             self.model_name = "3D Scaled Connectome SNN" if use_scaled else "Baseline Connectome SNN"
