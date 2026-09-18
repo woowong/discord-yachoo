@@ -1520,18 +1520,51 @@ const executeColosseumMatchLogic = (
       catch: (err) => err
     }).pipe(
       Effect.catchAll(() => {
-        const mockRounds = Array.from({ length: 12 }, (_, i) => ({
-          round: i + 1,
-          a: { category: "Choice", points: 20, total: 20 * (i + 1), dopamine: 120, dialogue: "가즈아 붕!", dice: [5, 5, 4, 3, 3] },
-          b: { category: "Choice", points: 18, total: 18 * (i + 1), dopamine: 110, dialogue: "계획대로 붕.", dice: [4, 4, 4, 3, 2] },
-          leader: "A",
-          is_lead_change: false
-        }));
+        const categories = ["Aces", "Deuces", "Treys", "Fours", "Fives", "Sixes", "Choice", "FourOfAKind", "FullHouse", "SmallStraight", "LargeStraight", "Yacht"];
+        const mockRounds = Array.from({ length: 12 }, (_, i) => {
+          const cat = categories[i];
+          const ptsA = i === 11 ? 50 : 15;
+          const ptsB = 14;
+          const sbA: Record<string, number> = {};
+          const sbB: Record<string, number> = {};
+          for (let j = 0; j <= i; j++) {
+            const c = categories[j];
+            sbA[c] = j === 11 ? 50 : 15;
+            sbB[c] = 14;
+          }
+          return {
+            round: i + 1,
+            a: {
+              category: cat,
+              points: ptsA,
+              total: 15 * i + ptsA,
+              dopamine: 120 + i * 10,
+              dialogue: "🔥🔥 도파민 풀악셀 가즈아 붕!!",
+              dice: [5, 5, 5, 5, 5],
+              holds: [true, true, true, true, true],
+              score_board: sbA,
+              upper_bonus: 0
+            },
+            b: {
+              category: cat,
+              points: ptsB,
+              total: ptsB * (i + 1),
+              dopamine: 110,
+              dialogue: "🧊 오차범위 0.01% 계산 완료 붕.",
+              dice: [4, 4, 4, 3, 2],
+              holds: [true, true, true, false, false],
+              score_board: sbB,
+              upper_bonus: 0
+            },
+            leader: "A",
+            is_lead_change: false
+          };
+        });
         return Effect.succeed({
           winner: "A",
-          score_a: 240,
-          score_b: 216,
-          diff: 24,
+          score_a: 215,
+          score_b: 168,
+          diff: 47,
           lead_changes: 0,
           rounds: mockRounds
         });
@@ -1540,19 +1573,14 @@ const executeColosseumMatchLogic = (
 
     const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
 
-    // 2. Phase 1: Clash (R01~R06)
-    const phase1Payload = serializer.serializeColosseumClash(match, bets, duelData, 1, flyUrl);
-    yield* apiService.editMessage(channelId, messageId, phase1Payload.data).pipe(
-      Effect.catchAll(() => Effect.void)
-    );
-    yield* Effect.sleep("3 seconds");
-
-    // 3. Phase 2: Climax (R07~R12)
-    const phase2Payload = serializer.serializeColosseumClash(match, bets, duelData, 2, flyUrl);
-    yield* apiService.editMessage(channelId, messageId, phase2Payload.data).pipe(
-      Effect.catchAll(() => Effect.void)
-    );
-    yield* Effect.sleep("3 seconds");
+    // 2. Play out 6 dramatic chapters (R01-02, R03-04, R05-06, R07-08, R09-10, R11-12)
+    for (let phase = 1; phase <= 6; phase++) {
+      const clashPayload = serializer.serializeColosseumClash(match, bets, duelData, phase, flyUrl);
+      yield* apiService.editMessage(channelId, messageId, clashPayload.data).pipe(
+        Effect.catchAll(() => Effect.void)
+      );
+      yield* Effect.sleep("2.5 seconds");
+    }
 
     // 4. Phase 3: Settle Bets & Final Results
     const winner = duelData.winner as "A" | "B" | "DRAW";

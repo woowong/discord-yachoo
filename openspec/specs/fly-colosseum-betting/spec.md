@@ -24,11 +24,11 @@ The system SHALL permit server members to place wagers using their own persisten
 - **THEN** system rejects the wager with an ephemeral message explaining the 800 Elo bankruptcy protection rule.
 
 ### Requirement: Single-Message 3-Stage Dramatic Highlight Broadcast
-The system SHALL orchestrate the duel simulation in background and update the single Discord message embed across 3 distinct phases showing dopamine levels and in-character dialogues without flooding the channel.
+The system SHALL orchestrate the duel simulation in background and sequentially update a single Discord message embed across multiple dramatic chapters with realistic suspense delays, rendering the complete ASCII category scoreboard, current roll dice emojis, hold locks, dopamine gauges, and spicy in-character trash talk without flooding the channel.
 
 #### Scenario: Wagering window ends and duel begins
-- **WHEN** the 30-second wagering timer expires or bet phase concludes
-- **THEN** system fetches the simulation timeline from the SNN server, updates the embed to Phase 1 (Rounds 1-6 clash summary with current leader, dopamine gauges, and fly dialogues), waits briefly, transitions to Phase 2 (Rounds 7-12 climax and dramatic lead changes), and concludes with Phase 3 (Final winner announcement and lead change count).
+- **WHEN** the betting phase concludes and the duel starts
+- **THEN** system executes the simulation, then updates the message embed sequentially through 6 round chapters (Opening R1-2, Upper Clash R3-4, Midfield Brawl R5-6, Bonus Race R7-8, Clutch Time R9-10, and Climax R11-12) with a ~2.5 second delay between updates, displaying the active 2-player ASCII scoreboard, current dice with lock icons (`🎲 ⚁ ⚂ ⚂ ⚄ ⚅`, `🔒 🔒 ▫️ ▫️ ▫️`), dopamine meters, and kitschy dialogues, before concluding with the final result and Elo payout settlement.
 
 ### Requirement: Payout Distribution and Persistence
 The system SHALL settle all registered wagers according to the match outcome and persist updated Elo ratings in the database.
@@ -40,3 +40,10 @@ The system SHALL settle all registered wagers according to the match outcome and
 #### Scenario: Match concludes in a draw
 - **WHEN** both fly personas finish with equal scores
 - **THEN** system refunds all placed Elo wagers to participants with 0 net loss.
+
+### Requirement: Kitsch Degen Gladiator Trash Talk and Dialogues
+The system SHALL generate witty, kitschy, meme-rich trash talk and contextual in-character reactions for each persona reflecting high-dopamine rushes, catastrophic roll failures, upper bonus calculations, speed rushes, and cosmic hallucinations.
+
+#### Scenario: Persona experiences dramatic roll or score event
+- **WHEN** a fly persona rolls dice or records a category score during the colosseum duel
+- **THEN** system attaches high-flavor, kitschy Korean dialogue (e.g., degen gambling memes, dopamine full-throttle scream, mathematical roasting, rage over missing dice, cosmic conspiracy) tailored to their neuromodulatory state.

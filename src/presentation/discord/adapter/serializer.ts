@@ -19,7 +19,7 @@ export interface DiscordResponseSerializer {
   readonly serializeMatchQueue: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
   readonly serializeMatchQueueCancelled: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
   readonly serializeColosseumMatch: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], flyBrainUrl?: string) => DiscordInteractionResponse;
-  readonly serializeColosseumClash: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, phase: 1 | 2, flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeColosseumClash: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, phase: number, flyBrainUrl?: string) => DiscordInteractionResponse;
   readonly serializeColosseumResult: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, flyBrainUrl?: string) => DiscordInteractionResponse;
 }
 
@@ -94,6 +94,58 @@ const formatScoreBoard = (state: GameState): string => {
     totalRow += ` | ${p.totalScore.toString().padStart(5)}`;
   }
   lines.push(totalRow);
+
+  return "```\n" + lines.join("\n") + "\n```";
+};
+
+const formatColosseumScoreBoard = (
+  nameA: string,
+  nameB: string,
+  sbA: Record<string, number> = {},
+  sbB: Record<string, number> = {},
+  totalA: number,
+  totalB: number,
+  bonusA: number,
+  bonusB: number
+): string => {
+  const upperCats = ["Aces", "Deuces", "Treys", "Fours", "Fives", "Sixes"];
+  const sumUpperA = upperCats.reduce((acc, c) => acc + (sbA[c] ?? 0), 0);
+  const sumUpperB = upperCats.reduce((acc, c) => acc + (sbB[c] ?? 0), 0);
+
+  const colA = nameA.substring(0, 5).padEnd(5);
+  const colB = nameB.substring(0, 5).padEnd(5);
+
+  const lines: string[] = [];
+  const header = `Category   | ${colA} | ${colB}`;
+  lines.push(header);
+  lines.push("-".repeat(header.length));
+
+  CATEGORIES.forEach((cat) => {
+    if (cat.key === "Subtotal" || cat.key === "Choice") {
+      lines.push("=".repeat(header.length));
+    }
+    const label = cat.label.padEnd(10);
+    let valA = "-";
+    let valB = "-";
+
+    if (cat.key === "Subtotal") {
+      valA = `${sumUpperA}/63`;
+      valB = `${sumUpperB}/63`;
+    } else if (cat.key === "Bonus") {
+      valA = bonusA > 0 ? "35" : (sumUpperA >= 63 ? "35" : "0");
+      valB = bonusB > 0 ? "35" : (sumUpperB >= 63 ? "35" : "0");
+    } else {
+      const vA = sbA[cat.key];
+      const vB = sbB[cat.key];
+      if (vA !== undefined) valA = vA.toString();
+      if (vB !== undefined) valB = vB.toString();
+    }
+
+    lines.push(`${label} | ${valA.padStart(5)} | ${valB.padStart(5)}`);
+  });
+
+  lines.push("-".repeat(header.length));
+  lines.push(`Total      | ${totalA.toString().padStart(5)} | ${totalB.toString().padStart(5)}`);
 
   return "```\n" + lines.join("\n") + "\n```";
 };
@@ -775,12 +827,36 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
       const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
 
-      const rIndex = phase === 1 ? 5 : 11;
-      const roundInfo = duelData.rounds && duelData.rounds[rIndex] ? duelData.rounds[rIndex] : null;
+      // Phase 1: R02, Phase 2: R04, Phase 3: R06, Phase 4: R08, Phase 5: R10, Phase 6: R12
+      const targetRound = Math.min(12, Math.max(1, phase * 2));
+      const rIndex = targetRound - 1;
+      const roundInfo = duelData.rounds && duelData.rounds[rIndex]
+        ? duelData.rounds[rIndex]
+        : (duelData.rounds && duelData.rounds.length > 0 ? duelData.rounds[duelData.rounds.length - 1] : null);
 
       const scoreA = roundInfo ? roundInfo.a.total : 0;
       const scoreB = roundInfo ? roundInfo.b.total : 0;
       const leaderStr = roundInfo?.leader === "A" ? `${pA.emoji} ${pA.name} 리드!` : (roundInfo?.leader === "B" ? `${pB.emoji} ${pB.name} 리드!` : "동점 접전!");
+
+      const chapterTitles: Record<number, string> = {
+        1: "챕터 1/6: 오프닝 기선제압 (R01~R02)",
+        2: "챕터 2/6: 상단 족보 난타전 (R03~R04)",
+        3: "챕터 3/6: 전반전 선두 쟁탈전 (R05~R06)",
+        4: "챕터 4/6: 상단 보너스 63점 사수 레이스 (R07~R08)",
+        5: "챕터 5/6: 클러치 야추/스트레이트 도박 (R09~R10)",
+        6: "챕터 6/6: 최종 라운드 명운의 혈투 (R11~R12)"
+      };
+      const chapterTitle = chapterTitles[phase] || `챕터 ${phase}/6 (R${targetRound.toString().padStart(2, "0")})`;
+
+      const chapterColors: Record<number, number> = {
+        1: 0x3498DB,
+        2: 0x2ECC71,
+        3: 0xF1C40F,
+        4: 0xE67E22,
+        5: 0xE74C3C,
+        6: 0x9B59B6
+      };
+      const embedColor = chapterColors[phase] || 0xE67E22;
 
       const renderDopamineGauge = (dopamine: number): string => {
         const percent = Math.min(250, Math.max(0, dopamine));
@@ -790,34 +866,56 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         return `[${filled}${empty}] ${Math.round(percent)}%`;
       };
 
-      const formatDiceList = (dice: readonly number[]): string => {
-        return (dice || []).map((d) => DICE_BUTTON_EMOJIS[d] || `[${d}]`).join(" ");
+      const formatDiceWithLocks = (dice: readonly number[] = [], holds: readonly boolean[] = []): string => {
+        if (!dice || dice.length === 0) return "(주사위 대기 중)";
+        const top = dice.map((d) => DICE_EMOJIS[d] || `[${d}]`).join(" ");
+        const bottom = dice.map((_, i) => (holds[i] ? "🔒" : "▫️")).join(" ");
+        return `${top}\n${bottom}`;
       };
 
+      const scoreBoardA = roundInfo?.a?.score_board || {};
+      const scoreBoardB = roundInfo?.b?.score_board || {};
+      const bonusA = roundInfo?.a?.upper_bonus || 0;
+      const bonusB = roundInfo?.b?.upper_bonus || 0;
+
+      const asciiBoard = formatColosseumScoreBoard(
+        pA.name,
+        pB.name,
+        scoreBoardA,
+        scoreBoardB,
+        scoreA,
+        scoreB,
+        bonusA,
+        bonusB
+      );
+
       const embed: DiscordEmbed = {
-        title: `⚔️ [초파리 콜로세움] ${phase === 1 ? "R06 전반전 격돌!" : "R12 후반전 클라이맥스!"}`,
+        title: `⚔️ [초파리 콜로세움] ${chapterTitle}`,
         description: `**${pA.emoji} ${pA.name}** [${scoreA}점] vs **${pB.emoji} ${pB.name}** [${scoreB}점]\n` +
-          `⚡ **전황 판세**: **${leaderStr}** (역전 횟수: ${duelData.lead_changes || 0}회)\n` +
+          `⚡ **현재 전황**: **${leaderStr}** (역전 횟수: ${duelData.lead_changes || 0}회)\n\n` +
+          `${asciiBoard}\n` +
           (flyBrainUrl ? `🔗 [3D 초파리 두뇌 실시간 관전](${flyBrainUrl})\n` : ""),
-        color: phase === 1 ? 0xE67E22 : 0xE74C3C,
+        color: embedColor,
         fields: [
           {
             name: `${pA.emoji} ${pA.title} (도파민: ${renderDopamineGauge(roundInfo?.a?.dopamine || 100)})`,
-            value: `🎲 마지막 주사위: ${roundInfo?.a?.dice ? formatDiceList(roundInfo.a.dice) : ""}\n` +
-              `🎯 등록 족보: **${roundInfo?.a?.category}** (+${roundInfo?.a?.points || 0}점)\n` +
+            value: `🎲 **최종 주사위 & 락**:\n${formatDiceWithLocks(roundInfo?.a?.dice, roundInfo?.a?.holds)}\n` +
+              `🎯 **직전 족보**: **${roundInfo?.a?.category || "진행 중"}** (+${roundInfo?.a?.points || 0}점)\n` +
               `💬 ${roundInfo?.a?.dialogue || "붕붕~"}`,
             inline: false
           },
           {
             name: `${pB.emoji} ${pB.title} (도파민: ${renderDopamineGauge(roundInfo?.b?.dopamine || 100)})`,
-            value: `🎲 마지막 주사위: ${roundInfo?.b?.dice ? formatDiceList(roundInfo.b.dice) : ""}\n` +
-              `🎯 등록 족보: **${roundInfo?.b?.category}** (+${roundInfo?.b?.points || 0}점)\n` +
+            value: `🎲 **최종 주사위 & 락**:\n${formatDiceWithLocks(roundInfo?.b?.dice, roundInfo?.b?.holds)}\n` +
+              `🎯 **직전 족보**: **${roundInfo?.b?.category || "진행 중"}** (+${roundInfo?.b?.points || 0}점)\n` +
               `💬 ${roundInfo?.b?.dialogue || "붕붕~"}`,
             inline: false
           }
         ],
         footer: {
-          text: phase === 1 ? "후반전 클라이맥스로 돌입합니다... (잠시 후 자동 갱신)" : "최종 결과 및 ELO 정산을 집계 중입니다..."
+          text: phase < 6
+            ? `다음 챕터로 격돌 중... (${phase}/6) | 약 2.5초 후 자동 갱신됩니다.`
+            : "최종 결과 및 ELO 정산을 집계 중입니다..."
         }
       };
 
@@ -856,11 +954,29 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         }
       });
 
+      const lastRound = duelData.rounds && duelData.rounds.length > 0 ? duelData.rounds[duelData.rounds.length - 1] : null;
+      const finalSbA = lastRound?.a?.score_board || {};
+      const finalSbB = lastRound?.b?.score_board || {};
+      const finalBonusA = duelData.upper_bonus_a ?? lastRound?.a?.upper_bonus ?? 0;
+      const finalBonusB = duelData.upper_bonus_b ?? lastRound?.b?.upper_bonus ?? 0;
+
+      const finalAsciiBoard = formatColosseumScoreBoard(
+        pA.name,
+        pB.name,
+        finalSbA,
+        finalSbB,
+        duelData.score_a,
+        duelData.score_b,
+        finalBonusA,
+        finalBonusB
+      );
+
       const embed: DiscordEmbed = {
         title: `🏆 [초파리 콜로세움] 최종 경기 결과 발표!`,
         description: `**${winnerTitle}**\n\n` +
           `📊 **최종 스코어**: ${pA.emoji} ${pA.name} **${duelData.score_a}점** vs **${duelData.score_b}점** ${pB.emoji} ${pB.name}\n` +
-          `⚡ **경기 역전 횟수**: 총 **${duelData.lead_changes}회**\n` +
+          `⚡ **경기 역전 횟수**: 총 **${duelData.lead_changes}회**\n\n` +
+          `${finalAsciiBoard}\n` +
           (flyBrainUrl ? `🔗 [3D 초파리 두뇌 뷰어](${flyBrainUrl})\n` : ""),
         color: winner === "DRAW" ? 0x95A5A6 : 0xF1C40F,
         fields: [

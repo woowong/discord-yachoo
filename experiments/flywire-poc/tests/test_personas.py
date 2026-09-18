@@ -34,7 +34,13 @@ def test_simulate_colosseum_duel():
     assert res["score_a"] > 0
     assert res["score_b"] > 0
     assert len(res["rounds"]) == 12
-    assert "dopamine" in res["rounds"][0]["a"]
-    assert "dialogue" in res["rounds"][0]["a"]
-    assert "dopamine" in res["rounds"][0]["b"]
-    assert "dialogue" in res["rounds"][0]["b"]
+    r0_a = res["rounds"][0]["a"]
+    assert "dopamine" in r0_a
+    assert "dialogue" in r0_a
+    assert "rolls" in r0_a
+    assert len(r0_a["rolls"]) >= 1
+    assert "score_board" in r0_a
+    assert len(r0_a["score_board"]) == 1
+    assert "rolls" in res["rounds"][0]["b"]
+    assert "score_board" in res["rounds"][0]["b"]
+    assert len(res["rounds"][0]["b"]["score_board"]) == 1

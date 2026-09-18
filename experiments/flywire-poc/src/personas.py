@@ -161,35 +161,61 @@ class PersonaFlyAgent(BaseYachtAgent):
         return gains, self.last_dopamine_level
 
     def _generate_dialogue(self, action_type: str, context: Dict[str, Any]) -> str:
+        cat = context.get("cat", "")
+        pts = context.get("points", 0)
         dopamine = self.last_dopamine_level
+        my_total = context.get("my_total", 0)
+        opp_total = context.get("opp_total", 0)
+        is_leading = my_total > opp_total
+
         if self.name == "Jackpot":
-            if dopamine >= 170:
-                return f"🔥 \"끼에에엑!! 설탕 냄새 폭발!! 야추 각 떴다 붕붕붕!! (도파민 {dopamine:.0f}%)\""
+            if cat == "Yacht" and pts == 50:
+                return f"🔥 \"끼야호오오오옥!! 50점 야추 떴다아아악!! 잭팟 폭발!! 설탕물 100L 원샷 간다 붕붕붕!! (도파민 {dopamine:.0f}%)\""
+            elif pts == 0:
+                return f"💀 \"0점 박았다... 한강물 온도 체크 들어간다 붕... 날 믿고 베팅한 흑우들 꽉 잡아라 ㅋㅋㅋ (도파민 {dopamine:.0f}%)\""
+            elif is_leading and dopamine >= 150:
+                return f"👑 \"뒤집었다 캬캬캬!! 도파민 풀악셀 찌이익-!! 도박의 신이시여 영원하라 붕붕!! (도파민 {dopamine:.0f}%)\""
+            elif dopamine >= 160:
+                return f"🔥🔥 \"도파민 수치 폭발!! 심장이 터질 것 같아 붕! 인생은 숏 말고 롱이다 가즈아아!! (도파민 {dopamine:.0f}%)\""
             elif dopamine <= 65:
-                return f"💀 \"찌익... 망했어... 하지만 다음 판에 올인하면 그만이야! (도파민 {dopamine:.0f}%)\""
+                return f"📉 \"멘탈 갈려나간다 붕... 주작판 멈춰! 하지만 다음 판에 100배 레버리지 땡기면 복구돼! (도파민 {dopamine:.0f}%)\""
             else:
-                return f"🎲 \"한 번 더 굴려! 인생은 한 방이다 붕! (도파민 {dopamine:.0f}%)\""
+                return f"🎲 \"굴려 굴려! 인생 뭐 있냐, 한 방만 터지면 내가 아레나의 지배자다 붕! (도파민 {dopamine:.0f}%)\""
         elif self.name == "Newton":
-            if dopamine >= 130:
-                return f"🧊 \"상단 보너스 달성 확률 87.4% 계산 완료. 계획대로 진행합니다. (도파민 {dopamine:.0f}%)\""
+            if context.get("upper_bonus", 0) > 0 and pts > 0:
+                return f"🎓 \"상단 63점 돌파, 보너스 35점 입금 완료. 이것이 바로 '과학적 참교육'입니다. (도파민 {dopamine:.0f}%)\""
+            elif pts >= 30:
+                return f"📊 \"기댓값 오차범위 0.002% 내에서의 필연적 수렴. 수학 앞에 무릎 꿇으십시오, 미개한 단세포들아. (도파민 {dopamine:.0f}%)\""
+            elif pts == 0:
+                return f"📉 \"어...? 연산 회로 에러?! 저 빡통의 무지성 샷은 들어가고 내 정밀 계산이 빗나가?! 물리법칙 개판이네 삐빅! (도파민 {dopamine:.0f}%)\""
+            elif is_leading:
+                return f"🧊 \"상대 검투사의 뇌 용적 0.1mm³ 이슈가 심각하군요. 저런 파멸적 무빙은 아메바도 안 합니다. (도파민 {dopamine:.0f}%)\""
             elif dopamine <= 70:
-                return f"📊 \"변동성이 높군요. 서브옵티멀 카테고리로 손실을 최소화합니다. (도파민 {dopamine:.0f}%)\""
+                return f"📊 \"엔트로피 급상승... 서브옵티멀 헷징으로 버팁니다. 침착해라 뉴런들아. (도파민 {dopamine:.0f}%)\""
             else:
-                return f"🧠 \"기댓값 18.5점 확보. 침착하게 다음 롤을 준비합니다. (도파민 {dopamine:.0f}%)\""
+                return f"🧠 \"분산(Variance) 통제 완료. 계획된 알고리즘대로 1밀리초의 낭비 없이 스코어링합니다. (도파민 {dopamine:.0f}%)\""
         elif self.name == "Speeder":
-            if dopamine >= 150:
-                return f"⚡ \"일직선으로 달린다!! 스트레이트 냄새가 코를 찌른다 붕!! (도파민 {dopamine:.0f}%)\""
-            elif dopamine <= 60:
-                return f"🛑 \"왜 중간 숫자가 비는 거야?! 세상이 날 억까한다... (도파민 {dopamine:.0f}%)\""
+            if cat in ("LargeStraight", "SmallStraight") and pts > 0:
+                return f"⚡ \"부와아아앙!! 12345 일직선 초고속 질주!! 내 뒤통수 먼지나 마셔라 굼벵이 녀석아! (도파민 {dopamine:.0f}%)\""
+            elif pts == 0:
+                return f"💥 \"으아악 코너에서 미끄러졌다!! 1번 주사위 너 이 자식 나와 맞짱까자 ㅂㄷㅂㄷ! (도파민 {dopamine:.0f}%)\""
+            elif is_leading:
+                return f"🏎️ \"꼬리잡기 들어간다 딱 대라!! 브레이크 뽑았다! 망설이면 뭐다? 비둘기 밥이다 붕붕!! (도파민 {dopamine:.0f}%)\""
+            elif dopamine >= 150:
+                return f"🔥 \"풀악셀 밟아!! 시속 300km로 돌진한다!! 날개 꺾여도 난 직진이야 붕붕붕! (도파민 {dopamine:.0f}%)\""
             else:
-                return f"💨 \"직진 아니면 후진뿐이다. 가속 페달 밟는다 붕! (도파민 {dopamine:.0f}%)\""
+                return f"💨 \"고민은 사치다! 1초 만에 족보 박고 다음 라운드로 달린다 붕! (도파민 {dopamine:.0f}%)\""
         elif self.name == "Chimera":
-            if dopamine >= 180:
-                return f"🌀 \"우주와 교신 중... 주사위 눈이 무지개색으로 보여! (도파민 {dopamine:.0f}%)\""
-            elif dopamine <= 50:
-                return f"👾 \"회로에 잡음이 심해... 붕? 붕붕? 삐이익! (도파민 {dopamine:.0f}%)\""
+            if pts >= 40 or (cat == "Yacht" and pts == 50):
+                return f"🌌 \"시공간 웜홀 개방!! 은하계 칠차원 주사위와 영혼이 동기화되었다 붕... 경외하라! (도파민 {dopamine:.0f}%)\""
+            elif pts == 0:
+                return f"👾 \"버그 났다 삐-익! 내 뉴런이 비트코인 채굴에 동원되고 있어 살려줘 ㅋㅋㅋ 붕? 붕붕? (도파민 {dopamine:.0f}%)\""
+            elif dopamine >= 170:
+                return f"🌀 \"주사위 눈에서 오로라가 보여... 이것이 카오스 이론이다 인간들아 캬캬캬! (도파민 {dopamine:.0f}%)\""
+            elif dopamine <= 60:
+                return f"👽 \"평행우주의 내가 주사위를 던졌는데 저승으로 날아갔다... 외계 전파 방해 멈춰! (도파민 {dopamine:.0f}%)\""
             else:
-                return f"🔮 \"이 선택의 의미는 나도 모른다 붕. 운명에 맡겨라! (도파민 {dopamine:.0f}%)\""
+                return f"🔮 \"이 선택의 의미는 신도 모른다. 우주의 주사위는 이미 굴러갔다 붕! (도파민 {dopamine:.0f}%)\""
         return f"🪰 \"붕붕~ (도파민 {dopamine:.0f}%)\""
 
     def _run_brain(self, dice: List[int], roll_count: int, available_categories: List[ScoreCategory]) -> np.ndarray:
@@ -263,26 +289,72 @@ def simulate_colosseum_duel(persona_a_id: str, persona_b_id: str) -> Dict[str, A
 
     for r in range(1, 13):
         # A Turn
+        rolls_a = []
         while env_a.roll_count < 3:
-            holds = agent_a.decide_hold(list(env_a.current_dice), env_a.roll_count, env_a.get_available_categories())
+            current_dice = list(env_a.current_dice)
+            holds = agent_a.decide_hold(current_dice, env_a.roll_count, env_a.get_available_categories())
+            rolls_a.append({
+                "roll": env_a.roll_count,
+                "dice": current_dice,
+                "holds": [bool(h) for h in holds]
+            })
             if all(holds):
                 break
             env_a.roll(holds)
+
+        if len(rolls_a) == 0 or rolls_a[-1]["dice"] != list(env_a.current_dice):
+            rolls_a.append({
+                "roll": env_a.roll_count,
+                "dice": list(env_a.current_dice),
+                "holds": [True] * 5
+            })
+
         cat_a = agent_a.decide_category(list(env_a.current_dice), env_a.roll_count, env_a.get_available_categories())
         pts_a = env_a.score(cat_a)
         dopa_a = agent_a.last_dopamine_level
-        diag_a = agent_a.last_dialogue
+        diag_a = agent_a._generate_dialogue("score", {
+            "cat": cat_a,
+            "points": pts_a,
+            "my_total": env_a.total_score,
+            "opp_total": env_b.total_score,
+            "upper_bonus": env_a.upper_bonus,
+            "dice": list(env_a.current_dice)
+        })
+        sb_a = {k: v for k, v in env_a.score_board.items() if v is not None}
 
         # B Turn
+        rolls_b = []
         while env_b.roll_count < 3:
-            holds = agent_b.decide_hold(list(env_b.current_dice), env_b.roll_count, env_b.get_available_categories())
+            current_dice = list(env_b.current_dice)
+            holds = agent_b.decide_hold(current_dice, env_b.roll_count, env_b.get_available_categories())
+            rolls_b.append({
+                "roll": env_b.roll_count,
+                "dice": current_dice,
+                "holds": [bool(h) for h in holds]
+            })
             if all(holds):
                 break
             env_b.roll(holds)
+
+        if len(rolls_b) == 0 or rolls_b[-1]["dice"] != list(env_b.current_dice):
+            rolls_b.append({
+                "roll": env_b.roll_count,
+                "dice": list(env_b.current_dice),
+                "holds": [True] * 5
+            })
+
         cat_b = agent_b.decide_category(list(env_b.current_dice), env_b.roll_count, env_b.get_available_categories())
         pts_b = env_b.score(cat_b)
         dopa_b = agent_b.last_dopamine_level
-        diag_b = agent_b.last_dialogue
+        diag_b = agent_b._generate_dialogue("score", {
+            "cat": cat_b,
+            "points": pts_b,
+            "my_total": env_b.total_score,
+            "opp_total": env_a.total_score,
+            "upper_bonus": env_b.upper_bonus,
+            "dice": list(env_b.current_dice)
+        })
+        sb_b = {k: v for k, v in env_b.score_board.items() if v is not None}
 
         curr_leader = "A" if env_a.total_score > env_b.total_score else ("B" if env_b.total_score > env_a.total_score else "TIE")
         is_lead_change = False
@@ -299,7 +371,11 @@ def simulate_colosseum_duel(persona_a_id: str, persona_b_id: str) -> Dict[str, A
                 "total": env_a.total_score,
                 "dopamine": dopa_a,
                 "dialogue": diag_a,
-                "dice": list(env_a.current_dice),
+                "dice": list(rolls_a[-1]["dice"]),
+                "holds": list(rolls_a[-1]["holds"]),
+                "rolls": rolls_a,
+                "score_board": sb_a,
+                "upper_bonus": env_a.upper_bonus,
             },
             "b": {
                 "category": cat_b,
@@ -307,7 +383,11 @@ def simulate_colosseum_duel(persona_a_id: str, persona_b_id: str) -> Dict[str, A
                 "total": env_b.total_score,
                 "dopamine": dopa_b,
                 "dialogue": diag_b,
-                "dice": list(env_b.current_dice),
+                "dice": list(rolls_b[-1]["dice"]),
+                "holds": list(rolls_b[-1]["holds"]),
+                "rolls": rolls_b,
+                "score_board": sb_b,
+                "upper_bonus": env_b.upper_bonus,
             },
             "leader": curr_leader,
             "is_lead_change": is_lead_change,

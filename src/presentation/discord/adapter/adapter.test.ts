@@ -459,9 +459,11 @@ describe("Discord Webhook Adapter Layer", () => {
       }).pipe(Effect.provide(DiscordResponseSerializerLive));
 
       const { clash, result } = await Effect.runPromise(program);
-      expect(clash.data?.embeds?.[0].title).toContain("R06 전반전");
+      expect(clash.data?.embeds?.[0].title).toContain("챕터 1/6");
+      expect(clash.data?.embeds?.[0].description).toContain("Category");
       expect(result.data?.embeds?.[0].title).toContain("최종 경기 결과");
       expect(result.data?.embeds?.[0].description).toContain("승자");
+      expect(result.data?.embeds?.[0].description).toContain("Category");
     });
   });
 });
