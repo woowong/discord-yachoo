@@ -885,7 +885,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           }
         ],
         footer: {
-          text: `주사위가 테이블 위로 쏟아집니다... (약 3초 후 결과 공개!)`
+          text: `주사위가 테이블 위로 쏟아집니다... (약 2초 후 결과 공개!)`
         }
       };
 
@@ -985,7 +985,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         ],
         footer: {
           text: act < 4
-            ? `다음 격돌 막으로 이동합니다... (${act}/4) | 약 3.5초 후 주사위 컵을 다시 흔듭니다.`
+            ? `다음 격돌 막으로 이동합니다... (${act}/4) | 약 2.5초 후 주사위 컵을 다시 흔듭니다.`
             : "최종 결과 및 ELO 정산을 집계 중입니다..."
         }
       };

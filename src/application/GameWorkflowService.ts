@@ -1574,20 +1574,28 @@ const executeColosseumMatchLogic = (
     const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
 
     // 2. Play out 4 dramatic acts (R03, R06, R09, R12) with 2-stage suspense:
+    // Total sleep budgeted at 17.0s (Acts 1-3: 2.0s+2.5s, Act 4: 2.0s+1.5s) to safely fit within Cloudflare 30s waitUntil limit.
     for (let act = 1; act <= 4; act++) {
       // Stage A: Rolling Suspense with animated GIF
       const rollingPayload = serializer.serializeColosseumRolling(match, bets, duelData, act, flyUrl);
       yield* apiService.editMessage(channelId, messageId, rollingPayload.data).pipe(
-        Effect.catchAll(() => Effect.void)
+        Effect.catchAll((err) => {
+          console.error(`[Colosseum] Failed to edit rolling message (act ${act}):`, err);
+          return Effect.void;
+        })
       );
-      yield* Effect.sleep("3 seconds");
+      yield* Effect.sleep("2 seconds");
 
       // Stage B: Dice Impact & Scoreboard Update
       const clashPayload = serializer.serializeColosseumClash(match, bets, duelData, act, flyUrl);
       yield* apiService.editMessage(channelId, messageId, clashPayload.data).pipe(
-        Effect.catchAll(() => Effect.void)
+        Effect.catchAll((err) => {
+          console.error(`[Colosseum] Failed to edit clash message (act ${act}):`, err);
+          return Effect.void;
+        })
       );
-      yield* Effect.sleep("3.5 seconds");
+      // For Act 4, a shorter 1.5s pause before immediately presenting the final settlement
+      yield* Effect.sleep(act === 4 ? "1.5 seconds" : "2.5 seconds");
     }
 
     // 4. Phase 3: Settle Bets & Final Results
@@ -1625,7 +1633,10 @@ const executeColosseumMatchLogic = (
 
     const phase3Payload = serializer.serializeColosseumResult(finalMatch, updatedBets, duelData, flyUrl);
     yield* apiService.editMessage(channelId, messageId, phase3Payload.data).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catchAll((err) => {
+        console.error(`[Colosseum] Failed to edit final result message for match ${matchId}:`, err);
+        return Effect.void;
+      })
     );
   });
 
