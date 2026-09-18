@@ -4,7 +4,7 @@ import { GameWorkflowService, GameWorkflowServiceLive } from "./GameWorkflowServ
 import { ColosseumRepository, PlayerRepository, GameRepository, MatchRepository, InvitationRepository, MatchQueueRepository } from "../persistence/repository";
 import { InMemoryColosseumRepositoryLive, InMemoryRepositoryLive, InMemoryInvitationRepositoryLive } from "../persistence/memory/repository";
 import { DiscordResponseSerializer, DiscordResponseSerializerLive } from "../presentation/discord/adapter/serializer";
-import { DiscordApiService, FlyBrainUrl } from "../presentation/discord/adapter/api";
+import { DiscordApiService, FlyBrainUrl, DiscordBotToken } from "../presentation/discord/adapter/api";
 
 describe("Colosseum Workflow Service", () => {
   const mockPlayerRepo = {
@@ -52,7 +52,8 @@ describe("Colosseum Workflow Service", () => {
     Layer.succeed(MatchRepository, {} as any),
     Layer.succeed(MatchQueueRepository, {} as any),
     Layer.succeed(DiscordApiService, mockApiService as any),
-    Layer.succeed(FlyBrainUrl, "http://mock-fly")
+    Layer.succeed(FlyBrainUrl, "http://mock-fly"),
+    Layer.succeed(DiscordBotToken, "mock-token")
   );
 
   it("should create a colosseum match with odds and betting status", async () => {
@@ -215,4 +216,35 @@ describe("Colosseum Workflow Service", () => {
       globalThis.fetch = originalFetch;
     }
   }, 35000);
+
+  it("should settle colosseum match directly when callback is received", async () => {
+    const program = Effect.gen(function* () {
+      const workflow = yield* GameWorkflowService;
+      const match = yield* workflow.createColosseumMatch("guild-1", "chan-1");
+      yield* workflow.placeColosseumBet(match.id, "user-1", "Alice", "guild-1", "A", 20);
+
+      yield* workflow.settleColosseumMatch(
+        match.id,
+        "chan-1",
+        "msg-123",
+        "A",
+        200,
+        180,
+        { winner: "A", score_a: 200, score_b: 180, lead_changes: 1, rounds: [] }
+      );
+
+      const colosseumRepo = yield* ColosseumRepository;
+      const finalMatch = yield* colosseumRepo.getMatchById(match.id);
+      const finalBets = yield* colosseumRepo.getBetsByMatchId(match.id);
+      return { finalMatch, finalBets };
+    }).pipe(Effect.provide(testLayer));
+
+    const { finalMatch, finalBets } = await Effect.runPromise(program);
+    expect(Option.isSome(finalMatch)).toBe(true);
+    if (Option.isSome(finalMatch)) {
+      expect(finalMatch.value.status).toBe("COMPLETED");
+      expect(finalMatch.value.winner).toBe("A");
+    }
+    expect(finalBets[0].status).toBe("WON");
+  });
 });

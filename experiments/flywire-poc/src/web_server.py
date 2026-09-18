@@ -18,6 +18,7 @@ from forward_sim import FlySubcircuitSNN, load_cached_subcircuit
 from synaptic_plasticity import set_kc_mbon_dense
 from telemetry_agent import TelemetryFlyBrainAgent, GameSession
 from personas import PERSONA_SPECS, simulate_colosseum_duel
+from colosseum_broadcaster import start_colosseum_broadcast_async
 import numpy as np
 
 STATIC_DIR = SRC_DIR.parent / "web"
@@ -286,6 +287,45 @@ class VisualizerHTTPHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps(duel_result).encode("utf-8"))
             except Exception as e:
                 self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+            return
+
+        elif self.path == "/api/fly/colosseum/broadcast":
+            match_id = data.get("match_id", "")
+            channel_id = data.get("channel_id", "")
+            message_id = data.get("message_id", "")
+            persona_a = data.get("persona_a", "Jackpot")
+            persona_b = data.get("persona_b", "Newton")
+            discord_token = data.get("discord_bot_token", "")
+            worker_settle_url = data.get("worker_callback_url", "")
+            fly_brain_url = data.get("fly_brain_url", "")
+
+            if not discord_token or not channel_id or not message_id:
+                self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Missing discord_token, channel_id, or message_id"}).encode("utf-8"))
+                return
+
+            try:
+                start_colosseum_broadcast_async(
+                    match_id=match_id,
+                    channel_id=channel_id,
+                    message_id=message_id,
+                    persona_a_id=persona_a,
+                    persona_b_id=persona_b,
+                    discord_token=discord_token,
+                    worker_settle_url=worker_settle_url,
+                    fly_brain_url=fly_brain_url
+                )
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "broadcasting", "match_id": match_id}).encode("utf-8"))
+            except Exception as e:
+                self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))

@@ -55,6 +55,44 @@ export default {
       return Effect.runPromise(webProgram);
     }
 
+    // Route colosseum settlement callback from Python SNN broadcaster
+    if (request.method === "POST" && url.pathname === "/api/colosseum/settle") {
+      const settleProgram = Effect.gen(function* () {
+        const bodyText = yield* Effect.promise(() => request.text());
+        let data: any;
+        try {
+          data = JSON.parse(bodyText);
+        } catch {
+          return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
+        }
+
+        const workflow = yield* GameWorkflowService;
+        yield* workflow.settleColosseumMatch(
+          data.match_id,
+          data.channel_id,
+          data.message_id,
+          data.winner,
+          data.score_a,
+          data.score_b,
+          data.duel_data
+        );
+
+        return new Response(JSON.stringify({ success: true, match_id: data.match_id }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }).pipe(
+        Effect.catchAll((err) =>
+          Effect.sync(() => {
+            console.error("[Colosseum Settle Endpoint] Error:", err);
+            return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+          })
+        ),
+        Effect.provide(mainLayer)
+      );
+      return Effect.runPromise(settleProgram);
+    }
+
     const signature = request.headers.get("x-signature-ed25519") || "";
     const timestamp = request.headers.get("x-signature-timestamp") || "";
 

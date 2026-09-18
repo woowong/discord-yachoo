@@ -7,7 +7,7 @@ import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository
 import { Invitation, isInvitationExpired } from "../domain/invitation";
 import { MatchQueue, isMatchQueueExpired } from "../domain/matchQueue";
 import { selectRandomGladiators, calculateOdds, validateBet, calculatePayout, GLADIATOR_PERSONAS, PersonaId, BetValidationError } from "../domain/colosseum";
-import { DiscordApiService, FlyBrainUrl } from "../presentation/discord/adapter/api";
+import { DiscordApiService, FlyBrainUrl, DiscordBotToken } from "../presentation/discord/adapter/api";
 import { DiscordResponseSerializer } from "../presentation/discord/adapter/serializer";
 import { 
   KoreanMessages, 
@@ -252,6 +252,20 @@ export interface GameWorkflowService {
     matchId: string,
     channelId: string,
     messageId: string
+  ) => Effect.Effect<
+    void,
+    any,
+    ColosseumRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
+
+  readonly settleColosseumMatch: (
+    matchId: string,
+    channelId: string,
+    messageId: string,
+    winner: "A" | "B" | "DRAW",
+    scoreA: number,
+    scoreB: number,
+    duelData: any
   ) => Effect.Effect<
     void,
     any,
@@ -1446,6 +1460,8 @@ export const GameWorkflowServiceLive = Layer.succeed(
         const serializer = yield* DiscordResponseSerializer;
         const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
         const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+        const botTokenOpt = yield* Effect.serviceOption(DiscordBotToken);
+        const botToken = Option.isSome(botTokenOpt) ? botTokenOpt.value : "";
 
         const matchOpt = yield* colosseumRepo.getMatchById(matchId);
         if (Option.isNone(matchOpt)) {
@@ -1459,10 +1475,31 @@ export const GameWorkflowServiceLive = Layer.succeed(
         yield* colosseumRepo.updateMatchStatus(matchId, "SIMULATING", messageId);
         const updatedMatch: ColosseumMatchRecord = { ...match, status: "SIMULATING", messageId };
 
-        const simTask = executeColosseumMatchLogic(matchId, channelId, messageId).pipe(
+        const broadcastTask = Effect.tryPromise({
+          try: async () => {
+            if (!flyUrl) throw new Error("FLY_BRAIN_URL not configured");
+            const res = await fetch(`${flyUrl}/api/fly/colosseum/broadcast`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                match_id: matchId,
+                channel_id: channelId,
+                message_id: messageId,
+                persona_a: match.personaAId,
+                persona_b: match.personaBId,
+                discord_bot_token: botToken,
+                worker_callback_url: "https://discord-yachoo.woowong.workers.dev/api/colosseum/settle",
+                fly_brain_url: flyUrl
+              })
+            });
+            if (!res.ok) throw new Error(`Python broadcast delegation returned status ${res.status}`);
+            return await res.json();
+          },
+          catch: (err) => err
+        }).pipe(
           Effect.catchAll((err) => {
-            console.error(`[Colosseum] Error executing duel ${matchId}:`, err);
-            return Effect.logError(`Error executing colosseum duel: ${err}`);
+            console.warn(`[Colosseum] Failed to delegate to Python SNN broadcaster, falling back to local simulation:`, err);
+            return executeColosseumMatchLogic(matchId, channelId, messageId);
           }),
           Effect.provide(
             Layer.mergeAll(
@@ -1474,13 +1511,16 @@ export const GameWorkflowServiceLive = Layer.succeed(
             )
           )
         );
-        ctx.waitUntil(Effect.runPromise(simTask));
 
+        ctx.waitUntil(Effect.runPromise(broadcastTask));
         return updatedMatch;
       }),
 
     executeColosseumMatch: (matchId, channelId, messageId) =>
-      executeColosseumMatchLogic(matchId, channelId, messageId)
+      executeColosseumMatchLogic(matchId, channelId, messageId),
+
+    settleColosseumMatch: (matchId, channelId, messageId, winner, scoreA, scoreB, duelData) =>
+      settleColosseumMatchLogic(matchId, channelId, messageId, winner, scoreA, scoreB, duelData)
   }
 );
 
@@ -1596,16 +1636,49 @@ const executeColosseumMatchLogic = (
       yield* Effect.sleep("1.2 seconds");
     }
 
-    // 4. Phase 3: Settle Bets & Final Results
-    const winner = duelData.winner as "A" | "B" | "DRAW";
+    // 3. Phase 3: Settle Bets & Final Results
+    yield* settleColosseumMatchLogic(
+      match.id,
+      channelId,
+      messageId,
+      duelData.winner as "A" | "B" | "DRAW",
+      duelData.score_a,
+      duelData.score_b,
+      duelData
+    );
+  });
+
+const settleColosseumMatchLogic = (
+  matchId: string,
+  channelId: string,
+  messageId: string,
+  winner: "A" | "B" | "DRAW",
+  scoreA: number,
+  scoreB: number,
+  duelData: any
+) =>
+  Effect.gen(function* () {
+    const colosseumRepo = yield* ColosseumRepository;
+    const playerRepo = yield* PlayerRepository;
+    const apiService = yield* DiscordApiService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+    if (Option.isNone(matchOpt)) return;
+    const match = matchOpt.value;
+    if (match.status === "COMPLETED" || match.status === "CANCELLED") return;
+
     yield* colosseumRepo.finishMatch(
       match.id,
       winner,
-      duelData.score_a,
-      duelData.score_b,
+      scoreA,
+      scoreB,
       JSON.stringify(duelData)
     );
 
+    const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
     for (const bet of bets) {
       if (winner === "DRAW") {
         yield* colosseumRepo.updateBetPayout(bet.id, bet.amount, "REFUNDED");

@@ -24,11 +24,11 @@ The system SHALL permit server members to place wagers using their own persisten
 - **THEN** system rejects the wager with an ephemeral message explaining the 800 Elo bankruptcy protection rule.
 
 ### Requirement: Single-Message 3-Stage Dramatic Highlight Broadcast
-The system SHALL orchestrate the duel simulation in background and sequentially update a single Discord message embed through every individual round (Round 1 through 12) without skipping turns, within the Cloudflare Worker 30-second `waitUntil` execution budget, rendering the animated rolling GIF opening, full ASCII category scoreboard dynamically populated round by round, current roll dice emojis, hold locks, dopamine gauges, and spicy in-character trash talk without timing out or flooding the channel.
+The system SHALL orchestrate the duel simulation and sequentially broadcast every individual roll (Roll 1, Roll 2, Roll 3, Hold selection, Category locking) for both fly personas across all 12 rounds to a single Discord message embed with generous turn delays (1.2s~1.5s), rendering dice emojis, hold locks, dynamic ASCII scoreboards, dopamine gauges, and spicy in-character dialogues without hitting Discord rate limits or Cloudflare Worker execution timeouts.
 
 #### Scenario: Wagering window ends and duel begins
 - **WHEN** the betting phase concludes and the duel starts
-- **THEN** system executes the simulation, then updates the message embed with an opening cup-shaking suspense frame (~1.5s), followed sequentially by all 12 rounds (Round 1 through Round 12, ~1.2s delay per round) displaying each player's rolled dice, holds, selected category score, trash-talk dialogue, and updated ASCII board, before concluding with the final result and Elo payout settlement frame (~21.5s total execution).
+- **THEN** system delegates the live broadcast to the persistent Python SNN broadcast worker, which streams all 12 rounds turn-by-turn (Fly A rolls 1-3 with lock decisions -> Fly A category lock -> Fly B rolls 1-3 with lock decisions -> Fly B category lock -> round scoreboard update) over 2~3 minutes, before triggering final match settlement and Elo payout. If Python server is unreachable, system gracefully falls back to the Worker-side fast round summary.
 
 ### Requirement: Payout Distribution and Persistence
 The system SHALL settle all registered wagers according to the match outcome and persist updated Elo ratings in the database.
