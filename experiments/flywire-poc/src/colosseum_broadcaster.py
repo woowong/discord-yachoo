@@ -109,7 +109,8 @@ def patch_discord_message(channel_id: str, message_id: str, embed: Dict[str, Any
         data=payload,
         headers={
             "Authorization": f"Bot {token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "User-Agent": "DiscordBot (https://github.com/woowong/discord-yachoo, 1.0.0)"
         },
         method="PATCH"
     )
@@ -129,7 +130,10 @@ def call_worker_settle(worker_settle_url: str, payload: Dict[str, Any]) -> bool:
     req = urllib.request.Request(
         worker_settle_url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "DiscordBot (https://github.com/woowong/discord-yachoo, 1.0.0)"
+        },
         method="POST"
     )
     try:
