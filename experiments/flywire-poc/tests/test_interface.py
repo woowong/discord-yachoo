@@ -42,6 +42,19 @@ class TestInterface(unittest.TestCase):
         self.assertTrue(holds[1])
         self.assertFalse(holds[2])
 
+    def test_decoder_hold_satiety_two_pairs(self):
+        mbon_spikes = np.zeros(24)  # MBON 0 (Multiples drive)
+        dice = [3, 3, 5, 5, 1]
+
+        # Case 1: FullHouse is available -> hold both pairs
+        holds_avail = decode_hold_mask(mbon_spikes, dice=dice, available_categories=["FullHouse", "Aces"])
+        self.assertEqual(holds_avail, [True, True, True, True, False])
+
+        # Case 2: FullHouse is already used (satiated) -> hold only higher pair (5s)
+        holds_satiated = decode_hold_mask(mbon_spikes, dice=dice, available_categories=["Fives", "Threes", "Aces"])
+        self.assertEqual(holds_satiated, [False, False, True, True, False])
+
+
     def test_decoder_category_strict_masking(self):
         # Suppose MBON for Aces (index 5) has massive firing (100 spikes),
         # but Aces is ALREADY USED.

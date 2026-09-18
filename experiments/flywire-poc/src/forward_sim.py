@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import numpy as np
 import scipy.sparse as sp
 
@@ -62,9 +62,23 @@ class FlySubcircuitSNN:
         self.num_kc = layers["kenyon_cells"]["count"]
         self.num_mbon = layers["mbon"]["count"]
         
+        # DAN (Dopaminergic Neuron) neuromodulation gains (PAM / PPL1)
+        self.dan_gains: Optional[np.ndarray] = None
+        
         # State vectors
         self.V = np.full(self.num_neurons, v_rest, dtype=np.float32)
         self.S = np.zeros(self.num_neurons, dtype=bool)
+
+    def set_dan_modulation(self, dan_gains: Optional[np.ndarray] = None):
+        """
+        Sets compartment-specific DAN neuromodulatory gains for MBONs.
+        Shape: (num_mbon,) float32. None restores default gain of 1.0.
+        """
+        if dan_gains is None:
+            self.dan_gains = None
+        else:
+            assert len(dan_gains) == self.num_mbon, f"Expected {self.num_mbon} gains, got {len(dan_gains)}"
+            self.dan_gains = np.array(dan_gains, dtype=np.float32)
 
     def reset_state(self):
         """Reset membrane voltages and spike buffers."""
@@ -79,14 +93,17 @@ class FlySubcircuitSNN:
         """
         Execute one discrete simulation time step (dt):
         1. Synaptic current integration: I_syn = W^T * S_{t-1}
-        2. Membrane leaky integration: V_t = V_{t-1} * tau + I_syn + I_ext
-        3. Spike generation: S_t = (V_t >= V_th)
-        4. Reset: V_t[S_t] = V_reset
+        2. DAN compartment modulation on MBON incoming current: I_syn[mbon] *= dan_gains
+        3. Membrane leaky integration: V_t = V_{t-1} * tau + I_syn + I_ext
+        4. Spike generation: S_t = (V_t >= V_th)
+        5. Reset: V_t[S_t] = V_reset
         """
         # Synaptic current from previous spikes (pre -> post)
         # S is pre-synaptic; W.T @ S accumulates incoming post-synaptic current
         if np.any(self.S):
             synaptic_current = self.W.T.dot(self.S.astype(np.float32))
+            if self.dan_gains is not None:
+                synaptic_current[self.mbon_slice] *= self.dan_gains
         else:
             synaptic_current = 0.0
             
@@ -101,6 +118,7 @@ class FlySubcircuitSNN:
         self.S = spikes
         
         return spikes
+
 
     def run_simulation(
         self,
@@ -181,7 +199,52 @@ def load_scaled_subcircuit(data_dir: Path = DATA_DIR) -> Tuple[sp.csr_matrix, Di
     return load_cached_subcircuit(data_dir=data_dir, prefix="mb_scaled")
 
 
+def compute_dan_modulation(
+    available_categories: List[str],
+    dice: List[int] | None = None,
+    num_mbon: int = 24,
+    pam_boost: float = 1.3,
+    ppl1_inhibit: float = 0.0,
+) -> np.ndarray:
+    """
+    Computes biologically faithful DAN (Dopaminergic Neuron) neuromodulatory gains:
+    - PAM cluster (Reward/Approach): Boosts MBONs of high-value available categories (Yacht, LargeStraight, Upper targets).
+    - PPL1 cluster (Aversive/Satiety): Suppresses MBONs of consumed/filled categories to 0.0 (satiety inhibition).
+    - Behavioral drives: MBON 1 (Straight) is inhibited if straights are unavailable.
+    """
+    from yacht_env import CATEGORIES, calculate_score
+    gains = np.ones(num_mbon, dtype=np.float32)
+    avail_set = set(available_categories)
+    
+    # Support both 24 MBONs (unilateral) and 48 MBONs (bilateral left/right)
+    offsets = [0] if num_mbon < 48 else [0, 24]
+    
+    for offset in offsets:
+        # Drive modulation (MBON 0..4)
+        has_straight = ("SmallStraight" in avail_set) or ("LargeStraight" in avail_set)
+        if not has_straight and offset + 1 < num_mbon:
+            gains[offset + 1] = ppl1_inhibit  # Suppress Straight drive when straights consumed
+            
+        # Category modulation (MBON 5..16)
+        for i, cat in enumerate(CATEGORIES):
+            mbon_idx = offset + 5 + i
+            if mbon_idx >= num_mbon:
+                break
+            if cat not in avail_set:
+                gains[mbon_idx] = ppl1_inhibit  # PPL1 satiety silence
+            else:
+                if cat in ("Yacht", "LargeStraight"):
+                    gains[mbon_idx] = pam_boost
+                elif dice is not None:
+                    pts = calculate_score(cat, dice)
+                    if pts >= 20:
+                        gains[mbon_idx] = pam_boost
+                        
+    return gains
+
+
 def print_simulation_report(history: Dict, metadata: Dict):
+
     print("=" * 65)
     print(" 🪰 Drosophila Mushroom Body Forward Propagation Report")
     print("=" * 65)

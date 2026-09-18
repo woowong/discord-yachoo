@@ -49,19 +49,21 @@ class ConnectomeVisualizerServer:
             champ_path = SRC_DIR.parent / "data" / "champion_fly_3d_weights.npz"
         else:
             self.base_adj, self.metadata = load_cached_subcircuit()
-            champ_path = SRC_DIR.parent / "data" / "super_champion_fly.npz"
+            dopamine_champ = SRC_DIR.parent / "data" / "champion_fly_weights.npz"
+            champ_path = dopamine_champ if dopamine_champ.exists() else (SRC_DIR.parent / "data" / "super_champion_fly.npz")
             
         self.use_champion = use_champion
         if use_champion and champ_path.exists():
             data = np.load(champ_path)
-            weights = data["kc_mbon_weights"]
+            weights = data["weights"] if "weights" in data else data["kc_mbon_weights"]
             adj = set_kc_mbon_dense(self.base_adj, self.metadata, weights, preserve_topology=True)
             self.snn = FlySubcircuitSNN(adj, self.metadata)
             scale_label = "3D Scaled " if use_scaled else ""
-            self.model_name = f"{scale_label}Champion Fly SNN (Gen {data.get('generations', 100)})"
+            self.model_name = f"{scale_label}Dopamine Island Champion Fly SNN"
         else:
             self.snn = FlySubcircuitSNN(self.base_adj, self.metadata)
             self.model_name = "3D Scaled Connectome SNN" if use_scaled else "Baseline Connectome SNN"
+
             
         self.agent = TelemetryFlyBrainAgent(self.snn, sim_steps=15, pulse_steps=4)
         self.session = GameSession(self.agent)

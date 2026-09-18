@@ -1,9 +1,12 @@
 import copy
+import json
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 import numpy as np
 import scipy.sparse as sp
+
 
 from forward_sim import FlySubcircuitSNN, load_cached_subcircuit
 from agent import FlyBrainAgent
@@ -42,7 +45,9 @@ def evaluate_individual_island(
     """
     adj = set_kc_mbon_dense(base_adj, metadata, ind.weights, preserve_topology=True)
     snn = FlySubcircuitSNN(adj, metadata)
-    agent = FlyBrainAgent(snn=snn, sim_steps=12, pulse_steps=3)
+    enable_dan = (bias_mode != "pure_snn")
+    agent = FlyBrainAgent(snn=snn, sim_steps=12, pulse_steps=3, enable_dan_modulation=enable_dan)
+
     
     total_scores = []
     upper_bonuses = 0
@@ -85,8 +90,21 @@ def evaluate_individual_island(
     four_kind_rate = four_kind_hits / num_games
     avg_zeros = zero_count / num_games
     
-    # Island-specific fitness calculation
-    if bias_mode == "jackpot":
+    # Island-specific dopamine fitness landscape
+    if bias_mode == "satiety_gated":
+        # Island A (Satiety-Gated): Heavy penalty for wasting turns on 0-point redundant patterns
+        fitness = mean_score - (15.0 * avg_zeros) + (25.0 * full_house_rate) + (25.0 * upper_rate)
+    elif bias_mode == "affordance_rpe":
+        # Island B (Affordance RPE): PAM dopamine bursts amplify high-potential categories (Upper Bonus, Yacht)
+        avg_upper_sum = float(np.mean(upper_sums))
+        fitness = mean_score + (60.0 * upper_rate) + (50.0 * yacht_rate) + (avg_upper_sum / 63.0) * 30.0
+    elif bias_mode == "dynamic_apl":
+        # Island C (Dynamic APL Attention / Male-Dimorphic Aggressive Drive): Rewards high-risk pursuit (Large Straight, Yacht)
+        fitness = 0.5 * mean_score + 0.5 * max_score + (50.0 * yacht_rate) + (40.0 * straight_rate) + (30.0 * four_kind_rate)
+    elif bias_mode == "pure_snn":
+        # Island D (Pure SNN Control): Pure score optimization without dopamine biasing
+        fitness = mean_score
+    elif bias_mode == "jackpot":
         fitness = mean_score + (50.0 * yacht_rate) + (25.0 * straight_rate) + (20.0 * four_kind_rate)
     elif bias_mode == "upper_bonus":
         avg_upper_sum = float(np.mean(upper_sums))
@@ -103,6 +121,7 @@ def evaluate_individual_island(
         fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
     else:
         fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
+
         
     ind.fitness = float(fitness)
     ind.stats = {
@@ -133,7 +152,8 @@ def _eval_task_worker(task: Tuple[int, int, np.ndarray, int, str]) -> Tuple[int,
     isl_idx, ind_idx, weights, games_per_eval, bias_mode = task
     adj = set_kc_mbon_dense(_WORKER_ADJ, _WORKER_META, weights, preserve_topology=True)
     snn = FlySubcircuitSNN(adj, _WORKER_META)
-    agent = FlyBrainAgent(snn=snn, sim_steps=12, pulse_steps=3)
+    enable_dan = (bias_mode != "pure_snn")
+    agent = FlyBrainAgent(snn=snn, sim_steps=12, pulse_steps=3, enable_dan_modulation=enable_dan)
     
     total_scores = []
     upper_bonuses = 0
@@ -170,7 +190,16 @@ def _eval_task_worker(task: Tuple[int, int, np.ndarray, int, str]) -> Tuple[int,
     four_kind_rate = four_kind_hits / games_per_eval
     avg_zeros = zero_count / games_per_eval
     
-    if bias_mode == "jackpot":
+    if bias_mode == "satiety_gated":
+        fitness = mean_score - (15.0 * avg_zeros) + (25.0 * full_house_rate) + (25.0 * upper_rate)
+    elif bias_mode == "affordance_rpe":
+        avg_upper_sum = float(np.mean(upper_sums))
+        fitness = mean_score + (60.0 * upper_rate) + (50.0 * yacht_rate) + (avg_upper_sum / 63.0) * 30.0
+    elif bias_mode == "dynamic_apl":
+        fitness = 0.5 * mean_score + 0.5 * max_score + (50.0 * yacht_rate) + (40.0 * straight_rate) + (30.0 * four_kind_rate)
+    elif bias_mode == "pure_snn":
+        fitness = mean_score
+    elif bias_mode == "jackpot":
         fitness = mean_score + (50.0 * yacht_rate) + (25.0 * straight_rate) + (20.0 * four_kind_rate)
     elif bias_mode == "upper_bonus":
         avg_upper_sum = float(np.mean(upper_sums))
@@ -189,6 +218,7 @@ def _eval_task_worker(task: Tuple[int, int, np.ndarray, int, str]) -> Tuple[int,
         fitness = mean_score + (50.0 * full_house_rate) + (30.0 * four_kind_rate)
     else:
         fitness = mean_score + (40.0 * yacht_rate) + (40.0 * upper_rate) + (20.0 * straight_rate)
+
         
     stats = {
         "mean_score": mean_score,
@@ -297,7 +327,7 @@ class MultiIslandEvolution:
     def __init__(
         self,
         island_configs: Optional[List[IslandConfig]] = None,
-        migration_interval: int = 20,
+        migration_interval: int = 5,
         games_per_eval: int = 6,
         seed: int = 42,
         use_scaled: bool = False,
@@ -317,21 +347,28 @@ class MultiIslandEvolution:
             
         self.initial_weights = extract_kc_mbon_dense(self.base_adj, self.metadata)
         
+        # Pre-seed Gen 0 with existing champion weights if available
+        champ_name = "champion_fly_3d_weights.npz" if use_scaled else "champion_fly_weights.npz"
+        champ_path = Path(__file__).resolve().parent.parent / "data" / champ_name
+        if champ_path.exists():
+            try:
+                data = np.load(champ_path)
+                if "weights" in data and data["weights"].shape == self.initial_weights.shape:
+                    self.initial_weights = data["weights"].astype(np.float32)
+                    print(f"Pre-seeded population with champion weights from {champ_name}")
+            except Exception as e:
+                print(f"Could not load champion weights: {e}")
+
         if island_configs is None:
-            # 10-Island M4 Architecture
+            # 4 Dopamine Evolution Islands
             pop = 16 if use_scaled else 12
             island_configs = [
-                IslandConfig("Jackpot Hunter", "jackpot", pop_size=pop, base_mutation_sigma=0.06),
-                IslandConfig("Upper Bonus Specialist", "upper_bonus", pop_size=pop, base_mutation_sigma=0.05),
-                IslandConfig("Balanced Maximizer", "balanced", pop_size=pop, base_mutation_sigma=0.05),
-                IslandConfig("Hypermutation Explorer", "hypermutation", pop_size=pop, base_mutation_sigma=0.12, base_mutation_rate=0.15),
-                IslandConfig("High-Roller Aggressive", "high_roller", pop_size=pop, base_mutation_sigma=0.07),
-                IslandConfig("Conservative MinMax", "conservative", pop_size=pop, base_mutation_sigma=0.04),
-                IslandConfig("Straight Runner", "straight", pop_size=pop, base_mutation_sigma=0.06),
-                IslandConfig("Full-House Harvester", "full_house", pop_size=pop, base_mutation_sigma=0.05),
-                IslandConfig("Adaptive Deme", "balanced", pop_size=pop, base_mutation_sigma=0.08),
-                IslandConfig("Apex Champion Crucible", "apex", pop_size=pop, base_mutation_sigma=0.06),
+                IslandConfig("Island A: Satiety-Gated", "satiety_gated", pop_size=pop, base_mutation_sigma=0.05),
+                IslandConfig("Island B: Affordance RPE", "affordance_rpe", pop_size=pop, base_mutation_sigma=0.06),
+                IslandConfig("Island C: Dynamic APL Attention", "dynamic_apl", pop_size=pop, base_mutation_sigma=0.08),
+                IslandConfig("Island D: Pure SNN Control", "pure_snn", pop_size=pop, base_mutation_sigma=0.05),
             ]
+
             
         self.islands: List[Island] = [
             Island(cfg, self.initial_weights, self.base_adj, self.metadata, seed=seed + i * 100)
@@ -437,3 +474,81 @@ class MultiIslandEvolution:
             
         self.history.append(gen_stats)
         return gen_stats
+
+    def run_evolution(
+        self,
+        num_generations: int = 100,
+        save_name: Optional[str] = None,
+        verbose: bool = True,
+    ) -> Individual:
+        """
+        Executes multi-generation island neuroevolution with multi-core parallel processing
+        and saves the elite champion weights.
+        """
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+        if save_name is None:
+            save_name = "champion_fly_3d_weights.npz" if self.use_scaled else "champion_fly_weights.npz"
+
+        print(f"\n🚀 Launching Dopamine Island Evolution ({len(self.islands)} Demes, {self.num_workers} Parallel Workers)...")
+        print(f"   - Target generations: {num_generations}")
+        print(f"   - Migration interval: every {self.migration_interval} generations (Ring topology)")
+        print(f"   - Connectome: {'Scaled 30k Bilateral' if self.use_scaled else 'Base 1.5k Subcircuit'}")
+        for isl in self.islands:
+            print(f"   - [{isl.config.name}] Mode: {isl.config.bias_mode}, Pop: {isl.config.pop_size}")
+
+        start_total = time.perf_counter()
+        for gen in range(num_generations):
+            stats = self.step_generation(gen)
+            if verbose and (gen % 5 == 0 or gen == num_generations - 1):
+                best_mean = stats.get("global_best_mean", 0)
+                best_fit = stats.get("global_best_fitness", 0)
+                dur = stats.get("duration_sec", 0)
+                print(f"[Gen {gen:3d}/{num_generations}] Best Fitness: {best_fit:.2f} | Mean: {best_mean:.1f} | Duration: {dur:.2f}s | Migrated: {stats['migrated']}")
+
+        total_sec = time.perf_counter() - start_total
+        print(f"\n🏆 Evolution Complete in {total_sec:.1f}s! Global Best Fitness: {self.global_best_fitness:.2f}")
+
+        if self.global_best_individual is not None:
+            out_path = data_dir / save_name
+            np.savez_compressed(
+                out_path,
+                weights=self.global_best_individual.weights,
+                fitness=self.global_best_fitness,
+                stats=self.global_best_individual.stats,
+            )
+            print(f"💾 Saved elite champion weights to {out_path}")
+            
+            # Also save history
+            hist_path = data_dir / "dopamine_island_history.json"
+            with open(hist_path, "w", encoding="utf-8") as f:
+                json.dump(self.history, f, indent=2)
+            print(f"📊 Saved evolutionary history to {hist_path}")
+
+        return self.global_best_individual
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Dopamine Island Multi-Process Evolution")
+    parser.add_argument("--generations", type=int, default=100, help="Number of generations")
+    parser.add_argument("--scaled", action="store_true", help="Use 30k scaled bilateral connectome")
+    parser.add_argument("--workers", type=int, default=10, help="Number of parallel worker processes")
+    parser.add_argument("--games", type=int, default=6, help="Games per evaluation")
+    parser.add_argument("--migration-interval", type=int, default=5, help="Migration interval")
+    args = parser.parse_args()
+
+    engine = MultiIslandEvolution(
+        use_scaled=args.scaled,
+        num_workers=args.workers,
+        games_per_eval=args.games,
+        migration_interval=args.migration_interval,
+    )
+    try:
+        engine.run_evolution(num_generations=args.generations)
+    finally:
+        engine.close()
+
+
+if __name__ == "__main__":
+    main()
+

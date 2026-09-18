@@ -72,3 +72,17 @@ def test_scaled_server_topology():
     assert len(topo["coordinates_3d"]) >= 20000
     assert len(topo["regions"]) >= 20000
     assert topo["is_scaled"] is True
+
+
+def test_champion_dopamine_server():
+    server = ConnectomeVisualizerServer(use_champion=True)
+    status = server.get_status()
+    assert "Dopamine Island Champion" in status["model_name"]
+    
+    # Test /api/fly/act decision with satiety gating
+    dice = [3, 3, 5, 5, 1]
+    res_hold = server.act(dice=dice, roll_count=1, available_categories=["Fives", "Choice"])
+    assert res_hold["action"] == "hold"
+    assert len(res_hold["holds"]) == 5
+    assert res_hold["holds"] == [False, False, True, True, False]
+

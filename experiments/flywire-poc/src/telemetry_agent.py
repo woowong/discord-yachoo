@@ -78,11 +78,12 @@ class TelemetryFlyBrainAgent(FlyBrainAgent):
         available_categories: List[ScoreCategory],
     ) -> Tuple[List[bool], Dict[str, Any]]:
         mbon_counts, telemetry = self._run_brain_instrumented(dice, roll_count, available_categories, phase="hold")
-        holds = decode_hold_mask(mbon_counts, dice=dice)
+        holds = decode_hold_mask(mbon_counts, dice=dice, available_categories=available_categories)
         telemetry["decision"] = holds
         telemetry["decision_type"] = "hold"
         self.last_telemetry = telemetry
         return holds, telemetry
+
 
     def decide_category_with_telemetry(
         self,

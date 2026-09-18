@@ -77,3 +77,18 @@ def test_decoder_sacrifice_fallback():
     
     selected = decode_category_selection(mbon_counts, avail, dice=dice)
     assert selected in avail
+
+
+def test_encoder_satiety_silencing():
+    # Dice forms Full House: [2, 2, 5, 5, 5]
+    dice = [2, 2, 5, 5, 5]
+    roll_count = 1
+
+    # Case A: FullHouse is available -> PN 46 active
+    currents_avail = encode_state_to_pn(dice, roll_count, ["FullHouse", "Aces"])
+    assert currents_avail[46] == 2.0
+
+    # Case B: FullHouse is already consumed -> PN 46 silenced (0.0)
+    currents_satiated = encode_state_to_pn(dice, roll_count, ["Fives", "Deuces", "Choice"])
+    assert currents_satiated[46] == 0.0
+

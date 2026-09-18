@@ -7,20 +7,19 @@ from yacht_env import CATEGORIES, ScoreCategory, calculate_score
 def decode_hold_mask(
     mbon_firing_counts: np.ndarray,
     dice: List[int] | None = None,
-    threshold: float = 0.5
+    threshold: float = 0.5,
+    available_categories: List[ScoreCategory] | None = None,
 ) -> List[bool]:
     """
-    Decodes MBON [0..4] into biological Behavioral Drives (Action Primitives)
-    with Multi-Pair, Full-House, and Near-Yacht preservation:
-    - If Full House or Yacht is already formed: lock all 5 dice.
-    - If 4 of a kind is formed: hold 4 matching dice (hunt for Yacht).
-    - If 2 pairs are formed: hold both pairs (hunt for Full House).
-    - Otherwise, execute the MBON-selected behavioral drive:
-        * MBON 0: Multiples Drive (hold matching dice)
-        * MBON 1: Straight Sequence Drive (hold sequential runs)
-        * MBON 2: High-Value Drive (hold 5s and 6s)
-        * MBON 3: Exploration Drive (reroll all)
-        * MBON 4: Harvest / Freeze Drive (lock in all)
+    Decodes MBON [0..4] into biological Behavioral Drives (Action Primitives):
+    - MBON 0: Multiples Drive (hold matching dice; satiety-gated for Full House)
+    - MBON 1: Straight Sequence Drive (hold sequential runs)
+    - MBON 2: High-Value Drive (hold 5s and 6s)
+    - MBON 3: Exploration Drive (reroll all)
+    - MBON 4: Harvest / Freeze Drive (lock in all)
+
+    Decisions are driven by MBON firing dynamics and conditioned on available_categories
+    (satiety gating) without hardcoded heuristic overrides.
     """
     assert len(mbon_firing_counts) >= 5, f"Expected at least 5 MBONs, got {len(mbon_firing_counts)}"
     if len(mbon_firing_counts) == 48:
@@ -35,30 +34,42 @@ def decode_hold_mask(
         
     counts = Counter(dice)
     freq_items = counts.most_common()
+    avail_set = set(available_categories) if available_categories is not None else None
     
-    # 1. Automatic Pattern Preservation Checks
-    # Full House or Yacht formed -> lock all 5
-    if (len(freq_items) == 2 and freq_items[0][1] == 3 and freq_items[1][1] == 2) or (freq_items[0][1] == 5):
-        return [True, True, True, True, True]
-        
-    # 4 of a kind -> keep the 4, reroll 1
-    if freq_items[0][1] == 4:
-        target_val = freq_items[0][0]
-        return [d == target_val for d in dice]
-        
-    # Two pairs (e.g. 3,3 and 5,5) -> keep both pairs, reroll the 5th
-    if len(freq_items) >= 2 and freq_items[0][1] == 2 and freq_items[1][1] == 2:
-        pair_vals = {freq_items[0][0], freq_items[1][0]}
-        return [d in pair_vals for d in dice]
-        
-    # 2. Biological Behavioral Drive Selection
+    # 1. Biological Behavioral Drive Selection from MBON [0..4]
     if np.max(drive_counts) == np.min(drive_counts):
         best_drive = 0  # Default to Multiples
     else:
         best_drive = int(np.argmax(drive_counts))
         
+    # Satiety modulation on drive selection:
+    # If Straight Drive (1) selected but neither SmallStraight nor LargeStraight is available,
+    # fall back to Multiples Drive (0).
+    if best_drive == 1 and avail_set is not None:
+        if "SmallStraight" not in avail_set and "LargeStraight" not in avail_set:
+            best_drive = 0
+
     if best_drive == 0:
-        # Multiples Drive: hold highest multiplicity dice
+        # Multiples Drive:
+        # If Full House is formed, hold all 5 ONLY if FullHouse is still available.
+        # Otherwise, focus on the dominant matching set (hunt 4-of-a-kind / Yacht).
+        if len(freq_items) == 2 and freq_items[0][1] == 3 and freq_items[1][1] == 2:
+            if avail_set is None or "FullHouse" in avail_set:
+                return [True, True, True, True, True]
+            else:
+                target_val = freq_items[0][0]
+                return [d == target_val for d in dice]
+                
+        # If two pairs formed:
+        # Hold both pairs only if Full House is available and no higher single pair dominance
+        if len(freq_items) >= 2 and freq_items[0][1] == 2 and freq_items[1][1] == 2:
+            if avail_set is None or "FullHouse" in avail_set:
+                pair_vals = {freq_items[0][0], freq_items[1][0]}
+                return [d in pair_vals for d in dice]
+            else:
+                target_val = max(freq_items[0][0], freq_items[1][0])
+                return [d == target_val for d in dice]
+
         max_c = max(counts.values())
         if max_c > 1:
             best_vals = [val for val, c in counts.items() if c == max_c]
@@ -88,6 +99,7 @@ def decode_hold_mask(
     else:
         # Harvest / Freeze Drive: lock in all
         return [True, True, True, True, True]
+
 
 
 def decode_category_selection(

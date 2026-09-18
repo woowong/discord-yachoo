@@ -1,0 +1,2502 @@
+[
+  {
+    "generation": 0,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 130.75,
+        "mean_score": 143.25,
+        "max_score": 177,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 201.1904761904762,
+        "mean_score": 142.5,
+        "max_score": 157,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 249.625,
+        "mean_score": 145.25,
+        "max_score": 224,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 131.25,
+        "mean_score": 131.25,
+        "max_score": 231,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 4.95701683301013,
+    "global_best_fitness": 249.625,
+    "global_best_mean": 145.25,
+    "global_best_max": 224
+  },
+  {
+    "generation": 1,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 126.5,
+        "mean_score": 136.5,
+        "max_score": 162,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 202.63095238095238,
+        "mean_score": 137.75,
+        "max_score": 153,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 232.625,
+        "mean_score": 137.25,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 153.75,
+        "mean_score": 153.75,
+        "max_score": 220,
+        "upper_bonus_rate": 0.5,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 4.8942471660120646,
+    "global_best_fitness": 249.625,
+    "global_best_mean": 145.25,
+    "global_best_max": 224
+  },
+  {
+    "generation": 2,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 112.75,
+        "mean_score": 136.5,
+        "max_score": 154,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 225.88095238095238,
+        "mean_score": 146.0,
+        "max_score": 206,
+        "upper_bonus_rate": 0.5,
+        "yacht_count": 2,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 236.75,
+        "mean_score": 142.5,
+        "max_score": 171,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 142.25,
+        "mean_score": 142.25,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 4.891164290995221,
+    "global_best_fitness": 249.625,
+    "global_best_mean": 145.25,
+    "global_best_max": 224
+  },
+  {
+    "generation": 3,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 132.25,
+        "mean_score": 149.75,
+        "max_score": 177,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 217.8452380952381,
+        "mean_score": 149.75,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 265.625,
+        "mean_score": 154.25,
+        "max_score": 227,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 146.75,
+        "mean_score": 146.75,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.05,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 4.985101750004105,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 4,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 121.25,
+        "mean_score": 138.75,
+        "max_score": 166,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 194.75,
+        "mean_score": 137.25,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 245.5,
+        "mean_score": 144.0,
+        "max_score": 172,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 151.5,
+        "mean_score": 151.5,
+        "max_score": 165,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.119376000002376,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 5,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 127.0,
+        "mean_score": 135.75,
+        "max_score": 165,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 204.52380952380952,
+        "mean_score": 145.0,
+        "max_score": 167,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 257.125,
+        "mean_score": 145.25,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 135.5,
+        "mean_score": 135.5,
+        "max_score": 151,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.185065500001656,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 6,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 136.25,
+        "mean_score": 146.25,
+        "max_score": 189,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 174.0952380952381,
+        "mean_score": 128.5,
+        "max_score": 161,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 237.125,
+        "mean_score": 145.25,
+        "max_score": 199,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 149.25,
+        "mean_score": 149.25,
+        "max_score": 160,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.06493037501059,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 7,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 134.25,
+        "mean_score": 150.5,
+        "max_score": 172,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 240.35714285714286,
+        "mean_score": 162.5,
+        "max_score": 218,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 235.25,
+        "mean_score": 146.5,
+        "max_score": 189,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.08,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 123.25,
+        "mean_score": 123.25,
+        "max_score": 164,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.07207183400169,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 8,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 127.75,
+        "mean_score": 137.75,
+        "max_score": 171,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 181.98809523809524,
+        "mean_score": 131.75,
+        "max_score": 171,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 243.625,
+        "mean_score": 146.25,
+        "max_score": 166,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 145.25,
+        "mean_score": 145.25,
+        "max_score": 179,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.136521167005412,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 9,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 143.5,
+        "mean_score": 149.75,
+        "max_score": 167,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 203.33333333333334,
+        "mean_score": 140.0,
+        "max_score": 220,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 227.875,
+        "mean_score": 131.75,
+        "max_score": 194,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 159.25,
+        "mean_score": 159.25,
+        "max_score": 210,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.171447332992102,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 10,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 130.0,
+        "mean_score": 142.5,
+        "max_score": 172,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 226.36904761904762,
+        "mean_score": 153.75,
+        "max_score": 221,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 249.75,
+        "mean_score": 154.5,
+        "max_score": 170,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 131.75,
+        "mean_score": 131.75,
+        "max_score": 153,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.131806167002651,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 11,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 133.0,
+        "mean_score": 141.75,
+        "max_score": 156,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 195.36904761904762,
+        "mean_score": 137.75,
+        "max_score": 183,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.06,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 227.875,
+        "mean_score": 128.75,
+        "max_score": 177,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 152.0,
+        "mean_score": 152.0,
+        "max_score": 176,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.187058041992714,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 12,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 138.75,
+        "mean_score": 143.75,
+        "max_score": 167,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 229.32142857142856,
+        "mean_score": 158.25,
+        "max_score": 172,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 256.0,
+        "mean_score": 149.0,
+        "max_score": 213,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 135.25,
+        "mean_score": 135.25,
+        "max_score": 184,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.125142165998113,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 13,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 131.75,
+        "mean_score": 138.0,
+        "max_score": 214,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.05,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 215.48809523809524,
+        "mean_score": 155.25,
+        "max_score": 180,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 216.625,
+        "mean_score": 123.25,
+        "max_score": 160,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 147.5,
+        "mean_score": 147.5,
+        "max_score": 200,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.1978403750108555,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 14,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 124.25,
+        "mean_score": 131.75,
+        "max_score": 159,
+        "upper_bonus_rate": 0.5,
+        "yacht_count": 0,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 175.8452380952381,
+        "mean_score": 130.25,
+        "max_score": 144,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 252.5,
+        "mean_score": 157.0,
+        "max_score": 168,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 129.5,
+        "mean_score": 129.5,
+        "max_score": 209,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.249834083006135,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 15,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 125.25,
+        "mean_score": 141.5,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 220.51190476190476,
+        "mean_score": 145.75,
+        "max_score": 193,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 230.375,
+        "mean_score": 141.75,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 148.0,
+        "mean_score": 148.0,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.3009815420082305,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 16,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 116.0,
+        "mean_score": 128.5,
+        "max_score": 176,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 201.03571428571428,
+        "mean_score": 136.75,
+        "max_score": 208,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 233.75,
+        "mean_score": 146.5,
+        "max_score": 171,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 140.75,
+        "mean_score": 140.75,
+        "max_score": 168,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.326812500003143,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 17,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 125.0,
+        "mean_score": 137.5,
+        "max_score": 170,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 202.60714285714286,
+        "mean_score": 142.25,
+        "max_score": 163,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 251.125,
+        "mean_score": 150.25,
+        "max_score": 177,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 143.25,
+        "mean_score": 143.25,
+        "max_score": 179,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.307456374997855,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 18,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 138.25,
+        "mean_score": 158.25,
+        "max_score": 175,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 226.0595238095238,
+        "mean_score": 152.25,
+        "max_score": 164,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 223.625,
+        "mean_score": 135.25,
+        "max_score": 202,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 142.0,
+        "mean_score": 142.0,
+        "max_score": 167,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.336526958999457,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 19,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 123.0,
+        "mean_score": 133.0,
+        "max_score": 147,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 208.86904761904762,
+        "mean_score": 141.25,
+        "max_score": 165,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 223.375,
+        "mean_score": 129.75,
+        "max_score": 167,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 129.0,
+        "mean_score": 129.0,
+        "max_score": 179,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.297849750000751,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 20,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 109.25,
+        "mean_score": 130.5,
+        "max_score": 175,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 207.6904761904762,
+        "mean_score": 144.0,
+        "max_score": 163,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 243.5,
+        "mean_score": 152.0,
+        "max_score": 180,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 127.25,
+        "mean_score": 127.25,
+        "max_score": 176,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.35307583300164,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 21,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 134.0,
+        "mean_score": 146.5,
+        "max_score": 178,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 178.01190476190476,
+        "mean_score": 133.25,
+        "max_score": 165,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 242.625,
+        "mean_score": 141.25,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 149.25,
+        "mean_score": 149.25,
+        "max_score": 178,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.524195541991503,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 22,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 132.0,
+        "mean_score": 149.5,
+        "max_score": 187,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 219.0952380952381,
+        "mean_score": 158.5,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 225.125,
+        "mean_score": 133.25,
+        "max_score": 187,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 154.5,
+        "mean_score": 154.5,
+        "max_score": 168,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.44507254200289,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 23,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 111.0,
+        "mean_score": 131.0,
+        "max_score": 178,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 201.79761904761904,
+        "mean_score": 142.75,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 218.125,
+        "mean_score": 135.25,
+        "max_score": 161,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 141.5,
+        "mean_score": 141.5,
+        "max_score": 163,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.349581916991156,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 24,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 131.0,
+        "mean_score": 147.25,
+        "max_score": 161,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 204.02380952380952,
+        "mean_score": 144.5,
+        "max_score": 170,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 255.75,
+        "mean_score": 155.5,
+        "max_score": 176,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 166.75,
+        "mean_score": 166.75,
+        "max_score": 228,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 4,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.352979124989361,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 25,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 117.75,
+        "mean_score": 130.25,
+        "max_score": 188,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 203.46428571428572,
+        "mean_score": 140.25,
+        "max_score": 155,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 219.75,
+        "mean_score": 143.5,
+        "max_score": 161,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 125.0,
+        "mean_score": 125.0,
+        "max_score": 165,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.377096625001286,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 26,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 115.75,
+        "mean_score": 125.75,
+        "max_score": 216,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 198.77380952380952,
+        "mean_score": 139.25,
+        "max_score": 167,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 243.5,
+        "mean_score": 128.0,
+        "max_score": 189,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 157.25,
+        "mean_score": 157.25,
+        "max_score": 224,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.366903290996561,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 27,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 109.0,
+        "mean_score": 125.25,
+        "max_score": 158,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 230.14285714285714,
+        "mean_score": 158.0,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 239.125,
+        "mean_score": 126.25,
+        "max_score": 207,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 1,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 136.75,
+        "mean_score": 136.75,
+        "max_score": 176,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.34429141698638,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 28,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 141.75,
+        "mean_score": 146.75,
+        "max_score": 177,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 194.27380952380952,
+        "mean_score": 137.25,
+        "max_score": 161,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 248.75,
+        "mean_score": 148.5,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 145.0,
+        "mean_score": 145.0,
+        "max_score": 172,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.085,
+        "stagnated": false
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.348270957998466,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 29,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 119.5,
+        "mean_score": 132.0,
+        "max_score": 157,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 204.48809523809524,
+        "mean_score": 144.25,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 219.125,
+        "mean_score": 135.25,
+        "max_score": 168,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 135.25,
+        "mean_score": 135.25,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.411984833001043,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 30,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 110.0,
+        "mean_score": 130.0,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 196.57142857142856,
+        "mean_score": 138.0,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 216.25,
+        "mean_score": 128.5,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 125.25,
+        "mean_score": 125.25,
+        "max_score": 162,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 0,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.369095165995532,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 31,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 154.0,
+        "mean_score": 161.5,
+        "max_score": 213,
+        "upper_bonus_rate": 0.5,
+        "yacht_count": 2,
+        "sigma": 0.085,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 206.96428571428572,
+        "mean_score": 146.25,
+        "max_score": 177,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 234.5,
+        "mean_score": 150.0,
+        "max_score": 164,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 143.75,
+        "mean_score": 143.75,
+        "max_score": 169,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.403805333000491,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 32,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 129.75,
+        "mean_score": 138.5,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.085,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 254.39285714285714,
+        "mean_score": 174.75,
+        "max_score": 216,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.102,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 238.25,
+        "mean_score": 145.5,
+        "max_score": 176,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 148.5,
+        "mean_score": 148.5,
+        "max_score": 171,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.3648570840014145,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 33,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 119.0,
+        "mean_score": 135.25,
+        "max_score": 171,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 226.3095238095238,
+        "mean_score": 155.0,
+        "max_score": 160,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.102,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 232.875,
+        "mean_score": 144.75,
+        "max_score": 161,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 147.25,
+        "mean_score": 147.25,
+        "max_score": 177,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.399879958000383,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 34,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 114.0,
+        "mean_score": 127.75,
+        "max_score": 172,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.085,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 235.91666666666666,
+        "mean_score": 154.25,
+        "max_score": 217,
+        "upper_bonus_rate": 0.5,
+        "yacht_count": 2,
+        "sigma": 0.102,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 226.875,
+        "mean_score": 143.75,
+        "max_score": 155,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 142.0,
+        "mean_score": 142.0,
+        "max_score": 226,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.395223333005561,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 35,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 127.0,
+        "mean_score": 143.25,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.085,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 237.85714285714286,
+        "mean_score": 160.0,
+        "max_score": 209,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.102,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 226.625,
+        "mean_score": 142.25,
+        "max_score": 176,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 160.5,
+        "mean_score": 160.5,
+        "max_score": 213,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.415964125000755,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 36,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 144.25,
+        "mean_score": 149.25,
+        "max_score": 168,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 190.26190476190476,
+        "mean_score": 133.0,
+        "max_score": 159,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.102,
+        "stagnated": false
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 220.125,
+        "mean_score": 121.25,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 134.5,
+        "mean_score": 134.5,
+        "max_score": 158,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.489073167002061,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 37,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 122.75,
+        "mean_score": 139.0,
+        "max_score": 182,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 185.4404761904762,
+        "mean_score": 131.75,
+        "max_score": 214,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 222.5,
+        "mean_score": 134.0,
+        "max_score": 151,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 140.0,
+        "mean_score": 140.0,
+        "max_score": 167,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.466318165999837,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 38,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 151.5,
+        "mean_score": 157.75,
+        "max_score": 229,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 187.4047619047619,
+        "mean_score": 130.5,
+        "max_score": 147,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 228.125,
+        "mean_score": 133.25,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 126.75,
+        "mean_score": 126.75,
+        "max_score": 147,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.462292708005407,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 39,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 138.75,
+        "mean_score": 151.25,
+        "max_score": 175,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 208.48809523809524,
+        "mean_score": 143.25,
+        "max_score": 200,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 235.0,
+        "mean_score": 141.0,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 137.75,
+        "mean_score": 137.75,
+        "max_score": 172,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.387612832986633,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 40,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 156.0,
+        "mean_score": 154.75,
+        "max_score": 200,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.085,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 200.53571428571428,
+        "mean_score": 143.75,
+        "max_score": 195,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 238.125,
+        "mean_score": 142.25,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 145.5,
+        "mean_score": 145.5,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.500135374997626,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 41,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 157.5,
+        "mean_score": 158.75,
+        "max_score": 192,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.07225000000000001,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 228.28571428571428,
+        "mean_score": 156.5,
+        "max_score": 174,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 208.875,
+        "mean_score": 131.75,
+        "max_score": 186,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 134.25,
+        "mean_score": 134.25,
+        "max_score": 156,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.447173874999862,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 42,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 116.5,
+        "mean_score": 132.75,
+        "max_score": 170,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.07225000000000001,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 194.4404761904762,
+        "mean_score": 135.75,
+        "max_score": 169,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 264.0,
+        "mean_score": 149.0,
+        "max_score": 179,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 137.5,
+        "mean_score": 137.5,
+        "max_score": 154,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.4520520829973975,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 43,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 125.75,
+        "mean_score": 142.0,
+        "max_score": 180,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.07225000000000001,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 206.46428571428572,
+        "mean_score": 145.75,
+        "max_score": 180,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 216.625,
+        "mean_score": 135.25,
+        "max_score": 163,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 148.75,
+        "mean_score": 148.75,
+        "max_score": 173,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.461368582997238,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 44,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 141.5,
+        "mean_score": 151.5,
+        "max_score": 231,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.07225000000000001,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 199.85714285714286,
+        "mean_score": 139.5,
+        "max_score": 162,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 221.25,
+        "mean_score": 137.5,
+        "max_score": 170,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 132.75,
+        "mean_score": 132.75,
+        "max_score": 167,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.46619754099811,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 45,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 125.5,
+        "mean_score": 139.25,
+        "max_score": 208,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 2,
+        "sigma": 0.07225000000000001,
+        "stagnated": false
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 180.4404761904762,
+        "mean_score": 129.25,
+        "max_score": 168,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 244.75,
+        "mean_score": 152.5,
+        "max_score": 182,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 162.5,
+        "mean_score": 162.5,
+        "max_score": 178,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": true,
+    "duration_sec": 5.469002375000855,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 46,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 125.75,
+        "mean_score": 145.75,
+        "max_score": 162,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 234.72619047619048,
+        "mean_score": 159.25,
+        "max_score": 225,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 216.25,
+        "mean_score": 133.5,
+        "max_score": 189,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 154.25,
+        "mean_score": 154.25,
+        "max_score": 166,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.467338041009498,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 47,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 125.0,
+        "mean_score": 131.25,
+        "max_score": 213,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 190.4047619047619,
+        "mean_score": 133.5,
+        "max_score": 181,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 238.375,
+        "mean_score": 153.75,
+        "max_score": 168,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 3,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 141.0,
+        "mean_score": 141.0,
+        "max_score": 165,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.491841707989806,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 48,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 142.5,
+        "mean_score": 146.25,
+        "max_score": 167,
+        "upper_bonus_rate": 0.5,
+        "yacht_count": 1,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 191.38095238095238,
+        "mean_score": 134.0,
+        "max_score": 153,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 231.875,
+        "mean_score": 135.75,
+        "max_score": 178,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.16,
+        "stagnated": true
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 143.75,
+        "mean_score": 143.75,
+        "max_score": 163,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.515861624997342,
+    "global_best_fitness": 265.625,
+    "global_best_mean": 154.25,
+    "global_best_max": 227
+  },
+  {
+    "generation": 49,
+    "island_stats": [
+      {
+        "name": "Island A: Satiety-Gated",
+        "best_fitness": 113.25,
+        "mean_score": 133.25,
+        "max_score": 170,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 2,
+        "sigma": 0.1,
+        "stagnated": true
+      },
+      {
+        "name": "Island B: Affordance RPE",
+        "best_fitness": 199.96428571428572,
+        "mean_score": 141.75,
+        "max_score": 159,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 3,
+        "sigma": 0.12,
+        "stagnated": true
+      },
+      {
+        "name": "Island C: Dynamic APL Attention",
+        "best_fitness": 273.75,
+        "mean_score": 162.5,
+        "max_score": 205,
+        "upper_bonus_rate": 0.25,
+        "yacht_count": 4,
+        "sigma": 0.136,
+        "stagnated": false
+      },
+      {
+        "name": "Island D: Pure SNN Control",
+        "best_fitness": 152.5,
+        "mean_score": 152.5,
+        "max_score": 166,
+        "upper_bonus_rate": 0.0,
+        "yacht_count": 4,
+        "sigma": 0.1,
+        "stagnated": true
+      }
+    ],
+    "migrated": false,
+    "duration_sec": 5.475270499999169,
+    "global_best_fitness": 273.75,
+    "global_best_mean": 162.5,
+    "global_best_max": 205
+  }
+]

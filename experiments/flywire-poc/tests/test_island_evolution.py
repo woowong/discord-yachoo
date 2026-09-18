@@ -90,3 +90,23 @@ def test_multi_island_migration():
     stat2 = engine.step_generation(2)
     assert stat2["migrated"] is True
     assert engine.global_best_individual is not None
+    engine.close()
+
+
+def test_dopamine_island_configurations():
+    # Test default initialization with 4 dopamine islands
+    engine = MultiIslandEvolution(
+        island_configs=None,
+        migration_interval=5,
+        games_per_eval=1,
+        num_workers=1,  # Single worker for test
+    )
+    assert len(engine.islands) == 4
+    bias_modes = [isl.config.bias_mode for isl in engine.islands]
+    assert "satiety_gated" in bias_modes
+    assert "affordance_rpe" in bias_modes
+    assert "dynamic_apl" in bias_modes
+    assert "pure_snn" in bias_modes
+    assert engine.migration_interval == 5
+    engine.close()
+

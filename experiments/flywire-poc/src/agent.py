@@ -4,7 +4,7 @@ import numpy as np
 
 from encoder import encode_state_to_pn
 from decoder import decode_hold_mask, decode_category_selection
-from forward_sim import FlySubcircuitSNN, load_cached_subcircuit
+from forward_sim import FlySubcircuitSNN, load_cached_subcircuit, compute_dan_modulation
 from yacht_env import ScoreCategory
 
 
@@ -31,16 +31,35 @@ class FlyBrainAgent(BaseYachtAgent):
     Translates Yacht game state into sensory inputs, simulates forward spike propagation,
     and decodes motor decisions from MBON firing patterns.
     """
-    def __init__(self, snn: Optional[FlySubcircuitSNN] = None, sim_steps: int = 15, pulse_steps: int = 4):
+    def __init__(
+        self,
+        snn: Optional[FlySubcircuitSNN] = None,
+        sim_steps: int = 15,
+        pulse_steps: int = 4,
+        enable_dan_modulation: bool = True,
+    ):
         if snn is None:
             adj, meta = load_cached_subcircuit()
             snn = FlySubcircuitSNN(adj, meta)
         self.snn = snn
         self.sim_steps = sim_steps
         self.pulse_steps = pulse_steps
+        self.enable_dan_modulation = enable_dan_modulation
 
     def _run_brain(self, dice: List[int], roll_count: int, available_categories: List[ScoreCategory]) -> np.ndarray:
-        # Encode state into input current for 50 PNs
+        # 1. Apply DAN neuromodulation (PAM reward amplification / PPL1 satiety inhibition)
+        if hasattr(self.snn, "set_dan_modulation"):
+            if self.enable_dan_modulation:
+                dan_gains = compute_dan_modulation(
+                    available_categories,
+                    dice=dice,
+                    num_mbon=self.snn.metadata["layers"]["mbon"]["count"],
+                )
+                self.snn.set_dan_modulation(dan_gains)
+            else:
+                self.snn.set_dan_modulation(None)
+
+        # 2. Encode state into input current for PNs
         pn_current = encode_state_to_pn(dice, roll_count, available_categories, num_pn=self.snn.metadata["layers"]["input_pn"]["count"])
         
         self.snn.reset_state()
@@ -57,9 +76,11 @@ class FlyBrainAgent(BaseYachtAgent):
             
         return mbon_counts
 
+
     def decide_hold(self, dice: List[int], roll_count: int, available_categories: List[ScoreCategory]) -> List[bool]:
         mbon_counts = self._run_brain(dice, roll_count, available_categories)
-        return decode_hold_mask(mbon_counts, dice=dice)
+        return decode_hold_mask(mbon_counts, dice=dice, available_categories=available_categories)
+
 
     def decide_category(self, dice: List[int], roll_count: int, available_categories: List[ScoreCategory]) -> ScoreCategory:
         mbon_counts = self._run_brain(dice, roll_count, available_categories)

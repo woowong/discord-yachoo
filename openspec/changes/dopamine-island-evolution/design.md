@@ -43,9 +43,18 @@ At the same time, Apple Silicon hardware has extensive computational headroom (1
 - **Choice**: Configure 4 islands with distinct dopamine fitness landscapes:
   - *Island A (Satiety-Gated)*: Heavy penalty for wasting turns on 0-point redundant patterns.
   - *Island B (Affordance RPE)*: Fitness bonus for tracking high-yield opportunities (Upper Bonus + Yacht).
-  - *Island C (Dynamic APL Attention)*: Rewards late-game risk-taking (Large Straight, Yacht) when options dwindle.
+  - *Island C (Dynamic APL Attention / Male-Dimorphic Drive)*: Rewards high-risk pursuit (Large Straight, Yacht) reflecting aggressive mating/courtship circuit behavioral drives.
   - *Island D (Pure Control)*: Pure score optimization without dopamine biasing.
   A ring migration topology exchanges 2 elites every 5 generations.
+
+### Decision 5: Architectural Protocol for Full Adult Male Drosophila Connectome (166.7k CNS)
+- **Choice**: Structure SNN matrix operations and plasticity around the **Frozen Biological Scaffold + Local KC-MBON Plasticity** paradigm:
+  - *Scaffold Freezing*: Fix ~99.9% of biological connections (Optic Lobe, VNC motor circuits, Antennal Lobe glomeruli) from the 166.7k connectome data, avoiding the curse of dimensionality and mutation explosion.
+  - *Local Plasticity*: Restrict evolutionary mutation/crossover strictly to Mushroom Body output compartments (KC $\to$ MBON) and DAN neuromodulatory gains (~20k-50k parameters).
+  - *Male Dimorphic Circuit Integration*: Map higher-order male-specific P1/courtship neurons to dopamine affordance sensitivity (high-risk Yacht reward pursuit).
+  - *Inference Serving*: Leverage Metal/MPS or optimized Scipy SpMV, keeping inference step latency under 2ms for real-time Discord bot responses.
+- **Alternative Considered**: Full-graph neuroevolution across 50M+ synapses.
+  - *Why rejected*: Causes combinatorial explosion, worker memory exhaustion, and destroys empirically validated biological connectome architecture.
 
 ## Risks / Trade-offs
 
@@ -55,3 +64,4 @@ At the same time, Apple Silicon hardware has extensive computational headroom (1
   *Mitigation*: Use Python `multiprocessing` pool utilizing all 10 Apple Silicon CPU cores, vectorized Scipy CSR step functions, and optimized simulation step counts (12~15 steps per roll).
 - **[Risk] Memory pressure across 40 parallel games** →
   *Mitigation*: Sparse matrix operations in Scipy use < 50MB per worker, total RAM footprint under 1GB.
+

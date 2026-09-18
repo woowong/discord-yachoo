@@ -68,7 +68,8 @@ class AdvancedCognitiveFlyAgent(FlyBrainAgent):
         if self.working_memory_drive is not None and roll_count > 1:
             mbon_counts[self.working_memory_drive] += 2.0
             
-        holds = decode_hold_mask(mbon_counts, dice=dice)
+        holds = decode_hold_mask(mbon_counts, dice=dice, available_categories=available_categories)
+
         
         # Record intended drive into working memory
         best_drive = int(np.argmax(mbon_counts[:5]))

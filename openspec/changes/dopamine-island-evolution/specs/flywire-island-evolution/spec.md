@@ -18,3 +18,14 @@ The system SHALL maintain multiple isolated sub-populations (islands) with disti
 #### Scenario: Multi-core parallel island evaluation
 - **WHEN** island neuroevolution is initiated on an M4 multi-core machine
 - **THEN** the system distributes island evaluations across 10 parallel processes, tracking generation progress and elite fitness without CPU starvation.
+
+## ADDED Requirements
+
+### Requirement: Connectome Scaffold Freezing & Local Plasticity Compatibility
+The system SHALL support the frozen scaffold local plasticity paradigm, where global non-MB connectome topology (up to hundreds of thousands of neurons including adult male connectome scale) remains invariant while synaptic mutation/crossover is isolated strictly to designated KC-MBON and neuromodulatory compartments.
+
+#### Scenario: Preserving frozen non-MB scaffold
+- **WHEN** mutating or crossing over genomes in scaled connectome mode
+- **THEN** only KC-to-MBON synaptic weights are updated, while PN->KC, central complex, APL, and other biological connections remain strictly preserved.
+
+

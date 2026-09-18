@@ -58,7 +58,7 @@ def encode_state_to_pn(
             # Base current + proportional affordance yield
             currents[33 + cat_idx] = cat_amp + (pts / 50.0) * 2.0
             
-    # 4. Sensory feature detectors (PN 45..49)
+    # 4. Sensory feature detectors (PN 45..49) with Satiety Gating
     if num_pn >= 50:
         counts = Counter(dice)
         freq_vals = sorted(counts.values(), reverse=True)
@@ -79,10 +79,14 @@ def encode_state_to_pn(
         dice_sum = sum(dice)
         high_dice = sum(1 for d in dice if d in (5, 6))
         
+        has_full_house_avail = "FullHouse" in avail_set
+        has_straight_avail = ("SmallStraight" in avail_set) or ("LargeStraight" in avail_set)
+
         currents[45] = (max_kind / 5.0) * 2.0
-        currents[46] = 2.0 if is_full_house else 0.0
-        currents[47] = (max_seq / 5.0) * 2.0
+        currents[46] = 2.0 if (is_full_house and has_full_house_avail) else 0.0
+        currents[47] = (max_seq / 5.0) * 2.0 if has_straight_avail else 0.0
         currents[48] = (dice_sum / 30.0) * 2.0
         currents[49] = (high_dice / 5.0) * 2.0
         
     return currents
+
