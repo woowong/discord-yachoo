@@ -2,7 +2,7 @@ import { Effect, Layer, Option } from "effect";
 import { GameState } from "../../domain/types";
 import { Invitation, isInvitationExpired } from "../../domain/invitation";
 import { MatchQueue, isMatchQueueExpired } from "../../domain/matchQueue";
-import { GameRepository, InvitationRepository, MatchQueueRepository, RepositoryError } from "../repository";
+import { GameRepository, InvitationRepository, MatchQueueRepository, ColosseumRepository, ColosseumMatchRecord, ColosseumBetRecord, RepositoryError } from "../repository";
 
 export const InMemoryRepositoryLive = Layer.sync(
   GameRepository,
@@ -111,4 +111,78 @@ export const InMemoryMatchQueueRepositoryLive = Layer.sync(
     };
   }
 );
+
+export const InMemoryColosseumRepositoryLive = Layer.sync(
+  ColosseumRepository,
+  () => {
+    const matches = new Map<string, ColosseumMatchRecord>();
+    const bets = new Map<string, ColosseumBetRecord>();
+
+    return {
+      createMatch: (match: ColosseumMatchRecord) =>
+        Effect.sync(() => {
+          matches.set(match.id, match);
+        }),
+
+      getMatchById: (id: string) =>
+        Effect.sync(() => {
+          const val = matches.get(id);
+          return Option.fromNullable(val);
+        }),
+
+      updateMatchStatus: (id: string, status: ColosseumMatchRecord["status"], messageId?: string | null) =>
+        Effect.sync(() => {
+          const existing = matches.get(id);
+          if (existing) {
+            matches.set(id, {
+              ...existing,
+              status,
+              messageId: messageId !== undefined && messageId !== null ? messageId : existing.messageId,
+            });
+          }
+        }),
+
+      finishMatch: (id: string, winner: "A" | "B" | "DRAW", scoreA: number, scoreB: number, timelineJson: string) =>
+        Effect.sync(() => {
+          const existing = matches.get(id);
+          if (existing) {
+            matches.set(id, {
+              ...existing,
+              status: "COMPLETED",
+              winner,
+              scoreA,
+              scoreB,
+              timelineJson,
+              closedAt: new Date()
+            });
+          }
+        }),
+
+      placeBet: (bet: ColosseumBetRecord) =>
+        Effect.sync(() => {
+          bets.set(bet.id, bet);
+        }),
+
+      getBetsByMatchId: (matchId: string) =>
+        Effect.sync(() => {
+          return Array.from(bets.values()).filter((b) => b.matchId === matchId);
+        }),
+
+      getUserBetInMatch: (matchId: string, userId: string) =>
+        Effect.sync(() => {
+          const found = Array.from(bets.values()).find((b) => b.matchId === matchId && b.userId === userId);
+          return Option.fromNullable(found);
+        }),
+
+      updateBetPayout: (id: string, payout: number, status: ColosseumBetRecord["status"]) =>
+        Effect.sync(() => {
+          const existing = bets.get(id);
+          if (existing) {
+            bets.set(id, { ...existing, payout, status });
+          }
+        })
+    };
+  }
+);
+
 

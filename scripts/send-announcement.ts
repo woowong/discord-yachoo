@@ -5,29 +5,39 @@ const isDryRun = args.includes("--dry-run");
 const channelId = args.find((arg) => !arg.startsWith("--"));
 
 const patchNoteEmbed = {
-  title: "📢 디스코드 야추 다이스 업데이트 패치 노트 🎲",
-  description: "이번 패치에서는 네트워크 지연이나 화면 멈춤 시 게임 보드를 즉시 동기화할 수 있는 새로고침 기능이 추가되었습니다!",
-  color: 0x5865f2,
+  title: "🏛️ 초파리 콜로세움 & ELO 베팅 시스템 오픈! 🪰🎲",
+  description: "초파리 인공신경망(SNN) 검투사들의 1v1 야추 다이스 혈투를 관전하고, 자신의 ELO 레이팅을 걸고 승부를 예측하는 **초파리 콜로세움**이 개장했습니다!",
+  color: 0xe67e22,
   fields: [
     {
-      name: "1️⃣ 게임 보드 새로고침(🔄) 기능 추가",
-      value: "• 게임 액션 버튼 영역(`[ 주사위 굴리기 ]`, `[ 기권 ]` 옆)에 **`[ 🔄 새로고침 ]`** 버튼이 추가되었습니다.\n• 네트워크 지연이나 Discord 상호작용 타임아웃으로 화면 턴 수가 맞지 않을 때 누르면, 즉시 서버의 최신 게임 상태로 화면이 동기화됩니다.",
+      name: "⚔️ 1v1 초파리 검투사 매칭 (`/colosseum`)",
+      value: "• 4종의 개성 넘치는 페르소나(**🎰 잭팟 광기**, **🍎 뉴턴 계산기**, **⚡ 스피더 돌격대**, **🧬 키메라 혼돈**) 중 2마리가 무작위 매칭되어 12라운드 진검승부를 펼칩니다.",
       inline: false
     },
     {
-      name: "2️⃣ 누구나 자유롭게 즉시 동기화",
-      value: "• 내 턴이 아니어도 대기 중인 상대방이나 채널 참여자 누구나 새로고침 버튼을 눌러 최신 게임 진행 상태를 확인할 수 있습니다.\n• 추가 API 호출 없이 0ms급 즉시 응답으로 메시지가 갱신됩니다.",
+      name: "💰 실전 ELO 베팅 & 배당금 정산",
+      value: "• 유저의 실전 ELO 레이팅을 **10 ~ 50점**까지 자유롭게 베팅할 수 있습니다.\n• 검투사 간 전력차에 기반한 실시간 배당률이 적용되며, 승리 시 배당 ELO가 즉시 지급됩니다. (파산 방지: 최소 800 ELO 보장)",
+      inline: false
+    },
+    {
+      name: "🧠 실시간 도파민(PAM/PPL1) 수치 & 개성 대사 중계",
+      value: "• 주사위 롤 결과와 점수 상황에 따른 초파리의 실제 신경 도파민 분비량(`[████░░] 74%`)과 페르소나별 실시간 대사가 중계됩니다.",
+      inline: false
+    },
+    {
+      name: "🔇 채널 도배 없는 단일 임베드 중계",
+      value: "• 여러 개의 메시지를 쏘지 않고, 하나의 임베드 안에서 **[베팅 공고 ➔ 전반 격돌 ➔ 후반 클라이맥스 ➔ 최종 정산]** 4단계가 순차적으로 자동 업데이트됩니다.",
       inline: false
     }
   ],
   footer: {
-    text: "discord-yachoo • 2026-08-16 Patch Release"
+    text: "discord-yachoo • 2026-09-18 Colosseum Update"
   },
   timestamp: new Date().toISOString()
 };
 
 const payload = {
-  content: "🎲 **[discord-yachoo] 최신 패치 소식이 도착했습니다!**",
+  content: "🏛️ **[discord-yachoo] 초파리 콜로세움 & ELO 베팅 업데이트가 도착했습니다!** 🪰🎲",
   embeds: [patchNoteEmbed]
 };
 

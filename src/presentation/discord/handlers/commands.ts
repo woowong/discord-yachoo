@@ -1,7 +1,8 @@
 import { Effect, Option } from "effect";
 import { ParsedInteraction } from "../../discord/adapter/types";
-import { PlayerRepository, MatchRepository } from "../../../persistence/repository";
+import { PlayerRepository, MatchRepository, ColosseumRepository } from "../../../persistence/repository";
 import { DiscordResponseSerializer } from "../../discord/adapter/serializer";
+import { FlyBrainUrl } from "../../discord/adapter/api";
 import { GameWorkflowService } from "../../../application/GameWorkflowService";
 import { KoreanMessages } from "../../messages/ko";
 
@@ -278,3 +279,26 @@ export const handleHistory = (
       headers: { "content-type": "application/json" }
     });
   });
+
+export const handleColosseum = (
+  interaction: ParsedInteraction & { readonly _tag: "Command" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+    const colosseumRepo = yield* ColosseumRepository;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+
+    const match = yield* workflow.createColosseumMatch(guildId, channelId);
+    const bets = yield* colosseumRepo.getBetsByMatchId(match.id);
+
+    const serialized = serializer.serializeColosseumMatch(match, bets, flyUrl);
+    return new Response(JSON.stringify(serialized), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+

@@ -1,21 +1,22 @@
 import { Effect, Layer } from "effect";
 import { D1Database } from "./persistence/d1/database";
-import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive, D1InvitationRepositoryLive, D1MatchQueueRepositoryLive } from "./persistence/d1/repository";
+import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive, D1InvitationRepositoryLive, D1MatchQueueRepositoryLive, D1ColosseumRepositoryLive } from "./persistence/d1/repository";
 import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./presentation/discord/adapter/signature";
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./presentation/discord/adapter/parser";
 import { DiscordResponseSerializerLive } from "./presentation/discord/adapter/serializer";
-import { DiscordApiServiceLive, DiscordBotToken } from "./presentation/discord/adapter/api";
-import { GameWorkflowServiceLive } from "./application/GameWorkflowService";
+import { DiscordApiServiceLive, DiscordBotToken, FlyBrainUrl } from "./presentation/discord/adapter/api";
+import { GameWorkflowServiceLive, GameWorkflowService } from "./application/GameWorkflowService";
 import { routeInteraction } from "./presentation/discord/router";
 import { handleWebRequest } from "./presentation/web/router";
 
 export default {
-  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string }, ctx: any): Promise<Response> {
+  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string; FLY_BRAIN_URL?: string }, ctx: any): Promise<Response> {
     const url = new URL(request.url);
     const isGet = request.method === "GET";
     const isWebRoute = url.pathname === "/" || url.pathname.startsWith("/web");
 
     const botTokenLayer = Layer.succeed(DiscordBotToken, env.DISCORD_BOT_TOKEN || "");
+    const flyBrainUrlLayer = Layer.succeed(FlyBrainUrl, env.FLY_BRAIN_URL || "");
     const apiServiceLayer = DiscordApiServiceLive.pipe(Layer.provide(botTokenLayer));
 
     const mainLayer = Layer.mergeAll(
@@ -27,7 +28,10 @@ export default {
       D1GameRepositoryLive,
       D1InvitationRepositoryLive,
       D1MatchQueueRepositoryLive,
+      D1ColosseumRepositoryLive,
+      botTokenLayer,
       apiServiceLayer,
+      flyBrainUrlLayer,
       GameWorkflowServiceLive
     ).pipe(
       Layer.provide(Layer.succeed(D1Database, env.DB))
@@ -50,6 +54,44 @@ export default {
         Effect.provide(mainLayer)
       );
       return Effect.runPromise(webProgram);
+    }
+
+    // Route colosseum settlement callback from Python SNN broadcaster
+    if (request.method === "POST" && url.pathname === "/api/colosseum/settle") {
+      const settleProgram = Effect.gen(function* () {
+        const bodyText = yield* Effect.promise(() => request.text());
+        let data: any;
+        try {
+          data = JSON.parse(bodyText);
+        } catch {
+          return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
+        }
+
+        const workflow = yield* GameWorkflowService;
+        yield* workflow.settleColosseumMatch(
+          data.match_id,
+          data.channel_id,
+          data.message_id,
+          data.winner,
+          data.score_a,
+          data.score_b,
+          data.duel_data
+        );
+
+        return new Response(JSON.stringify({ success: true, match_id: data.match_id }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }).pipe(
+        Effect.catchAll((err) =>
+          Effect.sync(() => {
+            console.error("[Colosseum Settle Endpoint] Error:", err);
+            return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+          })
+        ),
+        Effect.provide(mainLayer)
+      );
+      return Effect.runPromise(settleProgram);
     }
 
     const signature = request.headers.get("x-signature-ed25519") || "";

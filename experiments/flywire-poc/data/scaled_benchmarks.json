@@ -1,0 +1,5453 @@
+{
+  "baseline": {
+    "name": "Baseline Unscaled SNN",
+    "games": 100,
+    "mean_score": 106.92,
+    "std_score": 25.695011188944832,
+    "min_score": 53,
+    "max_score": 176,
+    "median_score": 103.5,
+    "upper_bonus_rate": 0.0,
+    "mean_upper_sum": 41.64,
+    "yacht_rate": 0.27,
+    "full_house_rate": 1.0,
+    "large_straight_rate": 0.01,
+    "four_kind_rate": 0.82,
+    "zero_frequencies": {
+      "Aces": 46,
+      "Deuces": 9,
+      "Treys": 2,
+      "Fours": 7,
+      "Fives": 6,
+      "Sixes": 2,
+      "Choice": 0,
+      "FourOfAKind": 18,
+      "FullHouse": 0,
+      "SmallStraight": 84,
+      "LargeStraight": 99,
+      "Yacht": 73
+    },
+    "category_means": {
+      "Aces": 1.23,
+      "Deuces": 4.38,
+      "Treys": 6.33,
+      "Fours": 7.8,
+      "Fives": 9.6,
+      "Sixes": 12.3,
+      "Choice": 17.54,
+      "FourOfAKind": 13.66,
+      "FullHouse": 17.88,
+      "SmallStraight": 2.4,
+      "LargeStraight": 0.3,
+      "Yacht": 13.5
+    },
+    "highlight_games": [
+      {
+        "game_index": 31,
+        "total_score": 152,
+        "upper_sum": 42,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 0,
+          "Deuces": 0,
+          "Treys": 6,
+          "Fours": 8,
+          "Fives": 10,
+          "Sixes": 18,
+          "Choice": 11,
+          "FourOfAKind": 27,
+          "FullHouse": 7,
+          "SmallStraight": 15,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                2,
+                1,
+                1,
+                6,
+                5
+              ],
+              [
+                1,
+                1,
+                1,
+                4,
+                2
+              ],
+              [
+                1,
+                1,
+                1,
+                2,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 11,
+            "cumulative": 11
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                1,
+                4,
+                2,
+                5,
+                1
+              ],
+              [
+                1,
+                2,
+                6,
+                2,
+                1
+              ],
+              [
+                1,
+                2,
+                1,
+                2,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 7,
+            "cumulative": 18
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                5,
+                6,
+                2,
+                4,
+                4
+              ],
+              [
+                1,
+                1,
+                3,
+                4,
+                4
+              ],
+              [
+                1,
+                1,
+                2,
+                4,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 8,
+            "cumulative": 26
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                1,
+                4,
+                6,
+                3,
+                6
+              ],
+              [
+                2,
+                6,
+                6,
+                5,
+                6
+              ],
+              [
+                5,
+                6,
+                6,
+                3,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Sixes",
+            "points": 18,
+            "cumulative": 44
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                3,
+                6,
+                6,
+                6,
+                2
+              ],
+              [
+                4,
+                6,
+                6,
+                6,
+                6
+              ],
+              [
+                3,
+                6,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 27,
+            "cumulative": 71
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                1,
+                5,
+                4,
+                3,
+                5
+              ],
+              [
+                6,
+                5,
+                4,
+                1,
+                5
+              ],
+              [
+                2,
+                5,
+                3,
+                4,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 15,
+            "cumulative": 86
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                4,
+                3,
+                6,
+                3,
+                6
+              ],
+              [
+                6,
+                3,
+                6,
+                3,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 6,
+            "cumulative": 92
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                6,
+                6,
+                5,
+                4,
+                2
+              ],
+              [
+                6,
+                6,
+                3,
+                4,
+                2
+              ],
+              [
+                6,
+                6,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 142
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                4,
+                5,
+                6,
+                1,
+                3
+              ],
+              [
+                6,
+                5,
+                6,
+                4,
+                1
+              ],
+              [
+                6,
+                2,
+                6,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Fives",
+            "points": 10,
+            "cumulative": 152
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                4,
+                5,
+                2,
+                5,
+                1
+              ],
+              [
+                6,
+                5,
+                1,
+                5,
+                6
+              ],
+              [
+                6,
+                5,
+                6,
+                5,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 0,
+            "cumulative": 152
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                1,
+                2,
+                3,
+                5,
+                5
+              ],
+              [
+                1,
+                1,
+                6,
+                5,
+                5
+              ],
+              [
+                1,
+                1,
+                3,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 0,
+            "cumulative": 152
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                4,
+                4,
+                6,
+                5,
+                3
+              ],
+              [
+                4,
+                4,
+                4,
+                5,
+                3
+              ],
+              [
+                4,
+                4,
+                4,
+                4,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 152
+          }
+        ]
+      },
+      {
+        "game_index": 49,
+        "total_score": 151,
+        "upper_sum": 51,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 4,
+          "Deuces": 6,
+          "Treys": 6,
+          "Fours": 12,
+          "Fives": 5,
+          "Sixes": 18,
+          "Choice": 15,
+          "FourOfAKind": 16,
+          "FullHouse": 19,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                3,
+                1,
+                1,
+                6,
+                2
+              ],
+              [
+                4,
+                1,
+                1,
+                6,
+                5
+              ],
+              [
+                4,
+                1,
+                1,
+                5,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 15,
+            "cumulative": 15
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                5,
+                4,
+                3,
+                5,
+                5
+              ],
+              [
+                5,
+                2,
+                2,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 19,
+            "cumulative": 34
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                6,
+                6,
+                5,
+                6,
+                4
+              ],
+              [
+                6,
+                6,
+                5,
+                6,
+                3
+              ],
+              [
+                6,
+                6,
+                3,
+                6,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                false
+              ]
+            ],
+            "category": "Sixes",
+            "points": 18,
+            "cumulative": 52
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                2,
+                3,
+                1,
+                5,
+                3
+              ],
+              [
+                2,
+                3,
+                1,
+                2,
+                3
+              ],
+              [
+                2,
+                3,
+                2,
+                2,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 6,
+            "cumulative": 58
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                6,
+                6,
+                2,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 6,
+            "cumulative": 64
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                3,
+                3,
+                3,
+                5,
+                2
+              ],
+              [
+                3,
+                3,
+                3,
+                2,
+                5
+              ],
+              [
+                3,
+                3,
+                3,
+                3,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 16,
+            "cumulative": 80
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                6,
+                4,
+                5,
+                5,
+                4
+              ],
+              [
+                4,
+                4,
+                5,
+                5,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 12,
+            "cumulative": 92
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                4,
+                3,
+                3,
+                3,
+                3
+              ],
+              [
+                5,
+                3,
+                3,
+                3,
+                3
+              ],
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 142
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                6,
+                1,
+                5,
+                4,
+                1
+              ],
+              [
+                6,
+                1,
+                3,
+                1,
+                1
+              ],
+              [
+                2,
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 4,
+            "cumulative": 146
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                1,
+                3,
+                6,
+                4,
+                3
+              ],
+              [
+                4,
+                3,
+                3,
+                5,
+                3
+              ],
+              [
+                6,
+                3,
+                3,
+                5,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 5,
+            "cumulative": 151
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                1,
+                3,
+                3,
+                2,
+                5
+              ],
+              [
+                5,
+                3,
+                3,
+                3,
+                3
+              ],
+              [
+                5,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 151
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                3,
+                1,
+                3,
+                1,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 151
+          }
+        ]
+      },
+      {
+        "game_index": 60,
+        "total_score": 159,
+        "upper_sum": 58,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 2,
+          "Deuces": 0,
+          "Treys": 12,
+          "Fours": 4,
+          "Fives": 10,
+          "Sixes": 30,
+          "Choice": 12,
+          "FourOfAKind": 11,
+          "FullHouse": 28,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                4,
+                1,
+                4,
+                6,
+                1
+              ],
+              [
+                4,
+                1,
+                4,
+                3,
+                1
+              ],
+              [
+                4,
+                1,
+                4,
+                2,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Choice",
+            "points": 12,
+            "cumulative": 12
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                3,
+                5,
+                4,
+                5,
+                3
+              ],
+              [
+                3,
+                5,
+                1,
+                5,
+                3
+              ],
+              [
+                3,
+                5,
+                1,
+                5,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 10,
+            "cumulative": 22
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                4,
+                5,
+                2,
+                6,
+                1
+              ],
+              [
+                1,
+                5,
+                2,
+                6,
+                6
+              ],
+              [
+                5,
+                6,
+                5,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 28,
+            "cumulative": 50
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                2,
+                3,
+                2
+              ],
+              [
+                2,
+                6,
+                2,
+                3,
+                2
+              ],
+              [
+                2,
+                2,
+                2,
+                3,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 11,
+            "cumulative": 61
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                4,
+                1,
+                3,
+                5,
+                3
+              ],
+              [
+                1,
+                3,
+                3,
+                3,
+                3
+              ],
+              [
+                1,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 12,
+            "cumulative": 73
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                3,
+                4,
+                1,
+                2,
+                6
+              ],
+              [
+                1,
+                6,
+                6,
+                6,
+                6
+              ],
+              [
+                6,
+                6,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 123
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                4,
+                2,
+                3,
+                5,
+                3
+              ],
+              [
+                2,
+                1,
+                3,
+                1,
+                3
+              ],
+              [
+                5,
+                1,
+                3,
+                1,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 2,
+            "cumulative": 125
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                6,
+                2,
+                4,
+                1,
+                6
+              ],
+              [
+                6,
+                2,
+                6,
+                5,
+                6
+              ],
+              [
+                6,
+                6,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Sixes",
+            "points": 30,
+            "cumulative": 155
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                4,
+                3,
+                1,
+                6,
+                2
+              ],
+              [
+                3,
+                6,
+                4,
+                6,
+                5
+              ],
+              [
+                4,
+                6,
+                1,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ]
+            ],
+            "category": "Fours",
+            "points": 4,
+            "cumulative": 159
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                6,
+                6,
+                5,
+                4,
+                3
+              ],
+              [
+                6,
+                6,
+                2,
+                5,
+                4
+              ],
+              [
+                6,
+                6,
+                3,
+                5,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 159
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                3,
+                5,
+                3,
+                4,
+                4
+              ],
+              [
+                3,
+                2,
+                3,
+                4,
+                4
+              ],
+              [
+                3,
+                5,
+                3,
+                4,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 0,
+            "cumulative": 159
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                1,
+                3,
+                5
+              ],
+              [
+                6,
+                5,
+                1,
+                1,
+                5
+              ],
+              [
+                3,
+                5,
+                1,
+                1,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 159
+          }
+        ]
+      },
+      {
+        "game_index": 61,
+        "total_score": 153,
+        "upper_sum": 48,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 2,
+          "Deuces": 4,
+          "Treys": 6,
+          "Fours": 8,
+          "Fives": 10,
+          "Sixes": 18,
+          "Choice": 18,
+          "FourOfAKind": 28,
+          "FullHouse": 9,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                1,
+                2,
+                4,
+                4,
+                6
+              ],
+              [
+                3,
+                3,
+                4,
+                4,
+                6
+              ],
+              [
+                3,
+                3,
+                4,
+                4,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 18,
+            "cumulative": 18
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                2,
+                3,
+                4,
+                2,
+                1
+              ],
+              [
+                2,
+                1,
+                4,
+                2,
+                4
+              ],
+              [
+                2,
+                5,
+                4,
+                2,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 8,
+            "cumulative": 26
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                5,
+                5,
+                1,
+                2,
+                6
+              ],
+              [
+                5,
+                5,
+                2,
+                6,
+                1
+              ],
+              [
+                5,
+                5,
+                2,
+                6,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ]
+            ],
+            "category": "Fives",
+            "points": 10,
+            "cumulative": 36
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                1,
+                1,
+                1,
+                5,
+                6
+              ],
+              [
+                1,
+                1,
+                1,
+                4,
+                2
+              ],
+              [
+                1,
+                1,
+                1,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 9,
+            "cumulative": 45
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                5,
+                4,
+                2,
+                3,
+                5
+              ],
+              [
+                5,
+                1,
+                4,
+                3,
+                5
+              ],
+              [
+                5,
+                2,
+                3,
+                2,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                false,
+                false,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 4,
+            "cumulative": 49
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                2,
+                1,
+                2,
+                5,
+                1
+              ],
+              [
+                2,
+                1,
+                2,
+                2,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 2,
+            "cumulative": 51
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                6,
+                1,
+                3,
+                6,
+                5
+              ],
+              [
+                6,
+                1,
+                6,
+                6,
+                6
+              ],
+              [
+                6,
+                4,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 28,
+            "cumulative": 79
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                6,
+                6,
+                5,
+                1,
+                4
+              ],
+              [
+                6,
+                6,
+                6,
+                3,
+                2
+              ],
+              [
+                6,
+                6,
+                6,
+                5,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Sixes",
+            "points": 18,
+            "cumulative": 97
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                1,
+                2,
+                6,
+                2,
+                5
+              ],
+              [
+                6,
+                2,
+                4,
+                2,
+                2
+              ],
+              [
+                2,
+                2,
+                2,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 147
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                3,
+                4,
+                3,
+                6,
+                4
+              ],
+              [
+                3,
+                4,
+                3,
+                6,
+                4
+              ],
+              [
+                3,
+                4,
+                3,
+                2,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 6,
+            "cumulative": 153
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                6,
+                3,
+                4,
+                2,
+                2
+              ],
+              [
+                1,
+                2,
+                1,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 153
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                3,
+                4,
+                2,
+                6,
+                3
+              ],
+              [
+                3,
+                3,
+                5,
+                1,
+                3
+              ],
+              [
+                3,
+                3,
+                4,
+                4,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                false,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 153
+          }
+        ]
+      },
+      {
+        "game_index": 71,
+        "total_score": 163,
+        "upper_sum": 55,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 0,
+          "Deuces": 4,
+          "Treys": 6,
+          "Fours": 12,
+          "Fives": 15,
+          "Sixes": 18,
+          "Choice": 22,
+          "FourOfAKind": 13,
+          "FullHouse": 23,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                6,
+                4,
+                6,
+                3,
+                3
+              ],
+              [
+                6,
+                4,
+                6,
+                3,
+                3
+              ],
+              [
+                6,
+                4,
+                6,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Choice",
+            "points": 22,
+            "cumulative": 22
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                6,
+                1,
+                2,
+                2,
+                5
+              ],
+              [
+                5,
+                1,
+                2,
+                2,
+                2
+              ],
+              [
+                2,
+                5,
+                2,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                true,
+                false
+              ],
+              [
+                false,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 13,
+            "cumulative": 35
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                4,
+                5,
+                4,
+                2,
+                5
+              ],
+              [
+                4,
+                5,
+                4,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 23,
+            "cumulative": 58
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                1,
+                1,
+                1,
+                4,
+                2
+              ],
+              [
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 108
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                5,
+                4,
+                6,
+                2,
+                3
+              ],
+              [
+                5,
+                4,
+                6,
+                1,
+                2
+              ],
+              [
+                5,
+                3,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Sixes",
+            "points": 18,
+            "cumulative": 126
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                1,
+                1,
+                5,
+                4,
+                3
+              ],
+              [
+                1,
+                1,
+                5,
+                4,
+                5
+              ],
+              [
+                1,
+                1,
+                5,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 15,
+            "cumulative": 141
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                4,
+                6,
+                5,
+                6,
+                4
+              ],
+              [
+                4,
+                6,
+                3,
+                6,
+                4
+              ],
+              [
+                4,
+                6,
+                4,
+                6,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 12,
+            "cumulative": 153
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                5,
+                6,
+                4,
+                1,
+                1
+              ],
+              [
+                2,
+                3,
+                6,
+                1,
+                1
+              ],
+              [
+                6,
+                3,
+                3,
+                1,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 6,
+            "cumulative": 159
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                3,
+                2,
+                3,
+                2,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 4,
+            "cumulative": 163
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                1,
+                5,
+                4,
+                4,
+                5
+              ],
+              [
+                1,
+                5,
+                4,
+                4,
+                5
+              ],
+              [
+                6,
+                5,
+                4,
+                4,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 0,
+            "cumulative": 163
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                5,
+                2,
+                3,
+                1,
+                2
+              ],
+              [
+                6,
+                2,
+                4,
+                2,
+                2
+              ],
+              [
+                6,
+                2,
+                5,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 163
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                3,
+                2,
+                5,
+                2,
+                2
+              ],
+              [
+                3,
+                2,
+                1,
+                2,
+                2
+              ],
+              [
+                1,
+                2,
+                5,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 163
+          }
+        ]
+      }
+    ]
+  },
+  "super_champion": {
+    "name": "Evolved 3D Champion SNN",
+    "games": 100,
+    "mean_score": 107.23,
+    "std_score": 25.2744357009212,
+    "min_score": 59,
+    "max_score": 175,
+    "median_score": 103.0,
+    "upper_bonus_rate": 0.01,
+    "mean_upper_sum": 43.46,
+    "yacht_rate": 0.21,
+    "full_house_rate": 0.97,
+    "large_straight_rate": 0.0,
+    "four_kind_rate": 0.83,
+    "zero_frequencies": {
+      "Aces": 44,
+      "Deuces": 13,
+      "Treys": 4,
+      "Fours": 1,
+      "Fives": 1,
+      "Sixes": 2,
+      "Choice": 0,
+      "FourOfAKind": 17,
+      "FullHouse": 3,
+      "SmallStraight": 85,
+      "LargeStraight": 100,
+      "Yacht": 79
+    },
+    "category_means": {
+      "Aces": 1.23,
+      "Deuces": 3.74,
+      "Treys": 6.39,
+      "Fours": 8.64,
+      "Fives": 11.1,
+      "Sixes": 12.36,
+      "Choice": 18.19,
+      "FourOfAKind": 15.66,
+      "FullHouse": 16.82,
+      "SmallStraight": 2.25,
+      "LargeStraight": 0.0,
+      "Yacht": 10.5
+    },
+    "highlight_games": [
+      {
+        "game_index": 1,
+        "total_score": 168,
+        "upper_sum": 42,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 3,
+          "Deuces": 0,
+          "Treys": 3,
+          "Fours": 8,
+          "Fives": 10,
+          "Sixes": 18,
+          "Choice": 24,
+          "FourOfAKind": 25,
+          "FullHouse": 27,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                3,
+                6,
+                6,
+                1,
+                6
+              ],
+              [
+                2,
+                6,
+                6,
+                4,
+                6
+              ],
+              [
+                6,
+                6,
+                6,
+                1,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 25,
+            "cumulative": 25
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                5,
+                5,
+                5,
+                2,
+                4
+              ],
+              [
+                5,
+                5,
+                5,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 75
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                4,
+                6,
+                3,
+                4,
+                1
+              ],
+              [
+                4,
+                5,
+                5,
+                4,
+                3
+              ],
+              [
+                4,
+                5,
+                5,
+                4,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 24,
+            "cumulative": 99
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                5,
+                2,
+                5,
+                4,
+                4
+              ],
+              [
+                5,
+                3,
+                5,
+                4,
+                4
+              ],
+              [
+                5,
+                3,
+                5,
+                4,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 10,
+            "cumulative": 109
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                2,
+                1,
+                4,
+                3,
+                1
+              ],
+              [
+                3,
+                1,
+                1,
+                5,
+                1
+              ],
+              [
+                3,
+                1,
+                1,
+                2,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 3,
+            "cumulative": 112
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                5,
+                6,
+                1,
+                5,
+                2
+              ],
+              [
+                5,
+                6,
+                6,
+                5,
+                3
+              ],
+              [
+                5,
+                6,
+                6,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 27,
+            "cumulative": 139
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                6,
+                6,
+                2,
+                1,
+                2
+              ],
+              [
+                6,
+                6,
+                2,
+                3,
+                2
+              ],
+              [
+                6,
+                6,
+                2,
+                6,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Sixes",
+            "points": 18,
+            "cumulative": 157
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                4,
+                2,
+                2,
+                4,
+                1
+              ],
+              [
+                4,
+                2,
+                2,
+                4,
+                5
+              ],
+              [
+                4,
+                2,
+                2,
+                4,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Fours",
+            "points": 8,
+            "cumulative": 165
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                2,
+                4,
+                1,
+                6,
+                6
+              ],
+              [
+                1,
+                5,
+                1,
+                6,
+                6
+              ],
+              [
+                1,
+                1,
+                1,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 165
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                4,
+                1,
+                2,
+                4,
+                1
+              ],
+              [
+                4,
+                1,
+                4,
+                4,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 0,
+            "cumulative": 165
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                2,
+                1,
+                2,
+                4,
+                5
+              ],
+              [
+                2,
+                5,
+                2,
+                1,
+                1
+              ],
+              [
+                2,
+                5,
+                2,
+                1,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 165
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                1,
+                6,
+                5,
+                5,
+                5
+              ],
+              [
+                3,
+                4,
+                5,
+                5,
+                5
+              ],
+              [
+                3,
+                6,
+                5,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                false,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 3,
+            "cumulative": 168
+          }
+        ]
+      },
+      {
+        "game_index": 16,
+        "total_score": 170,
+        "upper_sum": 48,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 0,
+          "Deuces": 2,
+          "Treys": 12,
+          "Fours": 12,
+          "Fives": 10,
+          "Sixes": 12,
+          "Choice": 25,
+          "FourOfAKind": 29,
+          "FullHouse": 18,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                6,
+                4,
+                3,
+                1,
+                2
+              ],
+              [
+                6,
+                5,
+                6,
+                3,
+                6
+              ],
+              [
+                6,
+                6,
+                6,
+                5,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 29,
+            "cumulative": 29
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                3,
+                5,
+                4,
+                3,
+                3
+              ],
+              [
+                3,
+                2,
+                3,
+                3,
+                3
+              ],
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 79
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                3,
+                2,
+                2,
+                5,
+                6
+              ],
+              [
+                2,
+                2,
+                2,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 18,
+            "cumulative": 97
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                1,
+                6,
+                4
+              ],
+              [
+                6,
+                5,
+                6,
+                6,
+                1
+              ],
+              [
+                6,
+                5,
+                6,
+                6,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 25,
+            "cumulative": 122
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                3,
+                5,
+                3,
+                3,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 10,
+            "cumulative": 132
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                6,
+                1,
+                1,
+                2,
+                6
+              ],
+              [
+                6,
+                1,
+                1,
+                1,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Sixes",
+            "points": 12,
+            "cumulative": 144
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                4,
+                4,
+                2,
+                6,
+                4
+              ],
+              [
+                4,
+                4,
+                6,
+                6,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 12,
+            "cumulative": 156
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                3,
+                1,
+                5,
+                3,
+                6
+              ],
+              [
+                3,
+                4,
+                1,
+                3,
+                3
+              ],
+              [
+                3,
+                3,
+                5,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                false,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 12,
+            "cumulative": 168
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                2,
+                4,
+                4,
+                5,
+                6
+              ],
+              [
+                4,
+                4,
+                4,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 0,
+            "cumulative": 168
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                3,
+                2,
+                1,
+                6,
+                1
+              ],
+              [
+                1,
+                2,
+                1,
+                5,
+                1
+              ],
+              [
+                1,
+                2,
+                1,
+                1,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 2,
+            "cumulative": 170
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                5,
+                6,
+                3,
+                1,
+                5
+              ],
+              [
+                5,
+                5,
+                2,
+                3,
+                5
+              ],
+              [
+                5,
+                5,
+                4,
+                2,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                false,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 170
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                6,
+                3,
+                6,
+                2,
+                3
+              ],
+              [
+                6,
+                3,
+                6,
+                2,
+                3
+              ],
+              [
+                6,
+                3,
+                6,
+                6,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 170
+          }
+        ]
+      },
+      {
+        "game_index": 45,
+        "total_score": 160,
+        "upper_sum": 48,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 3,
+          "Deuces": 2,
+          "Treys": 9,
+          "Fours": 12,
+          "Fives": 10,
+          "Sixes": 12,
+          "Choice": 17,
+          "FourOfAKind": 12,
+          "FullHouse": 18,
+          "SmallStraight": 15,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                3,
+                3,
+                4,
+                6,
+                5
+              ],
+              [
+                3,
+                3,
+                3,
+                5,
+                1
+              ],
+              [
+                3,
+                3,
+                3,
+                6,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 17,
+            "cumulative": 17
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                1,
+                6,
+                6,
+                3,
+                5
+              ],
+              [
+                6,
+                6,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 67
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                1,
+                2,
+                4,
+                2,
+                6
+              ],
+              [
+                1,
+                2,
+                6,
+                2,
+                4
+              ],
+              [
+                6,
+                2,
+                2,
+                2,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 18,
+            "cumulative": 85
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                6,
+                2,
+                2,
+                2,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Sixes",
+            "points": 12,
+            "cumulative": 97
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                5,
+                2,
+                1,
+                5,
+                6
+              ],
+              [
+                5,
+                6,
+                3,
+                5,
+                6
+              ],
+              [
+                5,
+                6,
+                6,
+                5,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 10,
+            "cumulative": 107
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                1,
+                3,
+                1,
+                4,
+                2
+              ],
+              [
+                1,
+                5,
+                1,
+                2,
+                1
+              ],
+              [
+                1,
+                5,
+                1,
+                3,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 3,
+            "cumulative": 110
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                1,
+                6,
+                3,
+                4,
+                5
+              ],
+              [
+                2,
+                6,
+                5,
+                3,
+                5
+              ],
+              [
+                4,
+                3,
+                5,
+                2,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 15,
+            "cumulative": 125
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                3,
+                3,
+                6,
+                4,
+                5
+              ],
+              [
+                3,
+                3,
+                6,
+                3,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 9,
+            "cumulative": 134
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                2,
+                2,
+                2,
+                4,
+                2
+              ],
+              [
+                2,
+                2,
+                2,
+                6,
+                2
+              ],
+              [
+                2,
+                2,
+                2,
+                4,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 12,
+            "cumulative": 146
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                1,
+                3,
+                4,
+                3,
+                4
+              ],
+              [
+                4,
+                3,
+                4,
+                3,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 12,
+            "cumulative": 158
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                5,
+                6,
+                1,
+                4,
+                4
+              ],
+              [
+                1,
+                5,
+                5,
+                4,
+                4
+              ],
+              [
+                2,
+                5,
+                5,
+                4,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 2,
+            "cumulative": 160
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                3,
+                2,
+                6,
+                4,
+                5
+              ],
+              [
+                1,
+                5,
+                6,
+                5,
+                5
+              ],
+              [
+                6,
+                5,
+                4,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 160
+          }
+        ]
+      },
+      {
+        "game_index": 56,
+        "total_score": 175,
+        "upper_sum": 57,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 0,
+          "Deuces": 8,
+          "Treys": 9,
+          "Fours": 8,
+          "Fives": 20,
+          "Sixes": 12,
+          "Choice": 23,
+          "FourOfAKind": 26,
+          "FullHouse": 19,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                3,
+                6,
+                6,
+                2,
+                1
+              ],
+              [
+                1,
+                6,
+                6,
+                6,
+                2
+              ],
+              [
+                2,
+                6,
+                6,
+                6,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Choice",
+            "points": 23,
+            "cumulative": 23
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                2,
+                5,
+                4
+              ],
+              [
+                2,
+                5,
+                2,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 19,
+            "cumulative": 42
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                5,
+                5,
+                5,
+                1,
+                5
+              ],
+              [
+                5,
+                5,
+                5,
+                2,
+                5
+              ],
+              [
+                5,
+                5,
+                5,
+                6,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 26,
+            "cumulative": 68
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                3,
+                5,
+                5
+              ],
+              [
+                2,
+                5,
+                6,
+                5,
+                5
+              ],
+              [
+                3,
+                5,
+                5,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 20,
+            "cumulative": 88
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                2,
+                4,
+                2
+              ],
+              [
+                2,
+                4,
+                2,
+                6,
+                2
+              ],
+              [
+                2,
+                4,
+                2,
+                2,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 8,
+            "cumulative": 96
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                3,
+                5,
+                3,
+                2,
+                3
+              ],
+              [
+                3,
+                6,
+                3,
+                3,
+                3
+              ],
+              [
+                3,
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 146
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                3,
+                3,
+                3,
+                5,
+                2
+              ],
+              [
+                3,
+                3,
+                3,
+                5,
+                1
+              ],
+              [
+                3,
+                3,
+                3,
+                2,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                false
+              ]
+            ],
+            "category": "Treys",
+            "points": 9,
+            "cumulative": 155
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                4,
+                1,
+                2,
+                1,
+                3
+              ],
+              [
+                1,
+                1,
+                5,
+                1,
+                3
+              ],
+              [
+                1,
+                1,
+                6,
+                1,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                false
+              ]
+            ],
+            "category": "Sixes",
+            "points": 12,
+            "cumulative": 167
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                6,
+                3,
+                4,
+                2,
+                4
+              ],
+              [
+                6,
+                6,
+                4,
+                3,
+                4
+              ],
+              [
+                6,
+                6,
+                4,
+                2,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Fours",
+            "points": 8,
+            "cumulative": 175
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                3,
+                1,
+                5,
+                4,
+                4
+              ],
+              [
+                3,
+                4,
+                1,
+                4,
+                4
+              ],
+              [
+                6,
+                4,
+                6,
+                4,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                true
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Aces",
+            "points": 0,
+            "cumulative": 175
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                1,
+                2,
+                3,
+                6,
+                4
+              ],
+              [
+                4,
+                6,
+                6,
+                6,
+                3
+              ],
+              [
+                2,
+                6,
+                6,
+                6,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 175
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                1,
+                1,
+                3,
+                5,
+                2
+              ],
+              [
+                1,
+                1,
+                2,
+                6,
+                3
+              ],
+              [
+                1,
+                1,
+                4,
+                2,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ],
+              [
+                true,
+                true,
+                false,
+                false,
+                false
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 175
+          }
+        ]
+      },
+      {
+        "game_index": 58,
+        "total_score": 161,
+        "upper_sum": 50,
+        "upper_bonus": 0,
+        "board": {
+          "Aces": 3,
+          "Deuces": 4,
+          "Treys": 6,
+          "Fours": 4,
+          "Fives": 15,
+          "Sixes": 18,
+          "Choice": 18,
+          "FourOfAKind": 22,
+          "FullHouse": 21,
+          "SmallStraight": 0,
+          "LargeStraight": 0,
+          "Yacht": 50
+        },
+        "turns": [
+          {
+            "round": 1,
+            "dice_rolls": [
+              [
+                3,
+                6,
+                3,
+                1,
+                3
+              ],
+              [
+                3,
+                6,
+                3,
+                2,
+                3
+              ],
+              [
+                3,
+                5,
+                3,
+                4,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "Choice",
+            "points": 18,
+            "cumulative": 18
+          },
+          {
+            "round": 2,
+            "dice_rolls": [
+              [
+                5,
+                3,
+                3,
+                4,
+                3
+              ],
+              [
+                6,
+                3,
+                3,
+                6,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "FullHouse",
+            "points": 21,
+            "cumulative": 39
+          },
+          {
+            "round": 3,
+            "dice_rolls": [
+              [
+                4,
+                5,
+                6,
+                2,
+                1
+              ],
+              [
+                3,
+                5,
+                6,
+                5,
+                5
+              ],
+              [
+                4,
+                5,
+                4,
+                5,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                false,
+                false
+              ],
+              [
+                false,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "Fives",
+            "points": 15,
+            "cumulative": 54
+          },
+          {
+            "round": 4,
+            "dice_rolls": [
+              [
+                3,
+                1,
+                6,
+                6,
+                5
+              ],
+              [
+                5,
+                6,
+                6,
+                6,
+                4
+              ],
+              [
+                4,
+                6,
+                6,
+                6,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Sixes",
+            "points": 18,
+            "cumulative": 72
+          },
+          {
+            "round": 5,
+            "dice_rolls": [
+              [
+                1,
+                1,
+                2,
+                2,
+                1
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Deuces",
+            "points": 4,
+            "cumulative": 76
+          },
+          {
+            "round": 6,
+            "dice_rolls": [
+              [
+                1,
+                6,
+                2,
+                6,
+                5
+              ],
+              [
+                5,
+                6,
+                6,
+                6,
+                2
+              ],
+              [
+                6,
+                6,
+                6,
+                6,
+                6
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                true,
+                false
+              ],
+              [
+                false,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Yacht",
+            "points": 50,
+            "cumulative": 126
+          },
+          {
+            "round": 7,
+            "dice_rolls": [
+              [
+                2,
+                5,
+                1,
+                1,
+                4
+              ],
+              [
+                3,
+                5,
+                1,
+                1,
+                4
+              ],
+              [
+                1,
+                5,
+                1,
+                1,
+                2
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                true,
+                true,
+                false
+              ],
+              [
+                false,
+                false,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Aces",
+            "points": 3,
+            "cumulative": 129
+          },
+          {
+            "round": 8,
+            "dice_rolls": [
+              [
+                1,
+                6,
+                1,
+                3,
+                3
+              ],
+              [
+                1,
+                5,
+                1,
+                3,
+                3
+              ],
+              [
+                1,
+                2,
+                1,
+                3,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ],
+              [
+                true,
+                false,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "Treys",
+            "points": 6,
+            "cumulative": 135
+          },
+          {
+            "round": 9,
+            "dice_rolls": [
+              [
+                4,
+                3,
+                1,
+                2,
+                5
+              ],
+              [
+                5,
+                5,
+                5,
+                6,
+                5
+              ],
+              [
+                5,
+                5,
+                5,
+                2,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                false,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                false,
+                true
+              ]
+            ],
+            "category": "FourOfAKind",
+            "points": 22,
+            "cumulative": 157
+          },
+          {
+            "round": 10,
+            "dice_rolls": [
+              [
+                5,
+                2,
+                5,
+                1,
+                5
+              ],
+              [
+                5,
+                1,
+                5,
+                1,
+                5
+              ]
+            ],
+            "holds": [
+              [
+                true,
+                false,
+                true,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                true
+              ]
+            ],
+            "category": "SmallStraight",
+            "points": 0,
+            "cumulative": 157
+          },
+          {
+            "round": 11,
+            "dice_rolls": [
+              [
+                1,
+                3,
+                3,
+                3,
+                4
+              ],
+              [
+                3,
+                3,
+                3,
+                3,
+                4
+              ],
+              [
+                3,
+                3,
+                3,
+                3,
+                4
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                true,
+                true,
+                false
+              ],
+              [
+                true,
+                true,
+                true,
+                true,
+                false
+              ]
+            ],
+            "category": "Fours",
+            "points": 4,
+            "cumulative": 161
+          },
+          {
+            "round": 12,
+            "dice_rolls": [
+              [
+                1,
+                3,
+                2,
+                4,
+                3
+              ],
+              [
+                6,
+                3,
+                2,
+                6,
+                3
+              ],
+              [
+                6,
+                3,
+                1,
+                6,
+                3
+              ]
+            ],
+            "holds": [
+              [
+                false,
+                true,
+                false,
+                false,
+                true
+              ],
+              [
+                true,
+                true,
+                false,
+                true,
+                true
+              ]
+            ],
+            "category": "LargeStraight",
+            "points": 0,
+            "cumulative": 161
+          }
+        ]
+      }
+    ]
+  }
+}

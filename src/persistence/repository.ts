@@ -88,3 +88,47 @@ export interface MatchQueueRepository {
 
 export const MatchQueueRepository = Context.GenericTag<MatchQueueRepository>("@services/MatchQueueRepository");
 
+export interface ColosseumMatchRecord {
+  readonly id: string;
+  readonly guildId: string;
+  readonly channelId: string;
+  readonly messageId?: string | null;
+  readonly personaAId: string;
+  readonly personaBId: string;
+  readonly oddsA: number;
+  readonly oddsB: number;
+  readonly status: "BETTING" | "SIMULATING" | "COMPLETED" | "CANCELLED";
+  readonly winner?: "A" | "B" | "DRAW" | null;
+  readonly scoreA?: number | null;
+  readonly scoreB?: number | null;
+  readonly timelineJson?: string | null;
+  readonly createdAt: Date;
+  readonly closedAt?: Date | null;
+}
+
+export interface ColosseumBetRecord {
+  readonly id: string;
+  readonly matchId: string;
+  readonly userId: string;
+  readonly userName: string;
+  readonly chosenPersona: "A" | "B";
+  readonly amount: number;
+  readonly odds: number;
+  readonly payout: number;
+  readonly status: "PENDING" | "WON" | "LOST" | "REFUNDED";
+  readonly createdAt: Date;
+}
+
+export interface ColosseumRepository {
+  readonly createMatch: (match: ColosseumMatchRecord) => Effect.Effect<void, RepositoryError>;
+  readonly getMatchById: (id: string) => Effect.Effect<Option.Option<ColosseumMatchRecord>, RepositoryError>;
+  readonly updateMatchStatus: (id: string, status: ColosseumMatchRecord["status"], messageId?: string | null) => Effect.Effect<void, RepositoryError>;
+  readonly finishMatch: (id: string, winner: "A" | "B" | "DRAW", scoreA: number, scoreB: number, timelineJson: string) => Effect.Effect<void, RepositoryError>;
+  readonly placeBet: (bet: ColosseumBetRecord) => Effect.Effect<void, RepositoryError>;
+  readonly getBetsByMatchId: (matchId: string) => Effect.Effect<readonly ColosseumBetRecord[], RepositoryError>;
+  readonly getUserBetInMatch: (matchId: string, userId: string) => Effect.Effect<Option.Option<ColosseumBetRecord>, RepositoryError>;
+  readonly updateBetPayout: (id: string, payout: number, status: ColosseumBetRecord["status"]) => Effect.Effect<void, RepositoryError>;
+}
+
+export const ColosseumRepository = Context.GenericTag<ColosseumRepository>("@services/ColosseumRepository");
+
