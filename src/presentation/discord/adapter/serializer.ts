@@ -20,6 +20,7 @@ export interface DiscordResponseSerializer {
   readonly serializeMatchQueueCancelled: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
   readonly serializeColosseumMatch: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], flyBrainUrl?: string) => DiscordInteractionResponse;
   readonly serializeColosseumRolling: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, act: number, flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeColosseumRound: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, roundNumber: number, flyBrainUrl?: string) => DiscordInteractionResponse;
   readonly serializeColosseumClash: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, act: number, flyBrainUrl?: string) => DiscordInteractionResponse;
   readonly serializeColosseumResult: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, flyBrainUrl?: string) => DiscordInteractionResponse;
 }
@@ -149,6 +150,109 @@ const formatColosseumScoreBoard = (
   lines.push(`Total      | ${totalA.toString().padStart(5)} | ${totalB.toString().padStart(5)}`);
 
   return "```\n" + lines.join("\n") + "\n```";
+};
+
+const renderColosseumRound = (
+  match: ColosseumMatchRecord,
+  bets: readonly ColosseumBetRecord[],
+  duelData: any,
+  roundNumber: number,
+  flyBrainUrl?: string
+): DiscordInteractionResponse => {
+  const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
+  const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
+
+  const targetRound = Math.max(1, Math.min(12, roundNumber));
+  const rIndex = targetRound - 1;
+  const roundInfo = duelData.rounds && duelData.rounds[rIndex]
+    ? duelData.rounds[rIndex]
+    : (duelData.rounds && duelData.rounds.length > 0 ? duelData.rounds[duelData.rounds.length - 1] : null);
+
+  const scoreA = roundInfo ? roundInfo.a.total : 0;
+  const scoreB = roundInfo ? roundInfo.b.total : 0;
+  const leaderStr = roundInfo?.leader === "A" ? `${pA.emoji} ${pA.name} 리드!` : (roundInfo?.leader === "B" ? `${pB.emoji} ${pB.name} 리드!` : "동점 접전!");
+
+  let stageTag = "초반 탐색전";
+  if (targetRound >= 4 && targetRound <= 6) stageTag = "상단 63점 사수전";
+  else if (targetRound >= 7 && targetRound <= 9) stageTag = "클러치 족보 승부";
+  else if (targetRound >= 10) stageTag = "파이널 끝장 혈투";
+
+  const roundColors: Record<number, number> = {
+    1: 0x3498DB, 2: 0x3498DB, 3: 0x3498DB,
+    4: 0x2ECC71, 5: 0x2ECC71, 6: 0x2ECC71,
+    7: 0xE67E22, 8: 0xE67E22, 9: 0xE67E22,
+    10: 0x9B59B6, 11: 0x9B59B6, 12: 0xE74C3C
+  };
+  const embedColor = roundColors[targetRound] || 0xE67E22;
+
+  const renderDopamineGauge = (dopamine: number): string => {
+    const percent = Math.min(250, Math.max(0, dopamine));
+    const blocks = Math.round(percent / 25);
+    const filled = "█".repeat(Math.min(10, blocks));
+    const empty = "░".repeat(Math.max(0, 10 - blocks));
+    return `[${filled}${empty}] ${Math.round(percent)}%`;
+  };
+
+  const formatDiceWithLocks = (dice: readonly number[] = [], holds: readonly boolean[] = []): string => {
+    if (!dice || dice.length === 0) return "(주사위 대기 중)";
+    const top = dice.map((d) => DICE_EMOJIS[d] || `[${d}]`).join(" ");
+    const bottom = dice.map((_, i) => (holds[i] ? "🔒" : "▫️")).join(" ");
+    return `${top}\n${bottom}`;
+  };
+
+  const scoreBoardA = roundInfo?.a?.score_board || {};
+  const scoreBoardB = roundInfo?.b?.score_board || {};
+  const bonusA = roundInfo?.a?.upper_bonus || 0;
+  const bonusB = roundInfo?.b?.upper_bonus || 0;
+
+  const asciiBoard = formatColosseumScoreBoard(
+    pA.name,
+    pB.name,
+    scoreBoardA,
+    scoreBoardB,
+    scoreA,
+    scoreB,
+    bonusA,
+    bonusB
+  );
+
+  const embed: DiscordEmbed = {
+    title: `⚔️ [초파리 콜로세움] Round ${targetRound}/12 (${stageTag})`,
+    description: `**🔴 ${pA.emoji} ${pA.name}** [${scoreA}점] vs **🔵 ${pB.emoji} ${pB.name}** [${scoreB}점]\n` +
+      `⚡ **현재 전황**: **${leaderStr}** (역전 횟수: ${duelData.lead_changes || 0}회)\n\n` +
+      `${asciiBoard}\n` +
+      (flyBrainUrl ? `🔗 [3D 초파리 두뇌 실시간 관전](${flyBrainUrl})\n` : ""),
+    color: embedColor,
+    fields: [
+      {
+        name: `🔴 ${pA.emoji} ${pA.title} (도파민: ${renderDopamineGauge(roundInfo?.a?.dopamine || 100)})`,
+        value: `🎲 **최종 주사위 & 락**:\n${formatDiceWithLocks(roundInfo?.a?.dice, roundInfo?.a?.holds)}\n` +
+          `🎯 **채택 족보**: **${roundInfo?.a?.category || "진행 중"}** (+${roundInfo?.a?.points || 0}점)\n` +
+          `💬 ${roundInfo?.a?.dialogue || "붕붕~"}`,
+        inline: false
+      },
+      {
+        name: `🔵 ${pB.emoji} ${pB.title} (도파민: ${renderDopamineGauge(roundInfo?.b?.dopamine || 100)})`,
+        value: `🎲 **최종 주사위 & 락**:\n${formatDiceWithLocks(roundInfo?.b?.dice, roundInfo?.b?.holds)}\n` +
+          `🎯 **채택 족보**: **${roundInfo?.b?.category || "진행 중"}** (+${roundInfo?.b?.points || 0}점)\n` +
+          `💬 ${roundInfo?.b?.dialogue || "붕붕~"}`,
+        inline: false
+      }
+    ],
+    footer: {
+      text: targetRound < 12
+        ? `Round ${targetRound}/12 완료 | 다음 라운드로 진행 중...`
+        : "마지막 12라운드 격돌 종료! 최종 결과 및 ELO 정산을 집계 중입니다..."
+    }
+  };
+
+  return {
+    type: 7,
+    data: {
+      embeds: [embed],
+      components: []
+    }
+  };
 };
 
 export const DiscordResponseSerializerLive = Layer.succeed(
@@ -898,105 +1002,13 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       };
     },
 
-    serializeColosseumClash: (match, bets, duelData, act, flyBrainUrl) => {
-      const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
-      const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
+    serializeColosseumRound: (match, bets, duelData, roundNumber, flyBrainUrl) =>
+      renderColosseumRound(match, bets, duelData, roundNumber, flyBrainUrl),
 
+    serializeColosseumClash: (match, bets, duelData, act, flyBrainUrl) => {
       const actRounds: Record<number, number> = { 1: 3, 2: 6, 3: 9, 4: 12 };
       const targetRound = actRounds[act] || act * 3;
-      const rIndex = targetRound - 1;
-      const roundInfo = duelData.rounds && duelData.rounds[rIndex]
-        ? duelData.rounds[rIndex]
-        : (duelData.rounds && duelData.rounds.length > 0 ? duelData.rounds[duelData.rounds.length - 1] : null);
-
-      const scoreA = roundInfo ? roundInfo.a.total : 0;
-      const scoreB = roundInfo ? roundInfo.b.total : 0;
-      const leaderStr = roundInfo?.leader === "A" ? `${pA.emoji} ${pA.name} 리드!` : (roundInfo?.leader === "B" ? `${pB.emoji} ${pB.name} 리드!` : "동점 접전!");
-
-      const actTitles: Record<number, string> = {
-        1: "제1막: 초반 기선제압 & 탐색전 (R03 적중!)",
-        2: "제2막: 상단 보너스 63점 사수 분수령 (R06 전반 마감!)",
-        3: "제3막: 클러치 야추/스트레이트 올인 승부처 (R09 격돌!)",
-        4: "제4막: 파이널 끝장 매치! 운명의 마지막 투척 (R12 최종혈투!)"
-      };
-      const actTitle = actTitles[act] || `제${act}막 (R${targetRound} 득점 결과)`;
-
-      const actColors: Record<number, number> = {
-        1: 0x3498DB,
-        2: 0x2ECC71,
-        3: 0xE67E22,
-        4: 0x9B59B6
-      };
-      const embedColor = actColors[act] || 0xE67E22;
-
-      const renderDopamineGauge = (dopamine: number): string => {
-        const percent = Math.min(250, Math.max(0, dopamine));
-        const blocks = Math.round(percent / 25);
-        const filled = "█".repeat(Math.min(10, blocks));
-        const empty = "░".repeat(Math.max(0, 10 - blocks));
-        return `[${filled}${empty}] ${Math.round(percent)}%`;
-      };
-
-      const formatDiceWithLocks = (dice: readonly number[] = [], holds: readonly boolean[] = []): string => {
-        if (!dice || dice.length === 0) return "(주사위 대기 중)";
-        const top = dice.map((d) => DICE_EMOJIS[d] || `[${d}]`).join(" ");
-        const bottom = dice.map((_, i) => (holds[i] ? "🔒" : "▫️")).join(" ");
-        return `${top}\n${bottom}`;
-      };
-
-      const scoreBoardA = roundInfo?.a?.score_board || {};
-      const scoreBoardB = roundInfo?.b?.score_board || {};
-      const bonusA = roundInfo?.a?.upper_bonus || 0;
-      const bonusB = roundInfo?.b?.upper_bonus || 0;
-
-      const asciiBoard = formatColosseumScoreBoard(
-        pA.name,
-        pB.name,
-        scoreBoardA,
-        scoreBoardB,
-        scoreA,
-        scoreB,
-        bonusA,
-        bonusB
-      );
-
-      const embed: DiscordEmbed = {
-        title: `⚔️ [초파리 콜로세움] ${actTitle}`,
-        description: `**${pA.emoji} ${pA.name}** [${scoreA}점] vs **${pB.emoji} ${pB.name}** [${scoreB}점]\n` +
-          `⚡ **현재 전황**: **${leaderStr}** (역전 횟수: ${duelData.lead_changes || 0}회)\n\n` +
-          `${asciiBoard}\n` +
-          (flyBrainUrl ? `🔗 [3D 초파리 두뇌 실시간 관전](${flyBrainUrl})\n` : ""),
-        color: embedColor,
-        fields: [
-          {
-            name: `${pA.emoji} ${pA.title} (도파민: ${renderDopamineGauge(roundInfo?.a?.dopamine || 100)})`,
-            value: `🎲 **최종 주사위 & 락**:\n${formatDiceWithLocks(roundInfo?.a?.dice, roundInfo?.a?.holds)}\n` +
-              `🎯 **직전 족보**: **${roundInfo?.a?.category || "진행 중"}** (+${roundInfo?.a?.points || 0}점)\n` +
-              `💬 ${roundInfo?.a?.dialogue || "붕붕~"}`,
-            inline: false
-          },
-          {
-            name: `${pB.emoji} ${pB.title} (도파민: ${renderDopamineGauge(roundInfo?.b?.dopamine || 100)})`,
-            value: `🎲 **최종 주사위 & 락**:\n${formatDiceWithLocks(roundInfo?.b?.dice, roundInfo?.b?.holds)}\n` +
-              `🎯 **직전 족보**: **${roundInfo?.b?.category || "진행 중"}** (+${roundInfo?.b?.points || 0}점)\n` +
-              `💬 ${roundInfo?.b?.dialogue || "붕붕~"}`,
-            inline: false
-          }
-        ],
-        footer: {
-          text: act < 4
-            ? `다음 격돌 막으로 이동합니다... (${act}/4) | 약 2.5초 후 주사위 컵을 다시 흔듭니다.`
-            : "최종 결과 및 ELO 정산을 집계 중입니다..."
-        }
-      };
-
-      return {
-        type: 7,
-        data: {
-          embeds: [embed],
-          components: []
-        }
-      };
+      return renderColosseumRound(match, bets, duelData, targetRound, flyBrainUrl);
     },
 
     serializeColosseumResult: (match, bets, duelData, flyBrainUrl) => {

@@ -209,8 +209,8 @@ describe("Colosseum Workflow Service", () => {
       expect(bobBet?.status).toBe("LOST");
       expect(bobBet?.payout).toBe(0);
 
-      // Verify Discord messages were edited (4 acts * 2 frames + 1 final result = 9 stages)
-      expect(testApiService.editMessage).toHaveBeenCalledTimes(9);
+      // Verify Discord messages were edited (1 opening + 12 rounds + 1 final result = 14 stages)
+      expect(testApiService.editMessage).toHaveBeenCalledTimes(14);
     } finally {
       globalThis.fetch = originalFetch;
     }
