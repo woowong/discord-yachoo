@@ -3,9 +3,10 @@ import { GameState, DiceHold, DiceRoll, ScoreCategory } from "../domain/types";
 import { initGame, rollDice, selectCategory, surrenderGame, offerSurrender as domainOfferSurrender, acceptSurrender as domainAcceptSurrender, declineSurrender as domainDeclineSurrender } from "../domain/game";
 import { calculateEloChange } from "../domain/elo";
 import { calculateScore } from "../domain/score";
-import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository } from "../persistence/repository";
+import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository, ColosseumRepository, ColosseumMatchRecord, ColosseumBetRecord } from "../persistence/repository";
 import { Invitation, isInvitationExpired } from "../domain/invitation";
 import { MatchQueue, isMatchQueueExpired } from "../domain/matchQueue";
+import { selectRandomGladiators, calculateOdds, validateBet, calculatePayout, GLADIATOR_PERSONAS, PersonaId, BetValidationError } from "../domain/colosseum";
 import { DiscordApiService, FlyBrainUrl } from "../presentation/discord/adapter/api";
 import { DiscordResponseSerializer } from "../presentation/discord/adapter/serializer";
 import { 
@@ -31,7 +32,10 @@ import {
   MatchQueueExpiredError,
   SelfJoinQueueError,
   UnauthorizedCancelQueueError,
-  UnauthorizedPlayAiError
+  UnauthorizedPlayAiError,
+  ColosseumMatchNotFoundError,
+  ColosseumBetClosedError,
+  ColosseumAlreadyBetError
 } from "../domain/errors";
 
 export const FLY_AI_PLAYER_ID = "AI_FLY_BRAIN";
@@ -214,6 +218,45 @@ export interface GameWorkflowService {
     channelId: string,
     messageId: string
   ) => Effect.Effect<GameState | void, any, GameRepository | MatchRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer>;
+
+  readonly createColosseumMatch: (
+    guildId: string,
+    channelId: string
+  ) => Effect.Effect<ColosseumMatchRecord, any, ColosseumRepository>;
+
+  readonly placeColosseumBet: (
+    matchId: string,
+    userId: string,
+    userName: string,
+    guildId: string,
+    chosenPersona: "A" | "B",
+    amount: number
+  ) => Effect.Effect<
+    { readonly match: ColosseumMatchRecord; readonly bet: ColosseumBetRecord; readonly allBets: readonly ColosseumBetRecord[] },
+    any,
+    ColosseumRepository | PlayerRepository
+  >;
+
+  readonly startColosseumDuel: (
+    matchId: string,
+    channelId: string,
+    messageId: string,
+    ctx: ExecutionContext
+  ) => Effect.Effect<
+    ColosseumMatchRecord,
+    any,
+    ColosseumRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
+
+  readonly executeColosseumMatch: (
+    matchId: string,
+    channelId: string,
+    messageId: string
+  ) => Effect.Effect<
+    void,
+    any,
+    ColosseumRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
 }
 
 export const GameWorkflowService = Context.GenericTag<GameWorkflowService>("@services/GameWorkflowService");
@@ -1314,8 +1357,241 @@ export const GameWorkflowServiceLive = Layer.succeed(
       }),
 
     executeAiTurn: (gameId, guildId, channelId, messageId) =>
-      executeAiTurnLogic(gameId, guildId, channelId, messageId)
+      executeAiTurnLogic(gameId, guildId, channelId, messageId),
+
+    createColosseumMatch: (guildId, channelId) =>
+      Effect.gen(function* () {
+        const colosseumRepo = yield* ColosseumRepository;
+        const [pA, pB] = selectRandomGladiators();
+        const { oddsA, oddsB } = calculateOdds(pA.elo, pB.elo);
+
+        const matchId = `colosseum_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const matchRecord: ColosseumMatchRecord = {
+          id: matchId,
+          guildId,
+          channelId,
+          personaAId: pA.id,
+          personaBId: pB.id,
+          oddsA,
+          oddsB,
+          status: "BETTING",
+          createdAt: new Date()
+        };
+
+        yield* colosseumRepo.createMatch(matchRecord);
+        return matchRecord;
+      }),
+
+    placeColosseumBet: (matchId, userId, userName, guildId, chosenPersona, amount) =>
+      Effect.gen(function* () {
+        const colosseumRepo = yield* ColosseumRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+        if (Option.isNone(matchOpt)) {
+          return yield* Effect.fail(new ColosseumMatchNotFoundError());
+        }
+        const match = matchOpt.value;
+        if (match.status !== "BETTING") {
+          return yield* Effect.fail(new ColosseumBetClosedError());
+        }
+
+        const existingBet = yield* colosseumRepo.getUserBetInMatch(matchId, userId);
+        if (Option.isSome(existingBet)) {
+          return yield* Effect.fail(new ColosseumAlreadyBetError());
+        }
+
+        const playerOpt = yield* playerRepo.getPlayer(userId, guildId);
+        const currentElo = Option.isSome(playerOpt) ? playerOpt.value.elo : 1000;
+
+        const validateResult = validateBet(currentElo, amount);
+        if (validateResult._tag === "Left") {
+          return yield* Effect.fail(validateResult.left);
+        }
+        const validAmount = validateResult.right;
+
+        yield* playerRepo.upsertPlayer(userId, userName);
+        yield* playerRepo.updateElo(userId, guildId, currentElo - validAmount);
+
+        const odds = chosenPersona === "A" ? match.oddsA : match.oddsB;
+        const betId = `bet_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const betRecord: ColosseumBetRecord = {
+          id: betId,
+          matchId,
+          userId,
+          userName,
+          chosenPersona,
+          amount: validAmount,
+          odds,
+          payout: 0,
+          status: "PENDING",
+          createdAt: new Date()
+        };
+
+        yield* colosseumRepo.placeBet(betRecord);
+        const allBets = yield* colosseumRepo.getBetsByMatchId(matchId);
+
+        return {
+          match,
+          bet: betRecord,
+          allBets
+        };
+      }),
+
+    startColosseumDuel: (matchId, channelId, messageId, ctx) =>
+      Effect.gen(function* () {
+        const colosseumRepo = yield* ColosseumRepository;
+        const playerRepo = yield* PlayerRepository;
+        const apiService = yield* DiscordApiService;
+        const serializer = yield* DiscordResponseSerializer;
+        const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+        const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+        const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+        if (Option.isNone(matchOpt)) {
+          return yield* Effect.fail(new ColosseumMatchNotFoundError());
+        }
+        const match = matchOpt.value;
+        if (match.status !== "BETTING") {
+          return match;
+        }
+
+        yield* colosseumRepo.updateMatchStatus(matchId, "SIMULATING", messageId);
+        const updatedMatch: ColosseumMatchRecord = { ...match, status: "SIMULATING", messageId };
+
+        const simTask = executeColosseumMatchLogic(matchId, channelId, messageId).pipe(
+          Effect.catchAll((err) => {
+            console.error(`[Colosseum] Error executing duel ${matchId}:`, err);
+            return Effect.logError(`Error executing colosseum duel: ${err}`);
+          }),
+          Effect.provide(
+            Layer.mergeAll(
+              Layer.succeed(ColosseumRepository, colosseumRepo),
+              Layer.succeed(PlayerRepository, playerRepo),
+              Layer.succeed(DiscordApiService, apiService),
+              Layer.succeed(DiscordResponseSerializer, serializer),
+              Layer.succeed(FlyBrainUrl, flyUrl)
+            )
+          )
+        );
+        ctx.waitUntil(Effect.runPromise(simTask));
+
+        return updatedMatch;
+      }),
+
+    executeColosseumMatch: (matchId, channelId, messageId) =>
+      executeColosseumMatchLogic(matchId, channelId, messageId)
   }
 );
+
+const executeColosseumMatchLogic = (
+  matchId: string,
+  channelId: string,
+  messageId: string
+) =>
+  Effect.gen(function* () {
+    const colosseumRepo = yield* ColosseumRepository;
+    const playerRepo = yield* PlayerRepository;
+    const apiService = yield* DiscordApiService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+    if (Option.isNone(matchOpt)) return;
+    const match = matchOpt.value;
+    if (match.status === "COMPLETED" || match.status === "CANCELLED") return;
+
+    // 1. Fetch simulation duel timeline from Python SNN server
+    const duelData = yield* Effect.tryPromise({
+      try: async () => {
+        if (!flyUrl) throw new Error("FLY_BRAIN_URL not configured");
+        const res = await fetch(`${flyUrl}/api/fly/duel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            persona_a: match.personaAId,
+            persona_b: match.personaBId
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return (await res.json()) as any;
+      },
+      catch: (err) => err
+    }).pipe(
+      Effect.catchAll(() => {
+        const mockRounds = Array.from({ length: 12 }, (_, i) => ({
+          round: i + 1,
+          a: { category: "Choice", points: 20, total: 20 * (i + 1), dopamine: 120, dialogue: "가즈아 붕!", dice: [5, 5, 4, 3, 3] },
+          b: { category: "Choice", points: 18, total: 18 * (i + 1), dopamine: 110, dialogue: "계획대로 붕.", dice: [4, 4, 4, 3, 2] },
+          leader: "A",
+          is_lead_change: false
+        }));
+        return Effect.succeed({
+          winner: "A",
+          score_a: 240,
+          score_b: 216,
+          diff: 24,
+          lead_changes: 0,
+          rounds: mockRounds
+        });
+      })
+    );
+
+    const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
+
+    // 2. Phase 1: Clash (R01~R06)
+    const phase1Payload = serializer.serializeColosseumClash(match, bets, duelData, 1, flyUrl);
+    yield* apiService.editMessage(channelId, messageId, phase1Payload.data).pipe(
+      Effect.catchAll(() => Effect.void)
+    );
+    yield* Effect.sleep("3 seconds");
+
+    // 3. Phase 2: Climax (R07~R12)
+    const phase2Payload = serializer.serializeColosseumClash(match, bets, duelData, 2, flyUrl);
+    yield* apiService.editMessage(channelId, messageId, phase2Payload.data).pipe(
+      Effect.catchAll(() => Effect.void)
+    );
+    yield* Effect.sleep("3 seconds");
+
+    // 4. Phase 3: Settle Bets & Final Results
+    const winner = duelData.winner as "A" | "B" | "DRAW";
+    yield* colosseumRepo.finishMatch(
+      match.id,
+      winner,
+      duelData.score_a,
+      duelData.score_b,
+      JSON.stringify(duelData)
+    );
+
+    for (const bet of bets) {
+      if (winner === "DRAW") {
+        yield* colosseumRepo.updateBetPayout(bet.id, bet.amount, "REFUNDED");
+        const pOpt = yield* playerRepo.getPlayer(bet.userId, match.guildId);
+        if (Option.isSome(pOpt)) {
+          yield* playerRepo.updateElo(bet.userId, match.guildId, pOpt.value.elo + bet.amount);
+        }
+      } else if (winner === bet.chosenPersona) {
+        const payout = Math.floor(bet.amount * bet.odds);
+        yield* colosseumRepo.updateBetPayout(bet.id, payout, "WON");
+        const pOpt = yield* playerRepo.getPlayer(bet.userId, match.guildId);
+        if (Option.isSome(pOpt)) {
+          yield* playerRepo.updateElo(bet.userId, match.guildId, pOpt.value.elo + payout);
+        }
+      } else {
+        yield* colosseumRepo.updateBetPayout(bet.id, 0, "LOST");
+      }
+    }
+
+    const updatedBets = yield* colosseumRepo.getBetsByMatchId(matchId);
+    const updatedMatchOpt = yield* colosseumRepo.getMatchById(matchId);
+    const finalMatch = Option.getOrElse(updatedMatchOpt, () => match);
+
+    const phase3Payload = serializer.serializeColosseumResult(finalMatch, updatedBets, duelData, flyUrl);
+    yield* apiService.editMessage(channelId, messageId, phase3Payload.data).pipe(
+      Effect.catchAll(() => Effect.void)
+    );
+  });
+
 
 

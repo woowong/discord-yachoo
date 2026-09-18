@@ -1,6 +1,6 @@
 import { Effect, Layer } from "effect";
 import { D1Database } from "./persistence/d1/database";
-import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive, D1InvitationRepositoryLive, D1MatchQueueRepositoryLive } from "./persistence/d1/repository";
+import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive, D1InvitationRepositoryLive, D1MatchQueueRepositoryLive, D1ColosseumRepositoryLive } from "./persistence/d1/repository";
 import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./presentation/discord/adapter/signature";
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./presentation/discord/adapter/parser";
 import { DiscordResponseSerializerLive } from "./presentation/discord/adapter/serializer";
@@ -28,6 +28,7 @@ export default {
       D1GameRepositoryLive,
       D1InvitationRepositoryLive,
       D1MatchQueueRepositoryLive,
+      D1ColosseumRepositoryLive,
       apiServiceLayer,
       flyBrainUrlLayer,
       GameWorkflowServiceLive

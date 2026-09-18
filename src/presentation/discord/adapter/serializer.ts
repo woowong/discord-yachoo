@@ -1,8 +1,9 @@
 import { Context, Layer } from "effect";
 import { GameState, ScoreCategory, TurnRecord } from "../../../domain/types";
 import { HistoryTurnRecord, normalizeTurnHistory } from "../../../domain/history";
-import { PlayerStats, MatchRecord } from "../../../persistence/repository";
+import { PlayerStats, MatchRecord, ColosseumMatchRecord, ColosseumBetRecord } from "../../../persistence/repository";
 import { calculateScore, calculateUpperSectionSum } from "../../../domain/score";
+import { GLADIATOR_PERSONAS, PersonaId } from "../../../domain/colosseum";
 import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./types";
 
 export interface DiscordResponseSerializer {
@@ -17,6 +18,9 @@ export interface DiscordResponseSerializer {
   readonly serializeInvitationDeclined: (invitation: import("../../../domain/invitation").Invitation) => DiscordInteractionResponse;
   readonly serializeMatchQueue: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
   readonly serializeMatchQueueCancelled: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
+  readonly serializeColosseumMatch: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeColosseumClash: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, phase: 1 | 2, flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeColosseumResult: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, flyBrainUrl?: string) => DiscordInteractionResponse;
 }
 
 export const DiscordResponseSerializer = Context.GenericTag<DiscordResponseSerializer>("@services/DiscordResponseSerializer");
@@ -682,6 +686,193 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         title: "🎲 야추 대결 대기열 취소됨",
         description: `**${queue.hostName}**님이 야추 대결 대기열을 취소했습니다.`,
         color: 0x95A5A6
+      };
+
+      return {
+        type: 7,
+        data: {
+          embeds: [embed],
+          components: []
+        }
+      };
+    },
+
+    serializeColosseumMatch: (match, bets, flyBrainUrl) => {
+      const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
+      const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
+
+      const betsA = bets.filter((b) => b.chosenPersona === "A");
+      const betsB = bets.filter((b) => b.chosenPersona === "B");
+      const totalAmountA = betsA.reduce((sum, b) => sum + b.amount, 0);
+      const totalAmountB = betsB.reduce((sum, b) => sum + b.amount, 0);
+
+      const embed: DiscordEmbed = {
+        title: `🏛️ [초파리 콜로세움] 검투사 맞대결 & ELO 베팅`,
+        description: `초파리 커넥톰 SNN 검투사들이 격돌합니다!\n승리할 것 같은 초파리에게 본인의 ELO를 베팅하세요.\n\n` +
+          `⏱️ **베팅 상태**: 베팅 접수 중 (버튼을 클릭하여 20 ELO 베팅)\n` +
+          (flyBrainUrl ? `🔗 **3D 실시간 관전**: [초파리 뇌 실시간 뷰어](${flyBrainUrl})\n` : ""),
+        color: 0x9B59B6,
+        fields: [
+          {
+            name: `${pA.emoji} [선수 1] ${pA.title}`,
+            value: `• ELO: **${pA.elo}** | 스타일: *${pA.style}*\n• 승리 배당률: **${match.oddsA}배**\n• 현재 베팅 풀: **${totalAmountA} ELO** (${betsA.length}명)`,
+            inline: true
+          },
+          {
+            name: `${pB.emoji} [선수 2] ${pB.title}`,
+            value: `• ELO: **${pB.elo}** | 스타일: *${pB.style}*\n• 승리 배당률: **${match.oddsB}배**\n• 현재 베팅 풀: **${totalAmountB} ELO** (${betsB.length}명)`,
+            inline: true
+          },
+          {
+            name: `📜 참여자 베팅 현황 (${bets.length}명 참여)`,
+            value: bets.length > 0 
+              ? bets.map((b) => `• **${b.userName}**: ${b.chosenPersona === "A" ? pA.emoji + " " + pA.name : pB.emoji + " " + pB.name}에 **${b.amount} ELO** (적중 시 +${Math.floor(b.amount * b.odds)} ELO)`).slice(0, 10).join("\n")
+              : "아직 베팅한 유저가 없습니다. 아래 버튼으로 참여하세요!",
+            inline: false
+          }
+        ],
+        footer: {
+          text: "파산 방지 룰: 800 ELO 이하 베팅 불가 | 1인당 1회 베팅 가능"
+        }
+      };
+
+      const components: DiscordActionRow[] = [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2,
+              style: 1, // Primary Blurple
+              label: `${pA.emoji} ${pA.name} (+20 ELO)`,
+              custom_id: `colosseum_bet:${match.id}:A:20`
+            },
+            {
+              type: 2,
+              style: 1, // Primary Blurple
+              label: `${pB.emoji} ${pB.name} (+20 ELO)`,
+              custom_id: `colosseum_bet:${match.id}:B:20`
+            },
+            {
+              type: 2,
+              style: 3, // Success Green
+              label: "⚔️ 결투 시작!",
+              custom_id: `colosseum_start:${match.id}`
+            }
+          ]
+        }
+      ];
+
+      return {
+        type: 4,
+        data: {
+          embeds: [embed],
+          components
+        }
+      };
+    },
+
+    serializeColosseumClash: (match, bets, duelData, phase, flyBrainUrl) => {
+      const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
+      const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
+
+      const rIndex = phase === 1 ? 5 : 11;
+      const roundInfo = duelData.rounds && duelData.rounds[rIndex] ? duelData.rounds[rIndex] : null;
+
+      const scoreA = roundInfo ? roundInfo.a.total : 0;
+      const scoreB = roundInfo ? roundInfo.b.total : 0;
+      const leaderStr = roundInfo?.leader === "A" ? `${pA.emoji} ${pA.name} 리드!` : (roundInfo?.leader === "B" ? `${pB.emoji} ${pB.name} 리드!` : "동점 접전!");
+
+      const renderDopamineGauge = (dopamine: number): string => {
+        const percent = Math.min(250, Math.max(0, dopamine));
+        const blocks = Math.round(percent / 25);
+        const filled = "█".repeat(Math.min(10, blocks));
+        const empty = "░".repeat(Math.max(0, 10 - blocks));
+        return `[${filled}${empty}] ${Math.round(percent)}%`;
+      };
+
+      const formatDiceList = (dice: readonly number[]): string => {
+        return (dice || []).map((d) => DICE_BUTTON_EMOJIS[d] || `[${d}]`).join(" ");
+      };
+
+      const embed: DiscordEmbed = {
+        title: `⚔️ [초파리 콜로세움] ${phase === 1 ? "R06 전반전 격돌!" : "R12 후반전 클라이맥스!"}`,
+        description: `**${pA.emoji} ${pA.name}** [${scoreA}점] vs **${pB.emoji} ${pB.name}** [${scoreB}점]\n` +
+          `⚡ **전황 판세**: **${leaderStr}** (역전 횟수: ${duelData.lead_changes || 0}회)\n` +
+          (flyBrainUrl ? `🔗 [3D 초파리 두뇌 실시간 관전](${flyBrainUrl})\n` : ""),
+        color: phase === 1 ? 0xE67E22 : 0xE74C3C,
+        fields: [
+          {
+            name: `${pA.emoji} ${pA.title} (도파민: ${renderDopamineGauge(roundInfo?.a?.dopamine || 100)})`,
+            value: `🎲 마지막 주사위: ${roundInfo?.a?.dice ? formatDiceList(roundInfo.a.dice) : ""}\n` +
+              `🎯 등록 족보: **${roundInfo?.a?.category}** (+${roundInfo?.a?.points || 0}점)\n` +
+              `💬 ${roundInfo?.a?.dialogue || "붕붕~"}`,
+            inline: false
+          },
+          {
+            name: `${pB.emoji} ${pB.title} (도파민: ${renderDopamineGauge(roundInfo?.b?.dopamine || 100)})`,
+            value: `🎲 마지막 주사위: ${roundInfo?.b?.dice ? formatDiceList(roundInfo.b.dice) : ""}\n` +
+              `🎯 등록 족보: **${roundInfo?.b?.category}** (+${roundInfo?.b?.points || 0}점)\n` +
+              `💬 ${roundInfo?.b?.dialogue || "붕붕~"}`,
+            inline: false
+          }
+        ],
+        footer: {
+          text: phase === 1 ? "후반전 클라이맥스로 돌입합니다... (잠시 후 자동 갱신)" : "최종 결과 및 ELO 정산을 집계 중입니다..."
+        }
+      };
+
+      return {
+        type: 7,
+        data: {
+          embeds: [embed],
+          components: []
+        }
+      };
+    },
+
+    serializeColosseumResult: (match, bets, duelData, flyBrainUrl) => {
+      const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
+      const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
+      const winner = duelData.winner as "A" | "B" | "DRAW";
+
+      let winnerTitle = "";
+      if (winner === "A") {
+        winnerTitle = `🏆 승자: ${pA.emoji} ${pA.title}! (+${duelData.diff}점차 승리)`;
+      } else if (winner === "B") {
+        winnerTitle = `🏆 승자: ${pB.emoji} ${pB.title}! (+${duelData.diff}점차 승리)`;
+      } else {
+        winnerTitle = `🤝 무승부! 기적의 동점 드라마!`;
+      }
+
+      const settlementLines = bets.map((b) => {
+        if (winner === "DRAW") {
+          return `• **${b.userName}**: 무승부 환불 (±0 ELO)`;
+        } else if (winner === b.chosenPersona) {
+          const payout = Math.floor(b.amount * b.odds);
+          const net = payout - b.amount;
+          return `• **${b.userName}**: 적중! 🎉 **+${net} ELO** 획득 (총 ${payout} ELO 수령)`;
+        } else {
+          return `• **${b.userName}**: 예측 실패 💥 **-${b.amount} ELO**`;
+        }
+      });
+
+      const embed: DiscordEmbed = {
+        title: `🏆 [초파리 콜로세움] 최종 경기 결과 발표!`,
+        description: `**${winnerTitle}**\n\n` +
+          `📊 **최종 스코어**: ${pA.emoji} ${pA.name} **${duelData.score_a}점** vs **${duelData.score_b}점** ${pB.emoji} ${pB.name}\n` +
+          `⚡ **경기 역전 횟수**: 총 **${duelData.lead_changes}회**\n` +
+          (flyBrainUrl ? `🔗 [3D 초파리 두뇌 뷰어](${flyBrainUrl})\n` : ""),
+        color: winner === "DRAW" ? 0x95A5A6 : 0xF1C40F,
+        fields: [
+          {
+            name: `💰 ELO 베팅 정산 결과 (${bets.length}명 참여)`,
+            value: settlementLines.length > 0 ? settlementLines.join("\n") : "베팅 참여자가 없습니다.",
+            inline: false
+          }
+        ],
+        footer: {
+          text: "다음 대결을 시작하려면 /colosseum 명령어를 사용하세요!"
+        }
       };
 
       return {

@@ -1778,4 +1778,92 @@ describe("Discord Yacht Bot Integration Tests", () => {
       expect(json.data.flags).toBe(64);
     });
   });
+
+  describe("Colosseum spectator and betting endpoints", () => {
+    it("should handle /colosseum command and return colosseum announcement with betting buttons", async () => {
+      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+      mockAll.mockResolvedValue({ success: true, results: [], meta: {} });
+
+      const body = JSON.stringify({
+        type: 2,
+        user: { id: "user-test", username: "TestUser" },
+        guild_id: "guild1",
+        channel_id: "chan1",
+        data: {
+          name: "colosseum"
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.type).toBe(4);
+      expect(json.data.embeds[0].title).toContain("초파리 콜로세움");
+      expect(json.data.components[0].components).toHaveLength(3);
+    });
+
+    it("should handle colosseum_bet component click and update match embed", async () => {
+      mockFirst
+        // 1. colosseum_matches lookup
+        .mockResolvedValueOnce({
+          id: "col-123",
+          guild_id: "guild1",
+          channel_id: "chan1",
+          message_id: "msg-123",
+          persona_a_id: "Jackpot",
+          persona_b_id: "Newton",
+          odds_a: 1.85,
+          odds_b: 2.10,
+          status: "BETTING",
+          created_at: Date.now()
+        })
+        // 2. getUserBetInMatch (none)
+        .mockResolvedValueOnce(null)
+        // 3. getPlayer
+        .mockResolvedValueOnce({
+          id: "user-bettor",
+          name: "Bettor",
+          elo: 1200
+        });
+
+      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+      mockAll.mockResolvedValue({
+        results: [
+          {
+            id: "bet-1",
+            match_id: "col-123",
+            user_id: "user-bettor",
+            user_name: "Bettor",
+            chosen_persona: "A",
+            amount: 20,
+            odds: 1.85,
+            payout: 0,
+            status: "PENDING",
+            created_at: Date.now()
+          }
+        ]
+      });
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "user-bettor", username: "Bettor" },
+        guild_id: "guild1",
+        channel_id: "chan1",
+        data: {
+          custom_id: "colosseum_bet:col-123:A:20"
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.type).toBe(7);
+      expect(json.data.embeds[0].fields[2].value).toContain("Bettor");
+    });
+  });
 });
+

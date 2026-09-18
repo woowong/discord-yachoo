@@ -7,7 +7,8 @@ import {
   handleMatch,
   handleProfile, 
   handleLeaderboard, 
-  handleHistory 
+  handleHistory,
+  handleColosseum
 } from "./handlers/commands";
 import { 
   handleBackToHistoryList, 
@@ -26,7 +27,9 @@ import {
   handleHold, 
   handleRoll, 
   handleSelectCategory,
-  handleRefresh
+  handleRefresh,
+  handleColosseumBet,
+  handleColosseumStart
 } from "./handlers/components";
 
 export const routeInteraction = (
@@ -59,6 +62,9 @@ export const routeInteraction = (
       if (interaction.commandName === "history") {
         return yield* handleHistory(interaction);
       }
+      if (interaction.commandName === "colosseum") {
+        return yield* handleColosseum(interaction);
+      }
       return new Response(
         JSON.stringify(serializer.serializeError(`Unknown command: ${interaction.commandName}`)),
         { headers: { "content-type": "application/json" } }
@@ -68,6 +74,12 @@ export const routeInteraction = (
     if (interaction._tag === "Component") {
       const customId = interaction.customId;
 
+      if (customId.startsWith("colosseum_bet:")) {
+        return yield* handleColosseumBet(interaction);
+      }
+      if (customId.startsWith("colosseum_start:")) {
+        return yield* handleColosseumStart(interaction, rawJson, safeCtx);
+      }
       if (customId.startsWith("invitation:accept:")) {
         return yield* handleAcceptInvitation(interaction);
       }

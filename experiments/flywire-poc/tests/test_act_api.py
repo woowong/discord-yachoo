@@ -55,3 +55,36 @@ def test_champion_act_with_dopamine_satiety_gating():
         # Should only hold the dominant pair (5s)
         assert holds == [False, False, True, True, False]
 
+
+def test_duel_http_endpoint():
+    import threading
+    import urllib.request
+    import json
+    from http.server import ThreadingHTTPServer
+    from web_server import VisualizerHTTPHandler
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), VisualizerHTTPHandler)
+    port = server.server_address[1]
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
+
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/fly/personas")
+        with urllib.request.urlopen(req) as resp:
+            assert resp.status == 200
+            personas = json.loads(resp.read().decode())
+            assert "Jackpot" in personas
+            assert "Newton" in personas
+
+        data = json.dumps({"persona_a": "Jackpot", "persona_b": "Speeder"}).encode()
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/fly/duel", data=data, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req) as resp:
+            assert resp.status == 200
+            res = json.loads(resp.read().decode())
+            assert res["winner"] in ("A", "B", "DRAW")
+            assert len(res["rounds"]) == 12
+            assert "dopamine" in res["rounds"][0]["a"]
+    finally:
+        server.shutdown()
+
+

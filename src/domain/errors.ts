@@ -136,3 +136,28 @@ export class UnauthorizedPlayAiError extends Error {
   }
 }
 
+export class ColosseumMatchNotFoundError extends Error {
+  readonly _tag = "ColosseumMatchNotFoundError";
+  constructor() {
+    super("콜로세움 매치를 찾을 수 없습니다.");
+    this.name = "ColosseumMatchNotFoundError";
+  }
+}
+
+export class ColosseumBetClosedError extends Error {
+  readonly _tag = "ColosseumBetClosedError";
+  constructor() {
+    super("이미 베팅이 마감되어 대결이 진행 중이거나 종료되었습니다.");
+    this.name = "ColosseumBetClosedError";
+  }
+}
+
+export class ColosseumAlreadyBetError extends Error {
+  readonly _tag = "ColosseumAlreadyBetError";
+  constructor() {
+    super("이미 이 매치에 베팅을 완료하셨습니다. (매치당 1회 베팅 가능)");
+    this.name = "ColosseumAlreadyBetError";
+  }
+}
+
+

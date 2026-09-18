@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { Effect, Layer, Option } from "effect";
 import { D1Database, D1PreparedStatement } from "./d1/database";
-import { D1PlayerRepositoryLive, D1MatchRepositoryLive } from "./d1/repository";
-import { PlayerRepository, MatchRepository, MatchRecord } from "./repository";
+import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1ColosseumRepositoryLive } from "./d1/repository";
+import { PlayerRepository, MatchRepository, MatchRecord, ColosseumRepository } from "./repository";
 
 describe("D1 Persistence Repositories", () => {
   const createMockDb = () => {
@@ -455,4 +455,104 @@ describe("D1 Persistence Repositories", () => {
       expect(mockFirst).toHaveBeenCalled();
     });
   });
+
+  describe("ColosseumRepository", () => {
+    it("createMatch and getMatchById should execute correct queries", async () => {
+      const { mockDB, mockBind, mockRun, mockFirst } = createMockDb();
+      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+      mockFirst.mockResolvedValue({
+        id: "col-123",
+        guild_id: "guild-1",
+        channel_id: "chan-1",
+        message_id: "msg-1",
+        persona_a_id: "Jackpot",
+        persona_b_id: "Newton",
+        odds_a: 1.85,
+        odds_b: 2.10,
+        status: "BETTING",
+        winner: null,
+        score_a: null,
+        score_b: null,
+        timeline_json: null,
+        created_at: 1700000000000,
+        closed_at: null
+      });
+
+      const program = Effect.gen(function* () {
+        const repo = yield* ColosseumRepository;
+        yield* repo.createMatch({
+          id: "col-123",
+          guildId: "guild-1",
+          channelId: "chan-1",
+          messageId: "msg-1",
+          personaAId: "Jackpot",
+          personaBId: "Newton",
+          oddsA: 1.85,
+          oddsB: 2.10,
+          status: "BETTING",
+          createdAt: new Date(1700000000000)
+        });
+        return yield* repo.getMatchById("col-123");
+      }).pipe(
+        Effect.provide(D1ColosseumRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const result = await Effect.runPromise(program);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO colosseum_matches"));
+      expect(Option.isSome(result)).toBe(true);
+      const match = Option.getOrThrow(result);
+      expect(match.id).toBe("col-123");
+      expect(match.personaAId).toBe("Jackpot");
+      expect(match.oddsA).toBe(1.85);
+    });
+
+    it("placeBet and getBetsByMatchId should work correctly", async () => {
+      const { mockDB, mockBind, mockRun, mockAll } = createMockDb();
+      mockRun.mockResolvedValue({ success: true, results: [], meta: {} });
+      mockAll.mockResolvedValue({
+        results: [
+          {
+            id: "bet-1",
+            match_id: "col-123",
+            user_id: "user-1",
+            user_name: "Alice",
+            chosen_persona: "A",
+            amount: 20,
+            odds: 1.85,
+            payout: 0,
+            status: "PENDING",
+            created_at: 1700000000000
+          }
+        ]
+      });
+
+      const program = Effect.gen(function* () {
+        const repo = yield* ColosseumRepository;
+        yield* repo.placeBet({
+          id: "bet-1",
+          matchId: "col-123",
+          userId: "user-1",
+          userName: "Alice",
+          chosenPersona: "A",
+          amount: 20,
+          odds: 1.85,
+          payout: 0,
+          status: "PENDING",
+          createdAt: new Date(1700000000000)
+        });
+        return yield* repo.getBetsByMatchId("col-123");
+      }).pipe(
+        Effect.provide(D1ColosseumRepositoryLive),
+        Effect.provide(Layer.succeed(D1Database, mockDB))
+      );
+
+      const bets = await Effect.runPromise(program);
+      expect(mockDB.prepare).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO colosseum_bets"));
+      expect(bets.length).toBe(1);
+      expect(bets[0].userId).toBe("user-1");
+      expect(bets[0].amount).toBe(20);
+    });
+  });
 });
+

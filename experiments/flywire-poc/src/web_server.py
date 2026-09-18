@@ -17,6 +17,7 @@ sys.path.insert(0, str(SRC_DIR))
 from forward_sim import FlySubcircuitSNN, load_cached_subcircuit
 from synaptic_plasticity import set_kc_mbon_dense
 from telemetry_agent import TelemetryFlyBrainAgent, GameSession
+from personas import PERSONA_SPECS, simulate_colosseum_duel
 import numpy as np
 
 STATIC_DIR = SRC_DIR.parent / "web"
@@ -189,6 +190,13 @@ class VisualizerHTTPHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(topo).encode("utf-8"))
             return
 
+        elif self.path == "/api/fly/personas":
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(PERSONA_SPECS).encode("utf-8"))
+            return
+
         elif self.path == "/events":
             # Server-Sent Events stream
             self.send_response(HTTPStatus.OK)
@@ -265,6 +273,22 @@ class VisualizerHTTPHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps(result).encode("utf-8"))
+            return
+
+        elif self.path == "/api/fly/duel":
+            persona_a = data.get("persona_a", "Jackpot")
+            persona_b = data.get("persona_b", "Newton")
+            try:
+                duel_result = simulate_colosseum_duel(persona_a, persona_b)
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(duel_result).encode("utf-8"))
+            except Exception as e:
+                self.send_response(HTTPStatus.BAD_REQUEST)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
             return
 
         self.send_error(HTTPStatus.NOT_FOUND, "Endpoint not found")

@@ -386,5 +386,83 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(flyButton).toBeDefined();
       expect(flyButton?.emoji?.name).toBe("🪰");
     });
+
+    it("should serialize colosseum match and betting buttons", async () => {
+      const match = {
+        id: "col-123",
+        guildId: "g1",
+        channelId: "c1",
+        personaAId: "Jackpot",
+        personaBId: "Newton",
+        oddsA: 1.85,
+        oddsB: 2.10,
+        status: "BETTING" as const,
+        createdAt: new Date()
+      };
+      const bets = [
+        {
+          id: "b1",
+          matchId: "col-123",
+          userId: "u1",
+          userName: "Alice",
+          chosenPersona: "A" as const,
+          amount: 20,
+          odds: 1.85,
+          payout: 0,
+          status: "PENDING" as const,
+          createdAt: new Date()
+        }
+      ];
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeColosseumMatch(match, bets))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      expect(response.type).toBe(4);
+      expect(response.data?.embeds?.[0].title).toContain("초파리 콜로세움");
+      expect(response.data?.components?.[0].components).toHaveLength(3);
+    });
+
+    it("should serialize colosseum clash and results", async () => {
+      const match = {
+        id: "col-123",
+        guildId: "g1",
+        channelId: "c1",
+        personaAId: "Jackpot",
+        personaBId: "Newton",
+        oddsA: 1.85,
+        oddsB: 2.10,
+        status: "SIMULATING" as const,
+        createdAt: new Date()
+      };
+      const duelData = {
+        winner: "A",
+        score_a: 210,
+        score_b: 195,
+        diff: 15,
+        lead_changes: 2,
+        rounds: Array.from({ length: 12 }, (_, i) => ({
+          round: i + 1,
+          a: { category: "Yacht", points: 50, total: 210, dopamine: 220, dialogue: "야추다 붕!", dice: [5, 5, 5, 5, 5] },
+          b: { category: "FullHouse", points: 28, total: 195, dopamine: 130, dialogue: "침착하게 붕.", dice: [3, 3, 3, 2, 2] },
+          leader: "A",
+          is_lead_change: false
+        }))
+      };
+
+      const program = Effect.gen(function* () {
+        const serializer = yield* DiscordResponseSerializer;
+        const clash = serializer.serializeColosseumClash(match, [], duelData, 1);
+        const result = serializer.serializeColosseumResult(match, [], duelData);
+        return { clash, result };
+      }).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const { clash, result } = await Effect.runPromise(program);
+      expect(clash.data?.embeds?.[0].title).toContain("R06 전반전");
+      expect(result.data?.embeds?.[0].title).toContain("최종 경기 결과");
+      expect(result.data?.embeds?.[0].description).toContain("승자");
+    });
   });
 });
+

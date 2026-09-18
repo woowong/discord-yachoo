@@ -798,3 +798,102 @@ export const handlePlayAiInvitation = (
     });
   });
 
+export const handleColosseumBet = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const parts = interaction.customId.split(":");
+    const matchId = parts[1];
+    const chosenPersona = parts[2] as "A" | "B";
+    const amount = parseInt(parts[3], 10) || 20;
+
+    const userId = interaction.user.id;
+    const userName = interaction.user.globalName || interaction.user.username;
+    const guildId = interaction.guildId || "@me";
+
+    const result = workflow.placeColosseumBet(
+      matchId,
+      userId,
+      userName,
+      guildId,
+      chosenPersona,
+      amount
+    ).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrResult = yield* result;
+    if (resOrResult instanceof Response) {
+      return resOrResult;
+    }
+
+    const serialized = serializer.serializeColosseumMatch(resOrResult.match, resOrResult.allBets, flyUrl);
+    return new Response(JSON.stringify({ ...serialized, type: 7 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handleColosseumStart = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  rawJson: any,
+  safeCtx: any
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+
+    const parts = interaction.customId.split(":");
+    const matchId = parts[1];
+    const channelId = interaction.channelId || "";
+    const messageId = rawJson?.message?.id || "";
+
+    const result = workflow.startColosseumDuel(
+      matchId,
+      channelId,
+      messageId,
+      safeCtx
+    ).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrMatch = yield* result;
+    if (resOrMatch instanceof Response) {
+      return resOrMatch;
+    }
+
+    return new Response(JSON.stringify({ type: 6 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+
