@@ -453,13 +453,17 @@ describe("Discord Webhook Adapter Layer", () => {
 
       const program = Effect.gen(function* () {
         const serializer = yield* DiscordResponseSerializer;
+        const rolling = serializer.serializeColosseumRolling(match, [], duelData, 1);
         const clash = serializer.serializeColosseumClash(match, [], duelData, 1);
         const result = serializer.serializeColosseumResult(match, [], duelData);
-        return { clash, result };
+        return { rolling, clash, result };
       }).pipe(Effect.provide(DiscordResponseSerializerLive));
 
-      const { clash, result } = await Effect.runPromise(program);
-      expect(clash.data?.embeds?.[0].title).toContain("챕터 1/6");
+      const { rolling, clash, result } = await Effect.runPromise(program);
+      expect(rolling.data?.embeds?.[0].title).toContain("제1막");
+      expect(rolling.data?.embeds?.[0].title).toContain("주사위 컵 셰이킹 중");
+      expect(rolling.data?.embeds?.[0].image?.url).toBeDefined();
+      expect(clash.data?.embeds?.[0].title).toContain("제1막");
       expect(clash.data?.embeds?.[0].description).toContain("Category");
       expect(result.data?.embeds?.[0].title).toContain("최종 경기 결과");
       expect(result.data?.embeds?.[0].description).toContain("승자");

@@ -209,10 +209,10 @@ describe("Colosseum Workflow Service", () => {
       expect(bobBet?.status).toBe("LOST");
       expect(bobBet?.payout).toBe(0);
 
-      // Verify Discord messages were edited (6 chapters + 1 final result = 7 stages)
-      expect(testApiService.editMessage).toHaveBeenCalledTimes(7);
+      // Verify Discord messages were edited (4 acts * 2 frames + 1 final result = 9 stages)
+      expect(testApiService.editMessage).toHaveBeenCalledTimes(9);
     } finally {
       globalThis.fetch = originalFetch;
     }
-  }, 25000);
+  }, 35000);
 });

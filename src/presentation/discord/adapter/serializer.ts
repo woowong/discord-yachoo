@@ -19,7 +19,8 @@ export interface DiscordResponseSerializer {
   readonly serializeMatchQueue: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
   readonly serializeMatchQueueCancelled: (queue: import("../../../domain/matchQueue").MatchQueue) => DiscordInteractionResponse;
   readonly serializeColosseumMatch: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], flyBrainUrl?: string) => DiscordInteractionResponse;
-  readonly serializeColosseumClash: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, phase: number, flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeColosseumRolling: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, act: number, flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeColosseumClash: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, act: number, flyBrainUrl?: string) => DiscordInteractionResponse;
   readonly serializeColosseumResult: (match: ColosseumMatchRecord, bets: readonly ColosseumBetRecord[], duelData: any, flyBrainUrl?: string) => DiscordInteractionResponse;
 }
 
@@ -823,12 +824,86 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       };
     },
 
-    serializeColosseumClash: (match, bets, duelData, phase, flyBrainUrl) => {
+    serializeColosseumRolling: (match, bets, duelData, act, flyBrainUrl) => {
       const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
       const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
 
-      // Phase 1: R02, Phase 2: R04, Phase 3: R06, Phase 4: R08, Phase 5: R10, Phase 6: R12
-      const targetRound = Math.min(12, Math.max(1, phase * 2));
+      const actRounds: Record<number, number> = { 1: 3, 2: 6, 3: 9, 4: 12 };
+      const targetRound = actRounds[act] || act * 3;
+      const prevIndex = Math.max(0, targetRound - 2);
+      const prevRound = duelData.rounds && duelData.rounds[prevIndex] ? duelData.rounds[prevIndex] : null;
+
+      const scoreA = prevRound ? prevRound.a.total : 0;
+      const scoreB = prevRound ? prevRound.b.total : 0;
+
+      const actTitles: Record<number, string> = {
+        1: "제1막: 초반 기선제압 & 탐색전 (R03)",
+        2: "제2막: 상단 보너스 63점 사수 분수령 (R06)",
+        3: "제3막: 클러치 야추/스트레이트 올인 승부처 (R09)",
+        4: "제4막: 파이널 끝장 매치! 운명의 마지막 투척 (R12)"
+      };
+      const actTitle = actTitles[act] || `제${act}막 (R${targetRound} 격돌)`;
+
+      const randomGiphy = DICE_ROLL_GIPHY_POOL[Math.floor(Math.random() * DICE_ROLL_GIPHY_POOL.length)];
+
+      const scoreBoardA = prevRound?.a?.score_board || {};
+      const scoreBoardB = prevRound?.b?.score_board || {};
+      const bonusA = prevRound?.a?.upper_bonus || 0;
+      const bonusB = prevRound?.b?.upper_bonus || 0;
+
+      const asciiBoard = formatColosseumScoreBoard(
+        pA.name,
+        pB.name,
+        scoreBoardA,
+        scoreBoardB,
+        scoreA,
+        scoreB,
+        bonusA,
+        bonusB
+      );
+
+      const embed: DiscordEmbed = {
+        title: `🎲 [초파리 콜로세움] ${actTitle} - 주사위 컵 셰이킹 중...!!`,
+        description: `**${pA.emoji} ${pA.name}** [${scoreA}점] vs **${pB.emoji} ${pB.name}** [${scoreB}점]\n` +
+          `🔥 **검투사들이 주사위 컵을 맹렬히 흔들고 있습니다! 쉐킷쉐킷-!!**\n\n` +
+          `${asciiBoard}\n` +
+          (flyBrainUrl ? `🔗 [3D 초파리 두뇌 실시간 관전](${flyBrainUrl})\n` : ""),
+        color: 0xE67E22,
+        image: {
+          url: randomGiphy
+        },
+        fields: [
+          {
+            name: `${pA.emoji} ${pA.title}의 주사위 투척 준비!`,
+            value: `🎲 주사위 컵을 격렬하게 회전시키는 중...\n💬 "주사위 신이시여!! 대박 한 방만 부탁드립니다 붕붕붕!!"`,
+            inline: false
+          },
+          {
+            name: `${pB.emoji} ${pB.title}의 주사위 투척 준비!`,
+            value: `🎲 공기 역학적 각도로 컵 조준 중...\n💬 "물리법칙에 오차는 없다. 계획된 족보로 들어간다 붕!"`,
+            inline: false
+          }
+        ],
+        footer: {
+          text: `주사위가 테이블 위로 쏟아집니다... (약 3초 후 결과 공개!)`
+        }
+      };
+
+      return {
+        type: 7,
+        data: {
+          embeds: [embed],
+          components: []
+        }
+      };
+    },
+
+    serializeColosseumClash: (match, bets, duelData, act, flyBrainUrl) => {
+      const pA = GLADIATOR_PERSONAS[match.personaAId as PersonaId] || GLADIATOR_PERSONAS.Jackpot;
+      const pB = GLADIATOR_PERSONAS[match.personaBId as PersonaId] || GLADIATOR_PERSONAS.Newton;
+
+      const actRounds: Record<number, number> = { 1: 3, 2: 6, 3: 9, 4: 12 };
+      const targetRound = actRounds[act] || act * 3;
       const rIndex = targetRound - 1;
       const roundInfo = duelData.rounds && duelData.rounds[rIndex]
         ? duelData.rounds[rIndex]
@@ -838,25 +913,21 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       const scoreB = roundInfo ? roundInfo.b.total : 0;
       const leaderStr = roundInfo?.leader === "A" ? `${pA.emoji} ${pA.name} 리드!` : (roundInfo?.leader === "B" ? `${pB.emoji} ${pB.name} 리드!` : "동점 접전!");
 
-      const chapterTitles: Record<number, string> = {
-        1: "챕터 1/6: 오프닝 기선제압 (R01~R02)",
-        2: "챕터 2/6: 상단 족보 난타전 (R03~R04)",
-        3: "챕터 3/6: 전반전 선두 쟁탈전 (R05~R06)",
-        4: "챕터 4/6: 상단 보너스 63점 사수 레이스 (R07~R08)",
-        5: "챕터 5/6: 클러치 야추/스트레이트 도박 (R09~R10)",
-        6: "챕터 6/6: 최종 라운드 명운의 혈투 (R11~R12)"
+      const actTitles: Record<number, string> = {
+        1: "제1막: 초반 기선제압 & 탐색전 (R03 적중!)",
+        2: "제2막: 상단 보너스 63점 사수 분수령 (R06 전반 마감!)",
+        3: "제3막: 클러치 야추/스트레이트 올인 승부처 (R09 격돌!)",
+        4: "제4막: 파이널 끝장 매치! 운명의 마지막 투척 (R12 최종혈투!)"
       };
-      const chapterTitle = chapterTitles[phase] || `챕터 ${phase}/6 (R${targetRound.toString().padStart(2, "0")})`;
+      const actTitle = actTitles[act] || `제${act}막 (R${targetRound} 득점 결과)`;
 
-      const chapterColors: Record<number, number> = {
+      const actColors: Record<number, number> = {
         1: 0x3498DB,
         2: 0x2ECC71,
-        3: 0xF1C40F,
-        4: 0xE67E22,
-        5: 0xE74C3C,
-        6: 0x9B59B6
+        3: 0xE67E22,
+        4: 0x9B59B6
       };
-      const embedColor = chapterColors[phase] || 0xE67E22;
+      const embedColor = actColors[act] || 0xE67E22;
 
       const renderDopamineGauge = (dopamine: number): string => {
         const percent = Math.min(250, Math.max(0, dopamine));
@@ -890,7 +961,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       );
 
       const embed: DiscordEmbed = {
-        title: `⚔️ [초파리 콜로세움] ${chapterTitle}`,
+        title: `⚔️ [초파리 콜로세움] ${actTitle}`,
         description: `**${pA.emoji} ${pA.name}** [${scoreA}점] vs **${pB.emoji} ${pB.name}** [${scoreB}점]\n` +
           `⚡ **현재 전황**: **${leaderStr}** (역전 횟수: ${duelData.lead_changes || 0}회)\n\n` +
           `${asciiBoard}\n` +
@@ -913,8 +984,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           }
         ],
         footer: {
-          text: phase < 6
-            ? `다음 챕터로 격돌 중... (${phase}/6) | 약 2.5초 후 자동 갱신됩니다.`
+          text: act < 4
+            ? `다음 격돌 막으로 이동합니다... (${act}/4) | 약 3.5초 후 주사위 컵을 다시 흔듭니다.`
             : "최종 결과 및 ELO 정산을 집계 중입니다..."
         }
       };

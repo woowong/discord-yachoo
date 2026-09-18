@@ -24,11 +24,11 @@ The system SHALL permit server members to place wagers using their own persisten
 - **THEN** system rejects the wager with an ephemeral message explaining the 800 Elo bankruptcy protection rule.
 
 ### Requirement: Single-Message 3-Stage Dramatic Highlight Broadcast
-The system SHALL orchestrate the duel simulation in background and sequentially update a single Discord message embed across multiple dramatic chapters with realistic suspense delays, rendering the complete ASCII category scoreboard, current roll dice emojis, hold locks, dopamine gauges, and spicy in-character trash talk without flooding the channel.
+The system SHALL orchestrate the duel simulation in background and sequentially update a single Discord message embed across multiple dramatic acts with thrilling dice roll suspense animations and deliberate turn delays (3.0s~3.5s), rendering the animated rolling GIF, complete ASCII category scoreboard, current roll dice emojis, hold locks, dopamine gauges, and spicy in-character trash talk without flooding the channel.
 
 #### Scenario: Wagering window ends and duel begins
 - **WHEN** the betting phase concludes and the duel starts
-- **THEN** system executes the simulation, then updates the message embed sequentially through 6 round chapters (Opening R1-2, Upper Clash R3-4, Midfield Brawl R5-6, Bonus Race R7-8, Clutch Time R9-10, and Climax R11-12) with a ~2.5 second delay between updates, displaying the active 2-player ASCII scoreboard, current dice with lock icons (`🎲 ⚁ ⚂ ⚂ ⚄ ⚅`, `🔒 🔒 ▫️ ▫️ ▫️`), dopamine meters, and kitschy dialogues, before concluding with the final result and Elo payout settlement.
+- **THEN** system executes the simulation, then updates the message embed through 4 major acts (Act 1: R03 Opening, Act 2: R06 Upper Bonus Clash, Act 3: R09 Clutch Gamble, Act 4: R12 Final Showdown), presenting each act in two phases: first, an animated dice rolling suspense frame with GIF for ~3.0s, followed by the dice impact and updated ASCII scoreboard with dopamine dialogues for ~3.5s, before concluding with the final result and Elo payout settlement.
 
 ### Requirement: Payout Distribution and Persistence
 The system SHALL settle all registered wagers according to the match outcome and persist updated Elo ratings in the database.

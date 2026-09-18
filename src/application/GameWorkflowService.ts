@@ -1573,13 +1573,21 @@ const executeColosseumMatchLogic = (
 
     const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
 
-    // 2. Play out 6 dramatic chapters (R01-02, R03-04, R05-06, R07-08, R09-10, R11-12)
-    for (let phase = 1; phase <= 6; phase++) {
-      const clashPayload = serializer.serializeColosseumClash(match, bets, duelData, phase, flyUrl);
+    // 2. Play out 4 dramatic acts (R03, R06, R09, R12) with 2-stage suspense:
+    for (let act = 1; act <= 4; act++) {
+      // Stage A: Rolling Suspense with animated GIF
+      const rollingPayload = serializer.serializeColosseumRolling(match, bets, duelData, act, flyUrl);
+      yield* apiService.editMessage(channelId, messageId, rollingPayload.data).pipe(
+        Effect.catchAll(() => Effect.void)
+      );
+      yield* Effect.sleep("3 seconds");
+
+      // Stage B: Dice Impact & Scoreboard Update
+      const clashPayload = serializer.serializeColosseumClash(match, bets, duelData, act, flyUrl);
       yield* apiService.editMessage(channelId, messageId, clashPayload.data).pipe(
         Effect.catchAll(() => Effect.void)
       );
-      yield* Effect.sleep("2.5 seconds");
+      yield* Effect.sleep("3.5 seconds");
     }
 
     // 4. Phase 3: Settle Bets & Final Results
