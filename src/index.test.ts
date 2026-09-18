@@ -1613,4 +1613,169 @@ describe("Discord Yacht Bot Integration Tests", () => {
       expect(json.data.components).toEqual([]);
     });
   });
+
+  describe("Fly AI Match Switching Interaction Tests", () => {
+    it("should allow host to switch open queue to Fly AI match with 3D link", async () => {
+      const activeQueue = {
+        id: "queue-fly-1",
+        host_id: "user-host",
+        host_name: "HostUser",
+        guild_id: "guild1",
+        channel_id: "chan1",
+        status: "WAITING",
+        created_at: Date.now()
+      };
+
+      mockFirst.mockResolvedValueOnce(activeQueue);
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "user-host", username: "HostUser" },
+        guild_id: "guild1",
+        channel_id: "chan1",
+        data: {
+          custom_id: "queue:play_ai:queue-fly-1"
+        },
+        message: {
+          id: "msg-queue-1"
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(
+        req,
+        {
+          DB: mockDB,
+          DISCORD_PUBLIC_KEY: publicKeyHex,
+          FLY_BRAIN_URL: "https://fly.trycloudflare.com"
+        },
+        { waitUntil: () => {} } as any
+      );
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.type).toBe(7); // UpdateMessage
+      expect(json.data.embeds[0].description).toContain("Host");
+      expect(json.data.embeds[0].description).toContain("🪰 초");
+      expect(json.data.embeds[0].description).toContain("https://fly.trycloudflare.com");
+    });
+
+    it("should reject non-host from switching open queue to Fly AI", async () => {
+      const activeQueue = {
+        id: "queue-fly-2",
+        host_id: "user-host",
+        host_name: "HostUser",
+        guild_id: "guild1",
+        channel_id: "chan1",
+        status: "WAITING",
+        created_at: Date.now()
+      };
+
+      mockFirst.mockResolvedValueOnce(activeQueue);
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "intruder-user", username: "Intruder" },
+        guild_id: "guild1",
+        channel_id: "chan1",
+        data: {
+          custom_id: "queue:play_ai:queue-fly-2"
+        },
+        message: {
+          id: "msg-queue-2"
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.data.content).toContain("방장/신청자만");
+      expect(json.data.flags).toBe(64);
+    });
+
+    it("should allow challenger to switch pending invitation to Fly AI match", async () => {
+      const activeInvitation = {
+        id: "inv-fly-1",
+        challenger_id: "user-challenger",
+        challenger_name: "ChallengerUser",
+        opponent_id: "user-opponent",
+        opponent_name: "OpponentUser",
+        guild_id: "guild1",
+        channel_id: "chan1",
+        status: "PENDING",
+        created_at: Date.now()
+      };
+
+      mockFirst.mockResolvedValueOnce(activeInvitation);
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "user-challenger", username: "ChallengerUser" },
+        guild_id: "guild1",
+        channel_id: "chan1",
+        data: {
+          custom_id: "invitation:play_ai:inv-fly-1"
+        },
+        message: {
+          id: "msg-inv-1"
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(
+        req,
+        {
+          DB: mockDB,
+          DISCORD_PUBLIC_KEY: publicKeyHex,
+          FLY_BRAIN_URL: "https://fly.trycloudflare.com"
+        },
+        { waitUntil: () => {} } as any
+      );
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.type).toBe(7); // UpdateMessage
+      expect(json.data.embeds[0].description).toContain("Chal");
+      expect(json.data.embeds[0].description).toContain("🪰 초");
+    });
+
+    it("should reject non-challenger from switching invitation to Fly AI", async () => {
+      const activeInvitation = {
+        id: "inv-fly-2",
+        challenger_id: "user-challenger",
+        challenger_name: "ChallengerUser",
+        opponent_id: "user-opponent",
+        opponent_name: "OpponentUser",
+        guild_id: "guild1",
+        channel_id: "chan1",
+        status: "PENDING",
+        created_at: Date.now()
+      };
+
+      mockFirst.mockResolvedValueOnce(activeInvitation);
+
+      const body = JSON.stringify({
+        type: 3,
+        user: { id: "user-opponent", username: "OpponentUser" },
+        guild_id: "guild1",
+        channel_id: "chan1",
+        data: {
+          custom_id: "invitation:play_ai:inv-fly-2"
+        },
+        message: {
+          id: "msg-inv-2"
+        }
+      });
+
+      const req = await createSignedRequest(body);
+      const res = await worker.fetch(req, { DB: mockDB, DISCORD_PUBLIC_KEY: publicKeyHex }, { waitUntil: () => {} } as any);
+
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as any;
+      expect(json.data.content).toContain("방장/신청자만");
+      expect(json.data.flags).toBe(64);
+    });
+  });
 });

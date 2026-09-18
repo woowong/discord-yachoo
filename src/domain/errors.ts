@@ -128,3 +128,11 @@ export class UnauthorizedCancelQueueError extends Error {
   }
 }
 
+export class UnauthorizedPlayAiError extends Error {
+  readonly _tag = "UnauthorizedPlayAiError";
+  constructor() {
+    super("방장/신청자만 초파리 AI와의 대결을 시작할 수 있습니다.");
+    this.name = "UnauthorizedPlayAiError";
+  }
+}
+

@@ -6,8 +6,8 @@ import { calculateScore, calculateUpperSectionSum } from "../../../domain/score"
 import { DiscordInteractionResponse, DiscordEmbed, DiscordActionRow } from "./types";
 
 export interface DiscordResponseSerializer {
-  readonly serializeGame: (state: GameState, holds?: string) => DiscordInteractionResponse;
-  readonly serializeRolling: (state: GameState, holds?: string) => DiscordInteractionResponse;
+  readonly serializeGame: (state: GameState, holds?: string, flyBrainUrl?: string) => DiscordInteractionResponse;
+  readonly serializeRolling: (state: GameState, holds?: string, flyBrainUrl?: string) => DiscordInteractionResponse;
   readonly serializeLeaderboard: (topPlayers: readonly PlayerStats[], mode: "single" | "multi") => DiscordInteractionResponse;
   readonly serializeError: (message: string) => DiscordInteractionResponse;
   readonly serializeMessage: (content: string) => DiscordInteractionResponse;
@@ -97,11 +97,15 @@ const formatScoreBoard = (state: GameState): string => {
 export const DiscordResponseSerializerLive = Layer.succeed(
   DiscordResponseSerializer,
   {
-    serializeGame: (state, holds = "00000") => {
+    serializeGame: (state, holds = "00000", flyBrainUrl) => {
       const currentPlayer = state.players[state.currentPlayerIndex];
       const isFinished = state.status === "Finished";
 
       let description = formatScoreBoard(state);
+
+      if (state.players.some((p) => p.playerId === "AI_FLY_BRAIN") && flyBrainUrl) {
+        description += `\n\n🧠 **[3D 초파리 두뇌 실시간 중계 보기](${flyBrainUrl})**`;
+      }
 
       if (!isFinished) {
         const roundNumber = Math.min(12, Object.keys(currentPlayer.scoreBoard).length + 1);
@@ -164,6 +168,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
 
       const components: DiscordActionRow[] = [];
 
+      const isAiTurn = currentPlayer.playerId === "AI_FLY_BRAIN";
+
       if (!isFinished) {
         // Row 1: Dice hold/unhold buttons
         if (state.rollCount > 0 && state.rollCount < 3) {
@@ -176,7 +182,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
               style: isHeld ? (3 as const) : (2 as const),
               label: isHeld ? "🔒" : `[${idx + 1}]`,
               emoji: { name: emojiName },
-              custom_id: `hold_${idx}_${newHolds}`
+              custom_id: `hold_${idx}_${newHolds}`,
+              disabled: isAiTurn
             };
           });
           components.push({
@@ -188,13 +195,17 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         // Row 2: Roll & Surrender buttons
         const canRoll = state.rollCount < 3;
         const isAllHeld = state.rollCount > 0 && holds === "11111";
+        const rollLabel = isAiTurn
+          ? `🪰 초파리 두뇌 연산 중... (${state.rollCount}/3)`
+          : (isAllHeld ? "All Dice Held" : `Roll Dice (${state.rollCount}/3)`);
+
         const rollButton = {
           type: 2 as const,
           style: 1 as const,
-          label: isAllHeld ? "All Dice Held" : `Roll Dice (${state.rollCount}/3)`,
+          label: rollLabel,
           emoji: { name: "🎲" },
           custom_id: `roll_${holds}`,
-          disabled: !canRoll || isAllHeld
+          disabled: !canRoll || isAllHeld || isAiTurn
         };
         const surrenderButton = {
           type: 2 as const,
@@ -213,8 +224,8 @@ export const DiscordResponseSerializerLive = Layer.succeed(
           components: [rollButton, surrenderButton, refreshButton]
         });
 
-        // Row 3: Select Menu for category scoring
-        if (state.rollCount > 0) {
+        // Row 3: Select Menu for category scoring (human player only)
+        if (state.rollCount > 0 && !isAiTurn) {
           const selectOptions = CATEGORIES.filter(c => c.key !== "Subtotal" && c.key !== "Bonus" && currentPlayer.scoreBoard[c.key as ScoreCategory] === undefined)
             .map(c => {
               const estimatedScore = calculateScore(c.key as ScoreCategory, state.currentDice);
@@ -250,11 +261,15 @@ export const DiscordResponseSerializerLive = Layer.succeed(
       };
     },
 
-    serializeRolling: (state, holds = "00000") => {
+    serializeRolling: (state, holds = "00000", flyBrainUrl) => {
       const currentPlayer = state.players[state.currentPlayerIndex];
       const nextRollCount = Math.min(3, state.rollCount + 1);
 
       let description = formatScoreBoard(state);
+
+      if (state.players.some((p) => p.playerId === "AI_FLY_BRAIN") && flyBrainUrl) {
+        description += `\n\n🧠 **[3D 초파리 두뇌 실시간 중계 보기](${flyBrainUrl})**`;
+      }
       const roundNumber = Math.min(12, Object.keys(currentPlayer.scoreBoard).length + 1);
       description += `\n**Round:** ${roundNumber} / 12`;
       description += `\n**Current Turn:** <@${currentPlayer.playerId}> (${currentPlayer.playerName})`;
@@ -583,6 +598,12 @@ export const DiscordResponseSerializerLive = Layer.succeed(
               style: 4 as const, // Danger Red
               label: "❌ 거절 (Decline)",
               custom_id: `invitation:decline:${invitation.id}`
+            },
+            {
+              type: 2 as const,
+              style: 2 as const, // Secondary Gray
+              emoji: { name: "🪰" },
+              custom_id: `invitation:play_ai:${invitation.id}`
             }
           ]
         }
@@ -618,7 +639,7 @@ export const DiscordResponseSerializerLive = Layer.succeed(
         title: "🎲 야추 대결 공개 대기열",
         description: `**${queue.hostName}**님이 야추 대결 대기열을 생성했습니다!\n\n누구나 아래 **[참가하기]** 버튼을 눌러 즉시 1v1 대결을 시작할 수 있습니다.\n\n⏰ **유효시간**: 5분`,
         color: 0x57F287,
-        footer: { text: "방장은 [대기 취소] 버튼으로 대기열을 닫을 수 있습니다." }
+        footer: { text: "방장은 [대기 취소] 또는 [🪰] 버튼으로 즉시 초파리와 대결할 수 있습니다." }
       };
 
       const components: DiscordActionRow[] = [
@@ -630,6 +651,12 @@ export const DiscordResponseSerializerLive = Layer.succeed(
               style: 3 as const, // Success Green
               label: "⚔️ 대결 참가하기",
               custom_id: `queue:join:${queue.id}`
+            },
+            {
+              type: 2 as const,
+              style: 2 as const, // Secondary Gray
+              emoji: { name: "🪰" },
+              custom_id: `queue:play_ai:${queue.id}`
             },
             {
               type: 2 as const,

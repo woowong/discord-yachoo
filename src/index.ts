@@ -4,18 +4,19 @@ import { D1PlayerRepositoryLive, D1MatchRepositoryLive, D1GameRepositoryLive, D1
 import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./presentation/discord/adapter/signature";
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./presentation/discord/adapter/parser";
 import { DiscordResponseSerializerLive } from "./presentation/discord/adapter/serializer";
-import { DiscordApiServiceLive, DiscordBotToken } from "./presentation/discord/adapter/api";
+import { DiscordApiServiceLive, DiscordBotToken, FlyBrainUrl } from "./presentation/discord/adapter/api";
 import { GameWorkflowServiceLive } from "./application/GameWorkflowService";
 import { routeInteraction } from "./presentation/discord/router";
 import { handleWebRequest } from "./presentation/web/router";
 
 export default {
-  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string }, ctx: any): Promise<Response> {
+  async fetch(request: Request, env: { DB: D1Database; DISCORD_PUBLIC_KEY: string; DISCORD_BOT_TOKEN?: string; FLY_BRAIN_URL?: string }, ctx: any): Promise<Response> {
     const url = new URL(request.url);
     const isGet = request.method === "GET";
     const isWebRoute = url.pathname === "/" || url.pathname.startsWith("/web");
 
     const botTokenLayer = Layer.succeed(DiscordBotToken, env.DISCORD_BOT_TOKEN || "");
+    const flyBrainUrlLayer = Layer.succeed(FlyBrainUrl, env.FLY_BRAIN_URL || "");
     const apiServiceLayer = DiscordApiServiceLive.pipe(Layer.provide(botTokenLayer));
 
     const mainLayer = Layer.mergeAll(
@@ -28,6 +29,7 @@ export default {
       D1InvitationRepositoryLive,
       D1MatchQueueRepositoryLive,
       apiServiceLayer,
+      flyBrainUrlLayer,
       GameWorkflowServiceLive
     ).pipe(
       Layer.provide(Layer.succeed(D1Database, env.DB))

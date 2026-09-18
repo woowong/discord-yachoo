@@ -21,6 +21,8 @@ import {
   handleDeclineInvitation,
   handleJoinMatchQueue,
   handleCancelMatchQueue,
+  handlePlayAiMatchQueue,
+  handlePlayAiInvitation,
   handleHold, 
   handleRoll, 
   handleSelectCategory,
@@ -72,11 +74,17 @@ export const routeInteraction = (
       if (customId.startsWith("invitation:decline:")) {
         return yield* handleDeclineInvitation(interaction);
       }
+      if (customId.startsWith("invitation:play_ai:")) {
+        return yield* handlePlayAiInvitation(interaction, rawJson);
+      }
       if (customId.startsWith("queue:join:")) {
         return yield* handleJoinMatchQueue(interaction);
       }
       if (customId.startsWith("queue:cancel:")) {
         return yield* handleCancelMatchQueue(interaction);
+      }
+      if (customId.startsWith("queue:play_ai:")) {
+        return yield* handlePlayAiMatchQueue(interaction, rawJson);
       }
       if (customId === "backtohistorylist") {
         return yield* handleBackToHistoryList(interaction);
@@ -119,7 +127,7 @@ export const routeInteraction = (
       const gameState = gameStateOption.value;
 
       if (customId === "refresh_game" || customId.startsWith("refresh_game_")) {
-        return yield* handleRefresh(interaction, gameState);
+        return yield* handleRefresh(interaction, gameState, rawJson, safeCtx);
       }
       if (customId === "surrender") {
         return yield* handleSurrender(interaction, gameState, rawJson);

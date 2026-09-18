@@ -162,10 +162,10 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].description).toContain("▫️ ▫️ 🔒 ▫️ ▫️");
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
       const actionRow2 = response.data?.components?.[1];
-      expect(actionRow2?.components).toHaveLength(3);
-      expect(actionRow2?.components?.[2].custom_id).toBe("refresh_game");
-      expect(actionRow2?.components?.[2].style).toBe(2);
-      expect(actionRow2?.components?.[2].emoji).toEqual({ name: "🔄" });
+      const refreshBtn = actionRow2?.components?.[2] as any;
+      expect(refreshBtn.custom_id).toBe("refresh_game");
+      expect(refreshBtn.style).toBe(2);
+      expect(refreshBtn.emoji).toEqual({ name: "🔄" });
     });
 
     it("should render scoreboard within 27 characters per line for 2 players", async () => {
@@ -335,6 +335,56 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].title).toBe("🏆 Yacht Dice Leaderboard (Matching Mode)");
       expect(response.data?.embeds?.[0].fields?.[0].name).toContain("Alice");
       expect(response.data?.embeds?.[0].fields?.[0].value).toContain("Wins: **10**");
+    });
+
+    it("should include concise 🪰 button in invitation serialization", async () => {
+      const mockInvitation = {
+        id: "inv-123",
+        challengerId: "user-1",
+        challengerName: "Alice",
+        opponentId: "user-2",
+        opponentName: "Bob",
+        guildId: "guild-1",
+        channelId: "chan-1",
+        status: "PENDING" as const,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 300000
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeInvitation(mockInvitation))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      const row = response.data?.components?.[0];
+      expect(row?.components).toHaveLength(3);
+      const flyButton = row?.components?.find(c => c.custom_id === "invitation:play_ai:inv-123") as any;
+      expect(flyButton).toBeDefined();
+      expect(flyButton?.emoji?.name).toBe("🪰");
+    });
+
+    it("should include concise 🪰 button in match queue serialization", async () => {
+      const mockQueue = {
+        id: "queue-123",
+        hostId: "user-1",
+        hostName: "Alice",
+        guildId: "guild-1",
+        channelId: "chan-1",
+        status: "WAITING" as const,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 300000
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeMatchQueue(mockQueue))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      const row = response.data?.components?.[0];
+      expect(row?.components).toHaveLength(3);
+      const flyButton = row?.components?.find(c => c.custom_id === "queue:play_ai:queue-123") as any;
+      expect(flyButton).toBeDefined();
+      expect(flyButton?.emoji?.name).toBe("🪰");
     });
   });
 });

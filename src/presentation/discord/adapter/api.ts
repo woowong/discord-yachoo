@@ -10,6 +10,7 @@ export interface DiscordApiService {
 export const DiscordApiService = Context.GenericTag<DiscordApiService>("@services/DiscordApiService");
 
 export const DiscordBotToken = Context.GenericTag<string>("@services/DiscordBotToken");
+export const FlyBrainUrl = Context.GenericTag<string>("@services/FlyBrainUrl");
 
 export const DiscordApiServiceLive = Layer.effect(
   DiscordApiService,

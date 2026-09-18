@@ -104,6 +104,51 @@ class ConnectomeVisualizerServer:
         broadcast_sse("reset", status)
         return status
 
+    def act(self, dice: List[int], roll_count: int, available_categories: List[str]) -> Dict[str, Any]:
+        if not available_categories:
+            from yacht_env import CATEGORIES
+            available_categories = list(CATEGORIES)
+
+        if roll_count < 3:
+            holds, telemetry = self.agent.decide_hold_with_telemetry(dice, roll_count, available_categories)
+            if all(holds):
+                cat, cat_telemetry = self.agent.decide_category_with_telemetry(dice, roll_count, available_categories)
+                broadcast_sse("step", cat_telemetry)
+                return {
+                    "action": "score",
+                    "category": cat,
+                    "holds": holds,
+                    "telemetry": {
+                        "phase": "score",
+                        "total_kc_spikes": cat_telemetry.get("total_kc_spikes", 0),
+                        "mbon_firing": cat_telemetry.get("mbon_firing_counts", [])
+                    }
+                }
+            else:
+                broadcast_sse("step", telemetry)
+                return {
+                    "action": "hold",
+                    "holds": holds,
+                    "telemetry": {
+                        "phase": "hold",
+                        "total_kc_spikes": telemetry.get("total_kc_spikes", 0),
+                        "mbon_firing": telemetry.get("mbon_firing_counts", [])
+                    }
+                }
+        else:
+            cat, cat_telemetry = self.agent.decide_category_with_telemetry(dice, roll_count, available_categories)
+            broadcast_sse("step", cat_telemetry)
+            return {
+                "action": "score",
+                "category": cat,
+                "holds": [True, True, True, True, True],
+                "telemetry": {
+                    "phase": "score",
+                    "total_kc_spikes": cat_telemetry.get("total_kc_spikes", 0),
+                    "mbon_firing": cat_telemetry.get("mbon_firing_counts", [])
+                }
+            }
+
 
 SERVER_INSTANCE: Optional[ConnectomeVisualizerServer] = None
 
@@ -206,6 +251,17 @@ class VisualizerHTTPHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"broadcast": "ok"}).encode("utf-8"))
+            return
+
+        elif self.path == "/api/fly/act":
+            dice = data.get("dice", [1, 1, 1, 1, 1])
+            roll_count = data.get("roll_count", 1)
+            available_categories = data.get("available_categories", [])
+            result = SERVER_INSTANCE.act(dice, roll_count, available_categories) if SERVER_INSTANCE else {}
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode("utf-8"))
             return
 
         self.send_error(HTTPStatus.NOT_FOUND, "Endpoint not found")

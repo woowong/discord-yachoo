@@ -11,7 +11,13 @@
     "simulate": "tsx src/presentation/console/index.ts",
     "register-commands": "tsx scripts/register-commands.ts",
     "patch-game": "tsx scripts/patch-finished-game.ts",
-    "announce": "tsx scripts/send-announcement.ts"
+    "announce": "tsx scripts/send-announcement.ts",
+    "fly:start": "pm2 start experiments/flywire-poc/ecosystem.config.cjs",
+    "fly:stop": "pm2 stop fly-brain-snn",
+    "fly:restart": "pm2 restart fly-brain-snn",
+    "fly:logs": "pm2 logs fly-brain-snn",
+    "fly:status": "pm2 status fly-brain-snn",
+    "fly:tunnel": "bash scripts/run-tunnel.sh"
   },
   "dependencies": {
     "@effect/platform": "^0.96.2",
