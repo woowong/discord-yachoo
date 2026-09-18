@@ -147,7 +147,7 @@ const formatColosseumScoreBoard = (
   });
 
   lines.push("-".repeat(header.length));
-  lines.push(`Total      | ${totalA.toString().padStart(5)} | ${totalB.toString().padStart(5)}`);
+  lines.push(`Total      | ${(totalA ?? 0).toString().padStart(5)} | ${(totalB ?? 0).toString().padStart(5)}`);
 
   return "```\n" + lines.join("\n") + "\n```";
 };

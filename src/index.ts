@@ -5,7 +5,7 @@ import { DiscordSignatureVerifier, DiscordSignatureVerifierLive } from "./presen
 import { DiscordInteractionParser, DiscordInteractionParserLive } from "./presentation/discord/adapter/parser";
 import { DiscordResponseSerializerLive } from "./presentation/discord/adapter/serializer";
 import { DiscordApiServiceLive, DiscordBotToken, FlyBrainUrl } from "./presentation/discord/adapter/api";
-import { GameWorkflowServiceLive } from "./application/GameWorkflowService";
+import { GameWorkflowServiceLive, GameWorkflowService } from "./application/GameWorkflowService";
 import { routeInteraction } from "./presentation/discord/router";
 import { handleWebRequest } from "./presentation/web/router";
 
