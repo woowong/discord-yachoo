@@ -29,6 +29,7 @@ export default {
       D1InvitationRepositoryLive,
       D1MatchQueueRepositoryLive,
       D1ColosseumRepositoryLive,
+      botTokenLayer,
       apiServiceLayer,
       flyBrainUrlLayer,
       GameWorkflowServiceLive

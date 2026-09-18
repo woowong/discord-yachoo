@@ -1492,7 +1492,10 @@ export const GameWorkflowServiceLive = Layer.succeed(
                 fly_brain_url: flyUrl
               })
             });
-            if (!res.ok) throw new Error(`Python broadcast delegation returned status ${res.status}`);
+            if (!res.ok) {
+              const errText = await res.text();
+              throw new Error(`Python broadcast delegation returned status ${res.status}: ${errText}`);
+            }
             return await res.json();
           },
           catch: (err) => err
