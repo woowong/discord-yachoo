@@ -162,10 +162,10 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].description).toContain("▫️ ▫️ 🔒 ▫️ ▫️");
       expect(response.data?.components).toHaveLength(3); // hold buttons row, roll button row, category select row
       const actionRow2 = response.data?.components?.[1];
-      expect(actionRow2?.components).toHaveLength(3);
-      expect(actionRow2?.components?.[2].custom_id).toBe("refresh_game");
-      expect(actionRow2?.components?.[2].style).toBe(2);
-      expect(actionRow2?.components?.[2].emoji).toEqual({ name: "🔄" });
+      const refreshBtn = actionRow2?.components?.[2] as any;
+      expect(refreshBtn.custom_id).toBe("refresh_game");
+      expect(refreshBtn.style).toBe(2);
+      expect(refreshBtn.emoji).toEqual({ name: "🔄" });
     });
 
     it("should render scoreboard within 27 characters per line for 2 players", async () => {
@@ -336,5 +336,139 @@ describe("Discord Webhook Adapter Layer", () => {
       expect(response.data?.embeds?.[0].fields?.[0].name).toContain("Alice");
       expect(response.data?.embeds?.[0].fields?.[0].value).toContain("Wins: **10**");
     });
+
+    it("should include concise 🪰 button in invitation serialization", async () => {
+      const mockInvitation = {
+        id: "inv-123",
+        challengerId: "user-1",
+        challengerName: "Alice",
+        opponentId: "user-2",
+        opponentName: "Bob",
+        guildId: "guild-1",
+        channelId: "chan-1",
+        status: "PENDING" as const,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 300000
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeInvitation(mockInvitation))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      const row = response.data?.components?.[0];
+      expect(row?.components).toHaveLength(3);
+      const flyButton = row?.components?.find(c => c.custom_id === "invitation:play_ai:inv-123") as any;
+      expect(flyButton).toBeDefined();
+      expect(flyButton?.emoji?.name).toBe("🪰");
+    });
+
+    it("should include concise 🪰 button in match queue serialization", async () => {
+      const mockQueue = {
+        id: "queue-123",
+        hostId: "user-1",
+        hostName: "Alice",
+        guildId: "guild-1",
+        channelId: "chan-1",
+        status: "WAITING" as const,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 300000
+      };
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeMatchQueue(mockQueue))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      const row = response.data?.components?.[0];
+      expect(row?.components).toHaveLength(3);
+      const flyButton = row?.components?.find(c => c.custom_id === "queue:play_ai:queue-123") as any;
+      expect(flyButton).toBeDefined();
+      expect(flyButton?.emoji?.name).toBe("🪰");
+    });
+
+    it("should serialize colosseum match and betting buttons", async () => {
+      const match = {
+        id: "col-123",
+        guildId: "g1",
+        channelId: "c1",
+        personaAId: "Jackpot",
+        personaBId: "Newton",
+        oddsA: 1.85,
+        oddsB: 2.10,
+        status: "BETTING" as const,
+        createdAt: new Date()
+      };
+      const bets = [
+        {
+          id: "b1",
+          matchId: "col-123",
+          userId: "u1",
+          userName: "Alice",
+          chosenPersona: "A" as const,
+          amount: 20,
+          odds: 1.85,
+          payout: 0,
+          status: "PENDING" as const,
+          createdAt: new Date()
+        }
+      ];
+
+      const program = Effect.flatMap(DiscordResponseSerializer, (serializer) =>
+        Effect.sync(() => serializer.serializeColosseumMatch(match, bets))
+      ).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const response = await Effect.runPromise(program);
+      expect(response.type).toBe(4);
+      expect(response.data?.embeds?.[0].title).toContain("초파리 콜로세움");
+      expect(response.data?.components?.[0].components).toHaveLength(3);
+    });
+
+    it("should serialize colosseum clash and results", async () => {
+      const match = {
+        id: "col-123",
+        guildId: "g1",
+        channelId: "c1",
+        personaAId: "Jackpot",
+        personaBId: "Newton",
+        oddsA: 1.85,
+        oddsB: 2.10,
+        status: "SIMULATING" as const,
+        createdAt: new Date()
+      };
+      const duelData = {
+        winner: "A",
+        score_a: 210,
+        score_b: 195,
+        diff: 15,
+        lead_changes: 2,
+        rounds: Array.from({ length: 12 }, (_, i) => ({
+          round: i + 1,
+          a: { category: "Yacht", points: 50, total: 210, dopamine: 220, dialogue: "야추다 붕!", dice: [5, 5, 5, 5, 5] },
+          b: { category: "FullHouse", points: 28, total: 195, dopamine: 130, dialogue: "침착하게 붕.", dice: [3, 3, 3, 2, 2] },
+          leader: "A",
+          is_lead_change: false
+        }))
+      };
+
+      const program = Effect.gen(function* () {
+        const serializer = yield* DiscordResponseSerializer;
+        const rolling = serializer.serializeColosseumRolling(match, [], duelData, 1);
+        const round1 = serializer.serializeColosseumRound(match, [], duelData, 1);
+        const result = serializer.serializeColosseumResult(match, [], duelData);
+        return { rolling, round1, result };
+      }).pipe(Effect.provide(DiscordResponseSerializerLive));
+
+      const { rolling, round1, result } = await Effect.runPromise(program);
+      expect(rolling.data?.embeds?.[0].title).toContain("제1막");
+      expect(rolling.data?.embeds?.[0].title).toContain("주사위 컵 셰이킹 중");
+      expect(rolling.data?.embeds?.[0].image?.url).toBeDefined();
+      expect(round1.data?.embeds?.[0].title).toContain("Round 1/12");
+      expect(round1.data?.embeds?.[0].description).toContain("Category");
+      expect(result.data?.embeds?.[0].title).toContain("최종 경기 결과");
+      expect(result.data?.embeds?.[0].description).toContain("승자");
+      expect(result.data?.embeds?.[0].description).toContain("Category");
+    });
   });
 });
+

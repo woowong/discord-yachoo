@@ -1,5 +1,5 @@
 import { Effect, Layer, Option } from "effect";
-import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository, PlayerStats, MatchRecord, RepositoryError } from "../repository";
+import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository, ColosseumRepository, PlayerStats, MatchRecord, ColosseumMatchRecord, ColosseumBetRecord, RepositoryError } from "../repository";
 import { D1Database } from "./database";
 import { GameState } from "../../domain/types";
 import { Invitation, isInvitationExpired } from "../../domain/invitation";
@@ -73,6 +73,68 @@ const mapRowToMatchRecord = (row: DBMatchRow): MatchRecord => ({
   historyJson: row.history_json || null,
   player1EloAfter: row.player1_elo_after || null,
   player2EloAfter: row.player2_elo_after || null,
+});
+
+interface DBColosseumMatchRow {
+  readonly id: string;
+  readonly guild_id: string;
+  readonly channel_id: string;
+  readonly message_id: string | null;
+  readonly persona_a_id: string;
+  readonly persona_b_id: string;
+  readonly odds_a: number;
+  readonly odds_b: number;
+  readonly status: string;
+  readonly winner: string | null;
+  readonly score_a: number | null;
+  readonly score_b: number | null;
+  readonly timeline_json: string | null;
+  readonly created_at: number;
+  readonly closed_at: number | null;
+}
+
+interface DBColosseumBetRow {
+  readonly id: string;
+  readonly match_id: string;
+  readonly user_id: string;
+  readonly user_name: string;
+  readonly chosen_persona: string;
+  readonly amount: number;
+  readonly odds: number;
+  readonly payout: number;
+  readonly status: string;
+  readonly created_at: number;
+}
+
+const mapRowToColosseumMatch = (row: DBColosseumMatchRow): ColosseumMatchRecord => ({
+  id: row.id,
+  guildId: row.guild_id,
+  channelId: row.channel_id,
+  messageId: row.message_id,
+  personaAId: row.persona_a_id,
+  personaBId: row.persona_b_id,
+  oddsA: row.odds_a,
+  oddsB: row.odds_b,
+  status: row.status as ColosseumMatchRecord["status"],
+  winner: row.winner as any,
+  scoreA: row.score_a,
+  scoreB: row.score_b,
+  timelineJson: row.timeline_json,
+  createdAt: new Date(row.created_at),
+  closedAt: row.closed_at ? new Date(row.closed_at) : null,
+});
+
+const mapRowToColosseumBet = (row: DBColosseumBetRow): ColosseumBetRecord => ({
+  id: row.id,
+  matchId: row.match_id,
+  userId: row.user_id,
+  userName: row.user_name,
+  chosenPersona: row.chosen_persona as "A" | "B",
+  amount: row.amount,
+  odds: row.odds,
+  payout: row.payout,
+  status: row.status as ColosseumBetRecord["status"],
+  createdAt: new Date(row.created_at),
 });
 
 export const D1PlayerRepositoryLive = Layer.effect(
@@ -656,4 +718,115 @@ export const D1MatchQueueRepositoryLive = Layer.effect(
     };
   })
 );
+
+export const D1ColosseumRepositoryLive = Layer.effect(
+  ColosseumRepository,
+  Effect.gen(function* () {
+    const db = yield* D1Database;
+
+    return {
+      createMatch: (match: ColosseumMatchRecord) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              INSERT INTO colosseum_matches (
+                id, guild_id, channel_id, message_id, persona_a_id, persona_b_id,
+                odds_a, odds_b, status, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              match.id,
+              match.guildId,
+              match.channelId,
+              match.messageId ?? null,
+              match.personaAId,
+              match.personaBId,
+              match.oddsA,
+              match.oddsB,
+              match.status,
+              match.createdAt.getTime()
+            ).run(),
+          catch: (error) => new RepositoryError(`createMatch failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      getMatchById: (id: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM colosseum_matches WHERE id = ?").bind(id).first<DBColosseumMatchRow>(),
+          catch: (error) => new RepositoryError(`getMatchById failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => (row ? Option.some(mapRowToColosseumMatch(row)) : Option.none()))
+        ),
+
+      updateMatchStatus: (id: string, status: ColosseumMatchRecord["status"], messageId?: string | null) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              UPDATE colosseum_matches 
+              SET status = ?, message_id = COALESCE(?, message_id)
+              WHERE id = ?
+            `).bind(status, messageId ?? null, id).run(),
+          catch: (error) => new RepositoryError(`updateMatchStatus failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      finishMatch: (id: string, winner: "A" | "B" | "DRAW", scoreA: number, scoreB: number, timelineJson: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              UPDATE colosseum_matches 
+              SET status = 'COMPLETED', winner = ?, score_a = ?, score_b = ?, timeline_json = ?, closed_at = ?
+              WHERE id = ?
+            `).bind(winner, scoreA, scoreB, timelineJson, Date.now(), id).run(),
+          catch: (error) => new RepositoryError(`finishMatch failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      placeBet: (bet: ColosseumBetRecord) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare(`
+              INSERT INTO colosseum_bets (
+                id, match_id, user_id, user_name, chosen_persona, amount, odds, payout, status, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              bet.id,
+              bet.matchId,
+              bet.userId,
+              bet.userName,
+              bet.chosenPersona,
+              bet.amount,
+              bet.odds,
+              bet.payout,
+              bet.status,
+              bet.createdAt.getTime()
+            ).run(),
+          catch: (error) => new RepositoryError(`placeBet failed: ${error}`, error)
+        }).pipe(Effect.asVoid),
+
+      getBetsByMatchId: (matchId: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM colosseum_bets WHERE match_id = ?").bind(matchId).all<DBColosseumBetRow>(),
+          catch: (error) => new RepositoryError(`getBetsByMatchId failed: ${error}`, error)
+        }).pipe(
+          Effect.map((res) => (res.results || []).map(mapRowToColosseumBet))
+        ),
+
+      getUserBetInMatch: (matchId: string, userId: string) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("SELECT * FROM colosseum_bets WHERE match_id = ? AND user_id = ?").bind(matchId, userId).first<DBColosseumBetRow>(),
+          catch: (error) => new RepositoryError(`getUserBetInMatch failed: ${error}`, error)
+        }).pipe(
+          Effect.map((row) => (row ? Option.some(mapRowToColosseumBet(row)) : Option.none()))
+        ),
+
+      updateBetPayout: (id: string, payout: number, status: ColosseumBetRecord["status"]) =>
+        Effect.tryPromise({
+          try: () =>
+            db.prepare("UPDATE colosseum_bets SET payout = ?, status = ? WHERE id = ?").bind(payout, status, id).run(),
+          catch: (error) => new RepositoryError(`updateBetPayout failed: ${error}`, error)
+        }).pipe(Effect.asVoid)
+    };
+  })
+);
+
 

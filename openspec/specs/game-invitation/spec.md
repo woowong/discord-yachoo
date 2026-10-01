@@ -35,3 +35,14 @@ The system SHALL consider any invitation older than 300 seconds as expired upon 
 - **WHEN** Player B clicks `[Accept]` more than 300 seconds after invitation creation
 - **THEN** system marks invitation status as `EXPIRED` and responds with an ephemeral message stating the invitation has expired.
 
+### Requirement: Switch Challenge Invitation to Fly AI Match
+The system SHALL allow the challenger to switch a pending invitation into an active match against Fly AI if the challenged opponent has not yet accepted.
+
+#### Scenario: Challenger switches pending invitation to Fly AI match
+- **WHEN** the challenger clicks `[🪰 초파리와 플레이]` (`invitation:play_ai:<invitationId>`) on their pending invitation
+- **THEN** system updates the invitation status to `ACCEPTED`, initializes an active match between the challenger and `AI_FLY_BRAIN`, and updates the message to the active game board.
+
+#### Scenario: Non-challenger attempts to switch invitation to Fly AI
+- **WHEN** any user other than the challenger clicks `[🪰 초파리와 플레이]`
+- **THEN** system responds with an ephemeral error message stating only the challenger can start a match against Fly AI.
+

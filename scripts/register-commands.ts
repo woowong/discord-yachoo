@@ -47,6 +47,10 @@ const commands = [
         required: false
       }
     ]
+  },
+  {
+    name: "colosseum",
+    description: "Watch a 1v1 duel between two fruit fly AI gladiators and bet your Elo rating"
   }
 ];
 

@@ -7,7 +7,8 @@ import {
   handleMatch,
   handleProfile, 
   handleLeaderboard, 
-  handleHistory 
+  handleHistory,
+  handleColosseum
 } from "./handlers/commands";
 import { 
   handleBackToHistoryList, 
@@ -21,10 +22,14 @@ import {
   handleDeclineInvitation,
   handleJoinMatchQueue,
   handleCancelMatchQueue,
+  handlePlayAiMatchQueue,
+  handlePlayAiInvitation,
   handleHold, 
   handleRoll, 
   handleSelectCategory,
-  handleRefresh
+  handleRefresh,
+  handleColosseumBet,
+  handleColosseumStart
 } from "./handlers/components";
 
 export const routeInteraction = (
@@ -57,6 +62,9 @@ export const routeInteraction = (
       if (interaction.commandName === "history") {
         return yield* handleHistory(interaction);
       }
+      if (interaction.commandName === "colosseum") {
+        return yield* handleColosseum(interaction);
+      }
       return new Response(
         JSON.stringify(serializer.serializeError(`Unknown command: ${interaction.commandName}`)),
         { headers: { "content-type": "application/json" } }
@@ -66,17 +74,29 @@ export const routeInteraction = (
     if (interaction._tag === "Component") {
       const customId = interaction.customId;
 
+      if (customId.startsWith("colosseum_bet:")) {
+        return yield* handleColosseumBet(interaction);
+      }
+      if (customId.startsWith("colosseum_start:")) {
+        return yield* handleColosseumStart(interaction, rawJson, safeCtx);
+      }
       if (customId.startsWith("invitation:accept:")) {
         return yield* handleAcceptInvitation(interaction);
       }
       if (customId.startsWith("invitation:decline:")) {
         return yield* handleDeclineInvitation(interaction);
       }
+      if (customId.startsWith("invitation:play_ai:")) {
+        return yield* handlePlayAiInvitation(interaction, rawJson);
+      }
       if (customId.startsWith("queue:join:")) {
         return yield* handleJoinMatchQueue(interaction);
       }
       if (customId.startsWith("queue:cancel:")) {
         return yield* handleCancelMatchQueue(interaction);
+      }
+      if (customId.startsWith("queue:play_ai:")) {
+        return yield* handlePlayAiMatchQueue(interaction, rawJson);
       }
       if (customId === "backtohistorylist") {
         return yield* handleBackToHistoryList(interaction);
@@ -119,7 +139,7 @@ export const routeInteraction = (
       const gameState = gameStateOption.value;
 
       if (customId === "refresh_game" || customId.startsWith("refresh_game_")) {
-        return yield* handleRefresh(interaction, gameState);
+        return yield* handleRefresh(interaction, gameState, rawJson, safeCtx);
       }
       if (customId === "surrender") {
         return yield* handleSurrender(interaction, gameState, rawJson);

@@ -2,9 +2,11 @@
 
 ## Purpose
 Effect.ts, Cloudflare Workers, D1 데이터베이스, Vitest 등 프로젝트의 기반 의존성 및 인프라 설정을 정의하고 검증한다.
+
 ## Requirements
+
 ### Requirement: Project Dependencies Setup
-프로젝트는 `package.json` 파일에 최신 버전의 Effect.ts 에코시스템(`effect`, `@effect/platform`, `@effect/schema`), Cloudflare Workers 환경(`wrangler`), 개발 및 테스트 환경(`typescript` 7.0.x 이상, `vitest`)을 의존성으로 정의하고 성공적으로 로드해야 한다. (SHALL)
+프로젝트는 `package.json` 파일에 최신 버전의 Effect.ts 에코시스템(`effect`, `@effect/platform`, `@effect/schema`), Cloudflare CLI 환경(`cf`), 개발 및 테스트 환경(`typescript` 7.0.x 이상, `vitest`)을 의존성으로 정의하고 성공적으로 로드해야 한다. (SHALL)
 
 #### Scenario: Dependency Verification
 - **WHEN** 개발자가 `npm install`을 실행하여 패키지를 로컬 환경에 설치할 때
@@ -18,11 +20,11 @@ Effect.ts, Cloudflare Workers, D1 데이터베이스, Vitest 등 프로젝트의
 - **THEN** `src/` 디렉토리 내의 TypeScript 파일들이 문법 및 타입 에러 없이 성공적으로 컴파일되어야 한다.
 
 ### Requirement: Cloudflare Workers wrangler.toml Setup
-프로젝트는 Cloudflare Workers 환경에 빌드 및 배포될 수 있도록 `wrangler.toml` 설정을 가지고 있어야 한다. 특히, 프로덕션 환경 배포를 위한 원격 Cloudflare D1 데이터베이스 바인딩(`DB`)과 `DISCORD_PUBLIC_KEY` 보안 키 연동 설정을 완비해야 한다. (SHALL)
+프로젝트는 Cloudflare Workers 환경에 빌드 및 배포될 수 있도록 `cloudflare.config.ts` 설정을 가지고 있어야 한다. 특히, 프로덕션 환경 및 스테이징 환경 배포를 위한 원격 Cloudflare D1 데이터베이스 바인딩(`DB`)과 `FLY_BRAIN_URL` 등의 환경 변수 설정을 완비하고, `cf dev` 및 `cf deploy` 명령어로 실행될 수 있어야 한다. (SHALL)
 
 #### Scenario: Wrangler Configuration Validation
-- **WHEN** wrangler 개발 서버나 설정 검증 도구 또는 배포 명령이 실행될 때
-- **THEN** `wrangler.toml` 설정 파일이 올바르게 분석되어 원격 D1 DB 바인딩이 연결되고 에러가 발생하지 않아야 한다.
+- **WHEN** cf 개발 서버(`cf dev`)나 설정 검증 도구 또는 배포 명령(`cf deploy`)이 실행될 때
+- **THEN** `cloudflare.config.ts` 설정 파일이 올바르게 분석되어 원격 D1 DB 바인딩이 연결되고 에러가 발생하지 않아야 한다.
 
 ### Requirement: Vitest Test Runner Config
 프로젝트는 비즈니스 로직과 기타 구현 계층의 단위 테스트를 병렬로 빠르게 수행할 수 있도록 Vitest 설정을 포함해야 한다. (SHALL)
@@ -37,4 +39,3 @@ Effect.ts, Cloudflare Workers, D1 데이터베이스, Vitest 등 프로젝트의
 #### Scenario: Folder Integrity Check
 - **WHEN** 프로젝트 루트 내의 소스 경로를 검증할 때
 - **THEN** `src/` 하위에 각각 `domain/`(순수 도메인 로직), `persistence/`(전적 및 영속성 보관 계층), `presentation/`(디스코드 웹훅 및 콘솔 레이어) 디렉토리가 생성되어 존재해야 한다.
-

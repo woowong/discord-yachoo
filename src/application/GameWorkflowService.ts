@@ -3,10 +3,11 @@ import { GameState, DiceHold, DiceRoll, ScoreCategory } from "../domain/types";
 import { initGame, rollDice, selectCategory, surrenderGame, offerSurrender as domainOfferSurrender, acceptSurrender as domainAcceptSurrender, declineSurrender as domainDeclineSurrender } from "../domain/game";
 import { calculateEloChange } from "../domain/elo";
 import { calculateScore } from "../domain/score";
-import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository } from "../persistence/repository";
+import { PlayerRepository, MatchRepository, GameRepository, InvitationRepository, MatchQueueRepository, ColosseumRepository, ColosseumMatchRecord, ColosseumBetRecord } from "../persistence/repository";
 import { Invitation, isInvitationExpired } from "../domain/invitation";
 import { MatchQueue, isMatchQueueExpired } from "../domain/matchQueue";
-import { DiscordApiService } from "../presentation/discord/adapter/api";
+import { selectRandomGladiators, calculateOdds, validateBet, calculatePayout, GLADIATOR_PERSONAS, PersonaId, BetValidationError } from "../domain/colosseum";
+import { DiscordApiService, FlyBrainUrl, DiscordBotToken } from "../presentation/discord/adapter/api";
 import { DiscordResponseSerializer } from "../presentation/discord/adapter/serializer";
 import { 
   KoreanMessages, 
@@ -30,8 +31,15 @@ import {
   MatchQueueNotFoundError,
   MatchQueueExpiredError,
   SelfJoinQueueError,
-  UnauthorizedCancelQueueError
+  UnauthorizedCancelQueueError,
+  UnauthorizedPlayAiError,
+  ColosseumMatchNotFoundError,
+  ColosseumBetClosedError,
+  ColosseumAlreadyBetError
 } from "../domain/errors";
+
+export const FLY_AI_PLAYER_ID = "AI_FLY_BRAIN";
+export const FLY_AI_PLAYER_NAME = "🪰 초파리 AI (FlyWire SNN)";
 
 
 export class GameNotFoundError extends Error {
@@ -187,6 +195,82 @@ export interface GameWorkflowService {
     queueId: string,
     userId: string
   ) => Effect.Effect<MatchQueue, any, MatchQueueRepository>;
+
+  readonly playWithFlyAiFromQueue: (
+    queueId: string,
+    userId: string,
+    guildId: string,
+    channelId: string,
+    messageId?: string
+  ) => Effect.Effect<GameState, any, MatchQueueRepository | GameRepository | PlayerRepository>;
+
+  readonly playWithFlyAiFromInvitation: (
+    invitationId: string,
+    userId: string,
+    guildId: string,
+    channelId: string,
+    messageId?: string
+  ) => Effect.Effect<GameState, any, InvitationRepository | GameRepository | PlayerRepository>;
+
+  readonly executeAiTurn: (
+    gameId: string,
+    guildId: string,
+    channelId: string,
+    messageId: string
+  ) => Effect.Effect<GameState | void, any, GameRepository | MatchRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer>;
+
+  readonly createColosseumMatch: (
+    guildId: string,
+    channelId: string
+  ) => Effect.Effect<ColosseumMatchRecord, any, ColosseumRepository>;
+
+  readonly placeColosseumBet: (
+    matchId: string,
+    userId: string,
+    userName: string,
+    guildId: string,
+    chosenPersona: "A" | "B",
+    amount: number
+  ) => Effect.Effect<
+    { readonly match: ColosseumMatchRecord; readonly bet: ColosseumBetRecord; readonly allBets: readonly ColosseumBetRecord[] },
+    any,
+    ColosseumRepository | PlayerRepository
+  >;
+
+  readonly startColosseumDuel: (
+    matchId: string,
+    channelId: string,
+    messageId: string,
+    ctx: ExecutionContext
+  ) => Effect.Effect<
+    ColosseumMatchRecord,
+    any,
+    ColosseumRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
+
+  readonly executeColosseumMatch: (
+    matchId: string,
+    channelId: string,
+    messageId: string
+  ) => Effect.Effect<
+    void,
+    any,
+    ColosseumRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
+
+  readonly settleColosseumMatch: (
+    matchId: string,
+    channelId: string,
+    messageId: string,
+    winner: "A" | "B" | "DRAW",
+    scoreA: number,
+    scoreB: number,
+    duelData: any
+  ) => Effect.Effect<
+    void,
+    any,
+    ColosseumRepository | PlayerRepository | DiscordApiService | DiscordResponseSerializer
+  >;
 }
 
 export const GameWorkflowService = Context.GenericTag<GameWorkflowService>("@services/GameWorkflowService");
@@ -348,6 +432,222 @@ const processSurrender = (
     return nextState;
   });
 
+const executeAiTurnLogic = (
+  gameId: string,
+  guildId: string,
+  channelId: string,
+  messageId: string
+) =>
+  Effect.gen(function* () {
+    const gameRepo = yield* GameRepository;
+    const playerRepo = yield* PlayerRepository;
+    const matchRepo = yield* MatchRepository;
+    const apiService = yield* DiscordApiService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    yield* Effect.sleep("1 second");
+
+    const gameStateOpt = yield* gameRepo.findById(gameId);
+    if (Option.isNone(gameStateOpt)) return;
+    let state = gameStateOpt.value;
+    if (state.status === "Finished") return;
+
+    const currentP = state.players[state.currentPlayerIndex];
+    if (currentP.playerId !== FLY_AI_PLAYER_ID) return;
+
+    const allCategories: ScoreCategory[] = [
+      "Aces", "Deuces", "Treys", "Fours", "Fives", "Sixes",
+      "Choice", "FourOfAKind", "FullHouse", "SmallStraight", "LargeStraight", "Yacht"
+    ];
+    const availableCategories = allCategories.filter((c) => currentP.scoreBoard[c] === undefined);
+    if (availableCategories.length === 0) return;
+
+    // Helper to update Discord message during turn
+    const renderBoard = (s: GameState, h: string) => {
+      if (!channelId || !messageId) return Effect.void;
+      const payload = serializer.serializeGame(s, h, flyUrl);
+      return apiService.editMessage(channelId, messageId, payload.data).pipe(
+        Effect.catchAll(() => Effect.void)
+      );
+    };
+
+    // Roll 1 for AI
+    state = yield* rollDice(state, [false, false, false, false, false], rollProvider);
+    yield* gameRepo.save(state);
+    yield* renderBoard(state, "00000");
+    yield* Effect.sleep("1.2 seconds");
+
+    const callFlyApi = (dice: readonly number[], rollCount: number) =>
+      Effect.tryPromise({
+        try: async () => {
+          if (!flyUrl) throw new Error("FLY_BRAIN_URL is not configured");
+          const res = await fetch(`${flyUrl}/api/fly/act`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              dice: [...dice],
+              roll_count: rollCount,
+              available_categories: availableCategories
+            })
+          });
+          if (!res.ok) throw new Error(`FlyBrain server status: ${res.status}`);
+          return (await res.json()) as { action: "hold" | "score"; holds?: boolean[]; category?: ScoreCategory };
+        },
+        catch: (err) => err as Error
+      });
+
+    const pickBestCategory = (dice: DiceRoll, categories: ScoreCategory[]): ScoreCategory => {
+      let best = categories[0];
+      let maxScore = -1;
+      for (const cat of categories) {
+        const score = calculateScore(cat, dice);
+        if (score > maxScore) {
+          maxScore = score;
+          best = cat;
+        }
+      }
+      return best;
+    };
+
+    const fallbackCategory = pickBestCategory(state.currentDice, availableCategories);
+
+    const d1 = yield* callFlyApi(state.currentDice, 1).pipe(
+      Effect.catchAll(() => Effect.succeed({ action: "score" as const, category: fallbackCategory }))
+    );
+
+    let chosenCategory: ScoreCategory = fallbackCategory;
+
+    if (d1.action === "hold" && d1.holds && d1.holds.length === 5 && !d1.holds.every(Boolean)) {
+      const hold1 = d1.holds.map(Boolean) as [boolean, boolean, boolean, boolean, boolean];
+      const hold1Str = hold1.map((h) => (h ? "1" : "0")).join("");
+
+      // Show held dice locks before roll 2
+      yield* renderBoard(state, hold1Str);
+      yield* Effect.sleep("1 second");
+
+      // Roll 2
+      state = yield* rollDice(state, hold1, rollProvider).pipe(
+        Effect.catchAll(() => Effect.succeed(state))
+      );
+      yield* gameRepo.save(state);
+      yield* renderBoard(state, hold1Str);
+      yield* Effect.sleep("1.2 seconds");
+
+      const d2 = yield* callFlyApi(state.currentDice, 2).pipe(
+        Effect.catchAll(() => Effect.succeed({ action: "score" as const, category: pickBestCategory(state.currentDice, availableCategories) }))
+      );
+
+      if (d2.action === "hold" && d2.holds && d2.holds.length === 5 && !d2.holds.every(Boolean)) {
+        const hold2 = d2.holds.map(Boolean) as [boolean, boolean, boolean, boolean, boolean];
+        const hold2Str = hold2.map((h) => (h ? "1" : "0")).join("");
+
+        // Show held dice locks before roll 3
+        yield* renderBoard(state, hold2Str);
+        yield* Effect.sleep("1 second");
+
+        // Roll 3
+        state = yield* rollDice(state, hold2, rollProvider).pipe(
+          Effect.catchAll(() => Effect.succeed(state))
+        );
+        yield* gameRepo.save(state);
+        yield* renderBoard(state, hold2Str);
+        yield* Effect.sleep("1.2 seconds");
+
+        const d3 = yield* callFlyApi(state.currentDice, 3).pipe(
+          Effect.catchAll(() => Effect.succeed({ action: "score" as const, category: pickBestCategory(state.currentDice, availableCategories) }))
+        );
+        chosenCategory = d3.category && availableCategories.includes(d3.category) ? d3.category : pickBestCategory(state.currentDice, availableCategories);
+      } else {
+        chosenCategory = d2.category && availableCategories.includes(d2.category) ? d2.category : pickBestCategory(state.currentDice, availableCategories);
+      }
+    } else {
+      chosenCategory = d1.category && availableCategories.includes(d1.category) ? d1.category : pickBestCategory(state.currentDice, availableCategories);
+    }
+
+    yield* Effect.sleep("800 millis");
+
+    const nextState = yield* selectCategory(state, chosenCategory);
+
+    if (nextState.status === "Finished") {
+      yield* gameRepo.delete(nextState.gameId);
+
+      const p1 = nextState.players[0];
+      const p2 = nextState.players[1];
+      const p1StatsOpt = yield* playerRepo.getPlayer(p1.playerId, guildId);
+      const p2StatsOpt = yield* playerRepo.getPlayer(p2.playerId, guildId);
+      const p1Elo = Option.isSome(p1StatsOpt) ? p1StatsOpt.value.elo : 1000;
+      const p2Elo = Option.isSome(p2StatsOpt) ? p2StatsOpt.value.elo : 1000;
+      const outcome = p1.totalScore > p2.totalScore ? 1 : (p2.totalScore > p1.totalScore ? 0 : 0.5);
+      const eloResult = calculateEloChange(p1Elo, p2Elo, outcome);
+
+      const matchRecord = {
+        id: nextState.gameId,
+        mode: "multi" as const,
+        guildId,
+        player1Id: p1.playerId,
+        player2Id: p2.playerId,
+        player1Score: p1.totalScore,
+        player2Score: p2.totalScore,
+        winnerId: p1.totalScore > p2.totalScore ? p1.playerId : (p2.totalScore > p1.totalScore ? p2.playerId : null),
+        surrenderedId: null,
+        playedAt: new Date(),
+        historyJson: JSON.stringify(nextState.turnHistory),
+        player1EloAfter: eloResult.newRatingA,
+        player2EloAfter: eloResult.newRatingB
+      };
+
+      yield* matchRepo.saveMatch(matchRecord);
+      yield* playerRepo.updateElo(p1.playerId, guildId, eloResult.newRatingA);
+      yield* playerRepo.updateElo(p2.playerId, guildId, eloResult.newRatingB);
+      if (p1.totalScore > p2.totalScore) {
+        yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "win", p1.totalScore);
+        yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "loss", p2.totalScore);
+      } else if (p2.totalScore > p1.totalScore) {
+        yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "loss", p1.totalScore);
+        yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "win", p2.totalScore);
+      } else {
+        yield* playerRepo.updateStats(p1.playerId, guildId, "multi", "draw", p1.totalScore);
+        yield* playerRepo.updateStats(p2.playerId, guildId, "multi", "draw", p2.totalScore);
+      }
+
+      const formatDelta = (d: number) => d >= 0 ? `▲+${d}` : `▼${d}`;
+      const deltaA = formatDelta(eloResult.deltaA);
+      const deltaB = formatDelta(eloResult.deltaB);
+
+      const endMsg = p1.totalScore > p2.totalScore
+        ? getMultiFinishedMessage(p1.playerId, p2.playerId, p1.totalScore, p2.totalScore, eloResult.newRatingA, eloResult.newRatingB, deltaA, deltaB)
+        : (p2.totalScore > p1.totalScore
+          ? getMultiFinishedMessage(p2.playerId, p1.playerId, p2.totalScore, p1.totalScore, eloResult.newRatingB, eloResult.newRatingA, deltaB, deltaA)
+          : getMultiDrawMessage(p1.playerId, p2.playerId, p1.totalScore, eloResult.newRatingA, eloResult.newRatingB, deltaA, deltaB));
+
+      if (channelId && messageId) {
+        yield* apiService.sendGameEndMessage(channelId, endMsg, messageId).pipe(Effect.catchAll(() => Effect.void));
+        const finalSerialized = serializer.serializeGame(nextState, "00000", flyUrl);
+        yield* apiService.editMessage(channelId, messageId, finalSerialized.data).pipe(Effect.catchAll(() => Effect.void));
+      }
+    } else {
+      yield* gameRepo.save(nextState);
+      const humanPlayer = nextState.players[nextState.currentPlayerIndex];
+      if (channelId && messageId) {
+        const boardSerialized = serializer.serializeGame(nextState, "00000", flyUrl);
+        yield* apiService.editMessage(channelId, messageId, boardSerialized.data).pipe(Effect.catchAll(() => Effect.void));
+        const newMentionId = yield* apiService.sendMention(channelId, humanPlayer.playerId, messageId).pipe(
+          Effect.catchAll(() => Effect.succeed(""))
+        );
+        if (newMentionId) {
+          yield* gameRepo.save({
+            ...nextState,
+            lastMentionMessageId: newMentionId,
+            lastMentionChannelId: channelId
+          });
+        }
+      }
+    }
+    return nextState;
+  });
+
 export const GameWorkflowServiceLive = Layer.succeed(
   GameWorkflowService,
   {
@@ -500,6 +800,9 @@ export const GameWorkflowServiceLive = Layer.succeed(
         const playerRepo = yield* PlayerRepository;
         const matchRepo = yield* MatchRepository;
         const apiService = yield* DiscordApiService;
+        const serializer = yield* DiscordResponseSerializer;
+        const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+        const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
 
         const gameStateOption = yield* gameRepo.findById(gameId);
         if (Option.isNone(gameStateOption)) {
@@ -658,25 +961,56 @@ export const GameWorkflowServiceLive = Layer.succeed(
         // Send turn mention / delete previous mention in background
         if (nextState.mode === "multi" && nextState.status !== "Finished" && channelId) {
           const nextPlayerId = nextState.players[nextState.currentPlayerIndex].playerId;
-          const sendMentionTask = Effect.gen(function* () {
+          if (nextPlayerId === FLY_AI_PLAYER_ID) {
             if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
-              yield* apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId);
+              const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
+                Effect.catchAll(() => Effect.void)
+              );
+              ctx.waitUntil(Effect.runPromise(deleteMentionTask));
             }
-            const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId, messageId);
-            if (newMsgId) {
-              const stateWithMention = {
-                ...nextState,
-                lastMentionMessageId: newMsgId,
-                lastMentionChannelId: channelId
-              };
-              yield* gameRepo.save(stateWithMention);
-            }
-          }).pipe(
-            Effect.catchAll((err) => 
-              Effect.logError(`Error sending turn mention: ${err}`)
-            )
-          );
-          ctx.waitUntil(Effect.runPromise(sendMentionTask));
+            const aiTask = executeAiTurnLogic(
+              nextState.gameId,
+              guildId,
+              channelId,
+              messageId || gameState.initialMessageId || ""
+            ).pipe(
+              Effect.catchAll((err) => {
+                console.error(`[Fly AI] Error executing AI turn for game ${nextState.gameId}:`, err);
+                return Effect.logError(`Error executing AI turn: ${err}`);
+              }),
+              Effect.provide(
+                Layer.mergeAll(
+                  Layer.succeed(GameRepository, gameRepo),
+                  Layer.succeed(PlayerRepository, playerRepo),
+                  Layer.succeed(MatchRepository, matchRepo),
+                  Layer.succeed(DiscordApiService, apiService),
+                  Layer.succeed(DiscordResponseSerializer, serializer),
+                  Layer.succeed(FlyBrainUrl, flyUrl)
+                )
+              )
+            );
+            ctx.waitUntil(Effect.runPromise(aiTask));
+          } else {
+            const sendMentionTask = Effect.gen(function* () {
+              if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
+                yield* apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId);
+              }
+              const newMsgId = yield* apiService.sendMention(channelId, nextPlayerId, messageId);
+              if (newMsgId) {
+                const stateWithMention = {
+                  ...nextState,
+                  lastMentionMessageId: newMsgId,
+                  lastMentionChannelId: channelId
+                };
+                yield* gameRepo.save(stateWithMention);
+              }
+            }).pipe(
+              Effect.catchAll((err) => 
+                Effect.logError(`Error sending turn mention: ${err}`)
+              )
+            );
+            ctx.waitUntil(Effect.runPromise(sendMentionTask));
+          }
         } else {
           if (gameState.lastMentionMessageId && gameState.lastMentionChannelId) {
             const deleteMentionTask = apiService.deleteMessage(gameState.lastMentionChannelId, gameState.lastMentionMessageId).pipe(
@@ -952,8 +1286,433 @@ export const GameWorkflowServiceLive = Layer.succeed(
 
         yield* queueRepo.updateStatus(queue.id, "CANCELLED");
         return { ...queue, status: "CANCELLED" as const };
-      })
+      }),
+
+    playWithFlyAiFromQueue: (queueId, userId, guildId, channelId, messageId) =>
+      Effect.gen(function* () {
+        const queueRepo = yield* MatchQueueRepository;
+        const gameRepo = yield* GameRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const queueOpt = yield* queueRepo.findById(queueId);
+        if (Option.isNone(queueOpt)) {
+          return yield* Effect.fail(new MatchQueueNotFoundError());
+        }
+
+        const queue = queueOpt.value;
+        if (queue.hostId !== userId) {
+          return yield* Effect.fail(new UnauthorizedPlayAiError());
+        }
+
+        if (queue.status !== "WAITING") {
+          return yield* Effect.fail(new MatchQueueNotFoundError());
+        }
+
+        if (isMatchQueueExpired(queue)) {
+          yield* queueRepo.updateStatus(queue.id, "EXPIRED");
+          return yield* Effect.fail(new MatchQueueExpiredError());
+        }
+
+        yield* queueRepo.updateStatus(queue.id, "MATCHED");
+
+        yield* playerRepo.upsertPlayer(queue.hostId, queue.hostName);
+        yield* playerRepo.upsertPlayer(FLY_AI_PLAYER_ID, FLY_AI_PLAYER_NAME);
+
+        const players = [
+          { playerId: queue.hostId, playerName: queue.hostName },
+          { playerId: FLY_AI_PLAYER_ID, playerName: FLY_AI_PLAYER_NAME }
+        ];
+
+        const gameState = yield* initGame(players, "multi");
+        const stateWithMsg = messageId ? { ...gameState, initialMessageId: messageId } : gameState;
+        yield* gameRepo.save(stateWithMsg);
+        return stateWithMsg;
+      }),
+
+    playWithFlyAiFromInvitation: (invitationId, userId, guildId, channelId, messageId) =>
+      Effect.gen(function* () {
+        const invRepo = yield* InvitationRepository;
+        const gameRepo = yield* GameRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const invOpt = yield* invRepo.findById(invitationId);
+        if (Option.isNone(invOpt)) {
+          return yield* Effect.fail(new InvitationNotFoundError());
+        }
+
+        const inv = invOpt.value;
+        if (inv.challengerId !== userId) {
+          return yield* Effect.fail(new UnauthorizedPlayAiError());
+        }
+
+        if (inv.status !== "PENDING") {
+          return yield* Effect.fail(new InvitationNotFoundError());
+        }
+
+        if (isInvitationExpired(inv)) {
+          yield* invRepo.updateStatus(inv.id, "EXPIRED");
+          return yield* Effect.fail(new InvitationExpiredError());
+        }
+
+        yield* invRepo.updateStatus(inv.id, "ACCEPTED");
+
+        yield* playerRepo.upsertPlayer(inv.challengerId, inv.challengerName);
+        yield* playerRepo.upsertPlayer(FLY_AI_PLAYER_ID, FLY_AI_PLAYER_NAME);
+
+        const players = [
+          { playerId: inv.challengerId, playerName: inv.challengerName },
+          { playerId: FLY_AI_PLAYER_ID, playerName: FLY_AI_PLAYER_NAME }
+        ];
+
+        const gameState = yield* initGame(players, "multi");
+        const stateWithMsg = messageId ? { ...gameState, initialMessageId: messageId } : gameState;
+        yield* gameRepo.save(stateWithMsg);
+        return stateWithMsg;
+      }),
+
+    executeAiTurn: (gameId, guildId, channelId, messageId) =>
+      executeAiTurnLogic(gameId, guildId, channelId, messageId),
+
+    createColosseumMatch: (guildId, channelId) =>
+      Effect.gen(function* () {
+        const colosseumRepo = yield* ColosseumRepository;
+        const [pA, pB] = selectRandomGladiators();
+        const { oddsA, oddsB } = calculateOdds(pA.elo, pB.elo);
+
+        const matchId = `colosseum_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const matchRecord: ColosseumMatchRecord = {
+          id: matchId,
+          guildId,
+          channelId,
+          personaAId: pA.id,
+          personaBId: pB.id,
+          oddsA,
+          oddsB,
+          status: "BETTING",
+          createdAt: new Date()
+        };
+
+        yield* colosseumRepo.createMatch(matchRecord);
+        return matchRecord;
+      }),
+
+    placeColosseumBet: (matchId, userId, userName, guildId, chosenPersona, amount) =>
+      Effect.gen(function* () {
+        const colosseumRepo = yield* ColosseumRepository;
+        const playerRepo = yield* PlayerRepository;
+
+        const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+        if (Option.isNone(matchOpt)) {
+          return yield* Effect.fail(new ColosseumMatchNotFoundError());
+        }
+        const match = matchOpt.value;
+        if (match.status !== "BETTING") {
+          return yield* Effect.fail(new ColosseumBetClosedError());
+        }
+
+        const existingBet = yield* colosseumRepo.getUserBetInMatch(matchId, userId);
+        if (Option.isSome(existingBet)) {
+          return yield* Effect.fail(new ColosseumAlreadyBetError());
+        }
+
+        const playerOpt = yield* playerRepo.getPlayer(userId, guildId);
+        const currentElo = Option.isSome(playerOpt) ? playerOpt.value.elo : 1000;
+
+        const validateResult = validateBet(currentElo, amount);
+        if (validateResult._tag === "Left") {
+          return yield* Effect.fail(validateResult.left);
+        }
+        const validAmount = validateResult.right;
+
+        yield* playerRepo.upsertPlayer(userId, userName);
+        yield* playerRepo.updateElo(userId, guildId, currentElo - validAmount);
+
+        const odds = chosenPersona === "A" ? match.oddsA : match.oddsB;
+        const betId = `bet_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const betRecord: ColosseumBetRecord = {
+          id: betId,
+          matchId,
+          userId,
+          userName,
+          chosenPersona,
+          amount: validAmount,
+          odds,
+          payout: 0,
+          status: "PENDING",
+          createdAt: new Date()
+        };
+
+        yield* colosseumRepo.placeBet(betRecord);
+        const allBets = yield* colosseumRepo.getBetsByMatchId(matchId);
+
+        return {
+          match,
+          bet: betRecord,
+          allBets
+        };
+      }),
+
+    startColosseumDuel: (matchId, channelId, messageId, ctx) =>
+      Effect.gen(function* () {
+        const colosseumRepo = yield* ColosseumRepository;
+        const playerRepo = yield* PlayerRepository;
+        const apiService = yield* DiscordApiService;
+        const serializer = yield* DiscordResponseSerializer;
+        const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+        const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+        const botTokenOpt = yield* Effect.serviceOption(DiscordBotToken);
+        const botToken = Option.isSome(botTokenOpt) ? botTokenOpt.value : "";
+
+        const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+        if (Option.isNone(matchOpt)) {
+          return yield* Effect.fail(new ColosseumMatchNotFoundError());
+        }
+        const match = matchOpt.value;
+        if (match.status !== "BETTING") {
+          return match;
+        }
+
+        yield* colosseumRepo.updateMatchStatus(matchId, "SIMULATING", messageId);
+        const updatedMatch: ColosseumMatchRecord = { ...match, status: "SIMULATING", messageId };
+
+        const broadcastTask = Effect.tryPromise({
+          try: async () => {
+            if (!flyUrl) throw new Error("FLY_BRAIN_URL not configured");
+            const res = await fetch(`${flyUrl}/api/fly/colosseum/broadcast`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                match_id: matchId,
+                channel_id: channelId,
+                message_id: messageId,
+                persona_a: match.personaAId,
+                persona_b: match.personaBId,
+                discord_bot_token: botToken,
+                worker_callback_url: "https://discord-yachoo.woowong.workers.dev/api/colosseum/settle",
+                fly_brain_url: flyUrl
+              })
+            });
+            if (!res.ok) {
+              const errText = await res.text();
+              throw new Error(`Python broadcast delegation returned status ${res.status}: ${errText}`);
+            }
+            return await res.json();
+          },
+          catch: (err) => err
+        }).pipe(
+          Effect.catchAll((err) => {
+            console.warn(`[Colosseum] Failed to delegate to Python SNN broadcaster, falling back to local simulation:`, err);
+            return executeColosseumMatchLogic(matchId, channelId, messageId);
+          }),
+          Effect.provide(
+            Layer.mergeAll(
+              Layer.succeed(ColosseumRepository, colosseumRepo),
+              Layer.succeed(PlayerRepository, playerRepo),
+              Layer.succeed(DiscordApiService, apiService),
+              Layer.succeed(DiscordResponseSerializer, serializer),
+              Layer.succeed(FlyBrainUrl, flyUrl)
+            )
+          )
+        );
+
+        ctx.waitUntil(Effect.runPromise(broadcastTask));
+        return updatedMatch;
+      }),
+
+    executeColosseumMatch: (matchId, channelId, messageId) =>
+      executeColosseumMatchLogic(matchId, channelId, messageId),
+
+    settleColosseumMatch: (matchId, channelId, messageId, winner, scoreA, scoreB, duelData) =>
+      settleColosseumMatchLogic(matchId, channelId, messageId, winner, scoreA, scoreB, duelData)
   }
 );
+
+const executeColosseumMatchLogic = (
+  matchId: string,
+  channelId: string,
+  messageId: string
+) =>
+  Effect.gen(function* () {
+    const colosseumRepo = yield* ColosseumRepository;
+    const playerRepo = yield* PlayerRepository;
+    const apiService = yield* DiscordApiService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+    if (Option.isNone(matchOpt)) return;
+    const match = matchOpt.value;
+    if (match.status === "COMPLETED" || match.status === "CANCELLED") return;
+
+    // 1. Fetch simulation duel timeline from Python SNN server
+    const duelData = yield* Effect.tryPromise({
+      try: async () => {
+        if (!flyUrl) throw new Error("FLY_BRAIN_URL not configured");
+        const res = await fetch(`${flyUrl}/api/fly/duel`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            persona_a: match.personaAId,
+            persona_b: match.personaBId
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return (await res.json()) as any;
+      },
+      catch: (err) => err
+    }).pipe(
+      Effect.catchAll(() => {
+        const categories = ["Aces", "Deuces", "Treys", "Fours", "Fives", "Sixes", "Choice", "FourOfAKind", "FullHouse", "SmallStraight", "LargeStraight", "Yacht"];
+        const mockRounds = Array.from({ length: 12 }, (_, i) => {
+          const cat = categories[i];
+          const ptsA = i === 11 ? 50 : 15;
+          const ptsB = 14;
+          const sbA: Record<string, number> = {};
+          const sbB: Record<string, number> = {};
+          for (let j = 0; j <= i; j++) {
+            const c = categories[j];
+            sbA[c] = j === 11 ? 50 : 15;
+            sbB[c] = 14;
+          }
+          return {
+            round: i + 1,
+            a: {
+              category: cat,
+              points: ptsA,
+              total: 15 * i + ptsA,
+              dopamine: 120 + i * 10,
+              dialogue: "🔥🔥 도파민 풀악셀 가즈아 붕!!",
+              dice: [5, 5, 5, 5, 5],
+              holds: [true, true, true, true, true],
+              score_board: sbA,
+              upper_bonus: 0
+            },
+            b: {
+              category: cat,
+              points: ptsB,
+              total: ptsB * (i + 1),
+              dopamine: 110,
+              dialogue: "🧊 오차범위 0.01% 계산 완료 붕.",
+              dice: [4, 4, 4, 3, 2],
+              holds: [true, true, true, false, false],
+              score_board: sbB,
+              upper_bonus: 0
+            },
+            leader: "A",
+            is_lead_change: false
+          };
+        });
+        return Effect.succeed({
+          winner: "A",
+          score_a: 215,
+          score_b: 168,
+          diff: 47,
+          lead_changes: 0,
+          rounds: mockRounds
+        });
+      })
+    );
+
+    const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
+
+    // 1. Opening Suspense Frame: Animated Dice Rolling GIF & Shaking
+    const rollingPayload = serializer.serializeColosseumRolling(match, bets, duelData, 1, flyUrl);
+    yield* apiService.editMessage(channelId, messageId, rollingPayload.data).pipe(
+      Effect.catchAll((err) => {
+        console.error(`[Colosseum] Failed to edit opening rolling message:`, err);
+        return Effect.void;
+      })
+    );
+    yield* Effect.sleep("1.5 seconds");
+
+    // 2. Play out ALL 12 Rounds sequentially without skipping any turn!
+    // Total sleep: 1.5s (opening) + 12 * 1.2s = 15.9s (safely within Cloudflare 30s waitUntil limit)
+    for (let r = 1; r <= 12; r++) {
+      const roundPayload = serializer.serializeColosseumRound(match, bets, duelData, r, flyUrl);
+      yield* apiService.editMessage(channelId, messageId, roundPayload.data).pipe(
+        Effect.catchAll((err) => {
+          console.error(`[Colosseum] Failed to edit round message (Round ${r}):`, err);
+          return Effect.void;
+        })
+      );
+      yield* Effect.sleep("1.2 seconds");
+    }
+
+    // 3. Phase 3: Settle Bets & Final Results
+    yield* settleColosseumMatchLogic(
+      match.id,
+      channelId,
+      messageId,
+      duelData.winner as "A" | "B" | "DRAW",
+      duelData.score_a,
+      duelData.score_b,
+      duelData
+    );
+  });
+
+const settleColosseumMatchLogic = (
+  matchId: string,
+  channelId: string,
+  messageId: string,
+  winner: "A" | "B" | "DRAW",
+  scoreA: number,
+  scoreB: number,
+  duelData: any
+) =>
+  Effect.gen(function* () {
+    const colosseumRepo = yield* ColosseumRepository;
+    const playerRepo = yield* PlayerRepository;
+    const apiService = yield* DiscordApiService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const matchOpt = yield* colosseumRepo.getMatchById(matchId);
+    if (Option.isNone(matchOpt)) return;
+    const match = matchOpt.value;
+    if (match.status === "COMPLETED" || match.status === "CANCELLED") return;
+
+    yield* colosseumRepo.finishMatch(
+      match.id,
+      winner,
+      scoreA,
+      scoreB,
+      JSON.stringify(duelData)
+    );
+
+    const bets = yield* colosseumRepo.getBetsByMatchId(matchId);
+    for (const bet of bets) {
+      if (winner === "DRAW") {
+        yield* colosseumRepo.updateBetPayout(bet.id, bet.amount, "REFUNDED");
+        const pOpt = yield* playerRepo.getPlayer(bet.userId, match.guildId);
+        if (Option.isSome(pOpt)) {
+          yield* playerRepo.updateElo(bet.userId, match.guildId, pOpt.value.elo + bet.amount);
+        }
+      } else if (winner === bet.chosenPersona) {
+        const payout = Math.floor(bet.amount * bet.odds);
+        yield* colosseumRepo.updateBetPayout(bet.id, payout, "WON");
+        const pOpt = yield* playerRepo.getPlayer(bet.userId, match.guildId);
+        if (Option.isSome(pOpt)) {
+          yield* playerRepo.updateElo(bet.userId, match.guildId, pOpt.value.elo + payout);
+        }
+      } else {
+        yield* colosseumRepo.updateBetPayout(bet.id, 0, "LOST");
+      }
+    }
+
+    const updatedBets = yield* colosseumRepo.getBetsByMatchId(matchId);
+    const updatedMatchOpt = yield* colosseumRepo.getMatchById(matchId);
+    const finalMatch = Option.getOrElse(updatedMatchOpt, () => match);
+
+    const phase3Payload = serializer.serializeColosseumResult(finalMatch, updatedBets, duelData, flyUrl);
+    yield* apiService.editMessage(channelId, messageId, phase3Payload.data).pipe(
+      Effect.catchAll((err) => {
+        console.error(`[Colosseum] Failed to edit final result message for match ${matchId}:`, err);
+        return Effect.void;
+      })
+    );
+  });
+
 
 

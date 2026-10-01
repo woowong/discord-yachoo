@@ -3,6 +3,7 @@ node_modules/
 
 # Cloudflare Workers / Wrangler
 .wrangler/
+.cloudflare/
 .dev.vars
 dist/
 
@@ -32,3 +33,12 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+.flyeireaitolens
+*.token
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/

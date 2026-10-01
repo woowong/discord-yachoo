@@ -1,0 +1,17 @@
+[project]
+name = "flywire-poc"
+version = "0.1.0"
+description = "FlyWire connectome subcircuit extraction and local SNN simulation PoC for Yacht"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "caveclient>=5.20.0",
+    "numpy>=1.26.0",
+    "scipy>=1.11.0",
+    "pandas>=2.1.0",
+    "python-dotenv>=1.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

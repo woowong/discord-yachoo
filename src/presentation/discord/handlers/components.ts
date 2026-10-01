@@ -1,10 +1,10 @@
-import { Effect, Option } from "effect";
+import { Effect, Option, Layer } from "effect";
 import { ParsedInteraction } from "../../discord/adapter/types";
 import { GameState, DiceHold, ScoreCategory } from "../../../domain/types";
-import { MatchRepository, GameRepository } from "../../../persistence/repository";
+import { MatchRepository, GameRepository, PlayerRepository } from "../../../persistence/repository";
 import { DiscordResponseSerializer } from "../../discord/adapter/serializer";
-import { DiscordApiService } from "../../discord/adapter/api";
-import { GameWorkflowService } from "../../../application/GameWorkflowService";
+import { DiscordApiService, FlyBrainUrl } from "../../discord/adapter/api";
+import { GameWorkflowService, FLY_AI_PLAYER_ID } from "../../../application/GameWorkflowService";
 import { KoreanMessages } from "../../messages/ko";
 
 export const handleBackToHistoryList = (
@@ -482,8 +482,10 @@ export const handleSelectCategory = (
       safeCtx
     );
 
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
     const nextState = yield* selectResult;
-    const responsePayload = serializer.serializeGame(nextState);
+    const responsePayload = serializer.serializeGame(nextState, "00000", flyUrl);
     return new Response(JSON.stringify(responsePayload), {
       headers: { "content-type": "application/json" }
     });
@@ -655,14 +657,243 @@ export const handleCancelMatchQueue = (
 
 export const handleRefresh = (
   interaction: ParsedInteraction & { readonly _tag: "Component" },
-  gameState: GameState
+  gameState: GameState,
+  rawJson?: any,
+  safeCtx?: any
 ) =>
   Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const gameRepo = yield* GameRepository;
+    const playerRepo = yield* PlayerRepository;
+    const matchRepo = yield* MatchRepository;
+    const apiService = yield* DiscordApiService;
     const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
     yield* Effect.logInfo(`Game state refreshed: ${gameState.gameId} by user: ${interaction.user.id}`);
-    const responsePayload = serializer.serializeGame(gameState);
+
+    // If it's currently Fly AI's turn, trigger AI turn in background
+    if (
+      gameState.status !== "Finished" &&
+      gameState.players[gameState.currentPlayerIndex]?.playerId === FLY_AI_PLAYER_ID &&
+      safeCtx
+    ) {
+      const guildId = interaction.guildId || "@me";
+      const channelId = interaction.channelId || "";
+      const messageId = rawJson?.message?.id || gameState.initialMessageId || "";
+      const aiTask = workflow.executeAiTurn(gameState.gameId, guildId, channelId, messageId).pipe(
+        Effect.catchAll((err) => {
+          console.error(`[Fly AI] Error executing AI turn on refresh for game ${gameState.gameId}:`, err);
+          return Effect.logError(`Error executing AI turn on refresh: ${err}`);
+        }),
+        Effect.provide(
+          Layer.mergeAll(
+            Layer.succeed(GameRepository, gameRepo),
+            Layer.succeed(PlayerRepository, playerRepo),
+            Layer.succeed(MatchRepository, matchRepo),
+            Layer.succeed(DiscordApiService, apiService),
+            Layer.succeed(DiscordResponseSerializer, serializer),
+            Layer.succeed(FlyBrainUrl, flyUrl)
+          )
+        )
+      );
+      safeCtx.waitUntil(Effect.runPromise(aiTask));
+    }
+
+    const responsePayload = serializer.serializeGame(gameState, "00000", flyUrl);
     return new Response(JSON.stringify(responsePayload), {
       headers: { "content-type": "application/json" }
     });
   });
+
+export const handlePlayAiMatchQueue = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  rawJson: any
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const parts = interaction.customId.split(":");
+    const queueId = parts[2];
+
+    const userId = interaction.user.id;
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+    const messageId = rawJson?.message?.id;
+
+    const result = workflow.playWithFlyAiFromQueue(queueId, userId, guildId, channelId, messageId).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrState = yield* result;
+    if (resOrState instanceof Response) {
+      return resOrState;
+    }
+
+    const serialized = serializer.serializeGame(resOrState, "00000", flyUrl);
+    return new Response(JSON.stringify({ ...serialized, type: 7 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handlePlayAiInvitation = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  rawJson: any
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const parts = interaction.customId.split(":");
+    const invId = parts[2];
+
+    const userId = interaction.user.id;
+    const guildId = interaction.guildId || "@me";
+    const channelId = interaction.channelId || "";
+    const messageId = rawJson?.message?.id;
+
+    const result = workflow.playWithFlyAiFromInvitation(invId, userId, guildId, channelId, messageId).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrState = yield* result;
+    if (resOrState instanceof Response) {
+      return resOrState;
+    }
+
+    const serialized = serializer.serializeGame(resOrState, "00000", flyUrl);
+    return new Response(JSON.stringify({ ...serialized, type: 7 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handleColosseumBet = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" }
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+    const serializer = yield* DiscordResponseSerializer;
+    const flyUrlOpt = yield* Effect.serviceOption(FlyBrainUrl);
+    const flyUrl = Option.isSome(flyUrlOpt) ? flyUrlOpt.value : "";
+
+    const parts = interaction.customId.split(":");
+    const matchId = parts[1];
+    const chosenPersona = parts[2] as "A" | "B";
+    const amount = parseInt(parts[3], 10) || 20;
+
+    const userId = interaction.user.id;
+    const userName = interaction.user.globalName || interaction.user.username;
+    const guildId = interaction.guildId || "@me";
+
+    const result = workflow.placeColosseumBet(
+      matchId,
+      userId,
+      userName,
+      guildId,
+      chosenPersona,
+      amount
+    ).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrResult = yield* result;
+    if (resOrResult instanceof Response) {
+      return resOrResult;
+    }
+
+    const serialized = serializer.serializeColosseumMatch(resOrResult.match, resOrResult.allBets, flyUrl);
+    return new Response(JSON.stringify({ ...serialized, type: 7 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
+export const handleColosseumStart = (
+  interaction: ParsedInteraction & { readonly _tag: "Component" },
+  rawJson: any,
+  safeCtx: any
+) =>
+  Effect.gen(function* () {
+    const workflow = yield* GameWorkflowService;
+
+    const parts = interaction.customId.split(":");
+    const matchId = parts[1];
+    const channelId = interaction.channelId || "";
+    const messageId = rawJson?.message?.id || "";
+
+    const result = workflow.startColosseumDuel(
+      matchId,
+      channelId,
+      messageId,
+      safeCtx
+    ).pipe(
+      Effect.catchAll((err: any) =>
+        Effect.succeed(
+          new Response(
+            JSON.stringify({
+              type: 4,
+              data: {
+                content: `❌ ${err.message || err}`,
+                flags: 64
+              }
+            }),
+            { headers: { "content-type": "application/json" } }
+          )
+        )
+      )
+    );
+
+    const resOrMatch = yield* result;
+    if (resOrMatch instanceof Response) {
+      return resOrMatch;
+    }
+
+    return new Response(JSON.stringify({ type: 6 }), {
+      headers: { "content-type": "application/json" }
+    });
+  });
+
 
