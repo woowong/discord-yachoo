@@ -3,6 +3,7 @@ node_modules/
 
 # Cloudflare Workers / Wrangler
 .wrangler/
+.cloudflare/
 .dev.vars
 dist/
 

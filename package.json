@@ -5,8 +5,8 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "dev": "cf dev",
+    "deploy": "cf deploy",
     "test": "vitest run",
     "simulate": "tsx src/presentation/console/index.ts",
     "register-commands": "tsx scripts/register-commands.ts",
@@ -27,10 +27,11 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260710.1",
     "@types/node": "^26.1.1",
+    "cf": "^1.0.0-beta.10",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10",
-    "wrangler": "^4.110.0"
+    "wrangler": "^4.145.0"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
